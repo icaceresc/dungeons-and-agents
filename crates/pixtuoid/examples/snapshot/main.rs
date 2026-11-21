@@ -981,7 +981,7 @@ mod tests {
             vec!["snapshot", "--gif", "--meeting", "4"],
             vec!["snapshot", "--meeting", "3"],
             vec!["snapshot", "--gif", "--meeting", "3", "--anim", "sofa"],
-            vec!["snapshot", "--gif", "--meeting", "3", "--pets", "cat"],
+            vec!["snapshot", "--gif", "--meeting", "3", "--pets", "wolf"],
             vec![
                 "snapshot",
                 "--gif",
@@ -1050,7 +1050,7 @@ mod tests {
             &["--anim", "sofa"],
             &["--anim", "sofa", "--anim-skip-ms", "5"],
         ];
-        let renderers = [&["--pets", "cat"][..], &["--navigate-at", "3:1"]];
+        let renderers = [&["--pets", "wolf"][..], &["--navigate-at", "3:1"]];
         for alone in pre_rolls.iter().chain(&renderers) {
             let argv = [gif, alone].concat();
             assert!(
@@ -1124,7 +1124,7 @@ mod tests {
         }
         for mode in [
             &["--proof", "session.jsonl"][..],
-            &["--gif", "--pets", "cat"],
+            &["--gif", "--pets", "wolf"],
             &["--gif", "--navigate-at", "3:1"],
             &["--anim", "sofa"],
             &["--gif", "--meeting", "3"],
@@ -1154,7 +1154,7 @@ mod tests {
                 "--warmup-secs",
                 "1",
             ],
-            &["snapshot", "--pixel", "cutaway", "--gif", "--pets", "cat"],
+            &["snapshot", "--pixel", "cutaway", "--gif", "--pets", "wolf"],
             &[
                 "snapshot",
                 "--pixel",

@@ -242,7 +242,7 @@ mod tests {
 
     /// The banner art for `agent`: their coworker holding a coffee as
     /// [`character_frame`] draws them at the pack's densest art, and the
-    /// sleeping cat at the same density.
+    /// sleeping wolf at the same density.
     fn banner_art(pack: &OfficeArt, agent: &AgentSlot) -> String {
         let density = pack.max_density_variant();
         let scale = crate::render_scale::RenderScale::new(density.get()).expect("nonzero");
@@ -258,9 +258,9 @@ mod tests {
         let coworker = character_frame(pose, (agent, outfit), pack, scale, &mut cache)
             .frame
             .clone();
-        let cat = &pack.inner().variants_of(Piece::CatSleep)[&density];
+        let wolf = &pack.inner().variants_of(Piece::WolfSleep)[&density];
         let art: Vec<_> = std::iter::once(("coworker", coffee, &coworker))
-            .chain(cat.frames().iter().map(|f| ("cat", cat.frame_ms(), f)))
+            .chain(wolf.frames().iter().map(|f| ("wolf", wolf.frame_ms(), f)))
             .collect();
         golden(&art)
     }

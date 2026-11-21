@@ -10,8 +10,6 @@
 "j" = "#20252c"   # dark screen glass (`SCREEN_GLASS_KEY`)
 "J" = "#3a3f47"   # dim screen content on idle glass; the cutaway relights it, as text, on a lit desk
 "w" = "#ececec"   # off-white
-"t" = "#d68a4a"   # orange tabby cat
-"u" = "#3a2010"   # cat dark (ears, eyes, nose, tail tip)
 "M" = "#3a3a40"   # charcoal
 "E" = "#56595f"   # brushed steel, between the wall and chrome (`K`)
 "k" = "#1a1a22"   # near-black: a keyboard, feet and casters, pulls
@@ -31,7 +29,6 @@
 "q" = "#1d1d1d"   # ink black
 "x" = "#c8a060"   # tan
 "z" = "#7a5030"   # dark brown
-"R" = "#c45050"   # dog nose/tongue
 "o" = "#d2402f"   # vermilion
 "N" = "#9e2a20"   # dark red
 "Q" = "#f0895a"   # lobster highlight (orange carapace)
@@ -128,8 +125,7 @@
 "Σ" = "#7e838c"   # iron: a helm's bowl, mail's lit rings
 "г" = "#4a3020"   # dark leather: the belt
 "ϝ" = "#6e5c48"   # a berserker's pelt (scripts/gen-art.py's FUR)
-# The campaign's creatures (scripts/gen-art.py's owlbear, wolf and raven), in the
-# dog's, the cat's and the gateway mascot's slots.
+# The campaign's pets (scripts/gen-art.py's owlbear, wolf and raven).
 "ƀ" = "#6b4a32"   # the owlbear's fur: a bear's warm brown
 "ƃ" = "#8c7d6a"   # the owlbear's feathers: its head, tufts, chest and tail
 "Ɔ" = "#d2c3a2"   # the owlbear's face disc, pale buff
@@ -137,9 +133,9 @@
 "Ƌ" = "#7f848c"   # the wolf's grey coat
 "Ə" = "#cfccc4"   # the wolf's pale throat, belly and muzzle
 "Ɛ" = "#e0a83a"   # the wolf's amber eye
-"Ƒ" = "#2c2a3a"   # the raven's black, kept off the outline's
-"Ɠ" = "#4a5574"   # the raven's blue sheen
-"Ɩ" = "#686674"   # the raven's beak and feet, slate
+"Ƒ" = "#34314a"   # the raven's black, a blue-violet one so it reads on a dark floor
+"Ɠ" = "#7a7ec8"   # the raven's blue-violet sheen
+"Ɩ" = "#8e8c9e"   # the raven's beak and feet, slate
 
 # Shades of a recolor key, derived from it: `level` steps along the key's ramp
 # (`Rgb::ramp`). They carry no colour of their own, so a per-agent recolor
@@ -172,10 +168,6 @@
 "ё" = { of = "б", level = -2 }   # the water cooler's cabinet, shaded east side
 "α" = { of = "ч", level = -2 }   # the first coat, turned from the pole
 "β" = { of = "ш", level = -2 }   # the second
-"ţ" = { of = "t", level = -2 }   # the cat's fur, shaded
-"Ţ" = { of = "t", level = 2 }    # the cat's fur, lit
-"ƭ" = { of = "x", level = -2 }   # the dog's coat, shaded
-"Ƭ" = { of = "x", level = 2 }    # the dog's coat, lit
 "ȼ" = { of = "o", level = -2 }   # the lobster's shell, shaded
 "Ȼ" = { of = "o", level = 2 }    # the lobster's shell, lit
 "ǩ" = { of = "A", level = -2 }   # the lobster's claws, shaded
@@ -199,7 +191,6 @@
 "ƅ" = { of = "ƃ", level = -2 }   # the owlbear's feathers, shaded: their scallops
 "Ƈ" = { of = "Ɔ", level = -2 }   # the face disc's rim
 "Ɖ" = { of = "ƈ", level = -3 }   # the beak's hook, shaded
-"ƌ" = { of = "Ƌ", level = 2 }    # the wolf's coat, lit
 "ƍ" = { of = "Ƌ", level = -2 }   # the wolf's coat, shaded: its saddle, its far legs
 "Ǝ" = { of = "Ƌ", level = -5 }   # the wolf's coat, darkest: ear backs, paws, the brush's tip
 "ƕ" = { of = "Ƒ", level = -2 }   # the raven's black, shaded
@@ -535,54 +526,80 @@ frame_ms = 600
 frames   = ["filing_cabinet@4x.sprite"]
 frame_ms = 600
 
-[animations.cat_walk]
-frames   = ["cat_walk_0.sprite", "cat_walk_1.sprite", "cat_walk_2.sprite", "cat_walk_3.sprite", "cat_walk_4.sprite", "cat_walk_5.sprite", "cat_walk_6.sprite", "cat_walk_7.sprite"]
+[animations.wolf_walk]
+frames   = ["wolf_walk_0.sprite", "wolf_walk_1.sprite", "wolf_walk_2.sprite", "wolf_walk_3.sprite", "wolf_walk_4.sprite", "wolf_walk_5.sprite", "wolf_walk_6.sprite", "wolf_walk_7.sprite"]
 frame_ms = 250
 stride   = 2
 
-[animations."cat_walk@4x"]
-frames   = ["cat_walk_0@4x.sprite", "cat_walk_1@4x.sprite", "cat_walk_2@4x.sprite", "cat_walk_3@4x.sprite", "cat_walk_4@4x.sprite", "cat_walk_5@4x.sprite", "cat_walk_6@4x.sprite", "cat_walk_7@4x.sprite"]
+[animations."wolf_walk@4x"]
+frames   = ["wolf_walk_0@4x.sprite", "wolf_walk_1@4x.sprite", "wolf_walk_2@4x.sprite", "wolf_walk_3@4x.sprite", "wolf_walk_4@4x.sprite", "wolf_walk_5@4x.sprite", "wolf_walk_6@4x.sprite", "wolf_walk_7@4x.sprite"]
 frame_ms = 250
 
-[animations.cat_sit]
-frames   = ["cat_sit_0.sprite", "cat_sit_1.sprite", "cat_sit_2.sprite", "cat_sit_3.sprite"]
+[animations.wolf_sit]
+frames   = ["wolf_sit_0.sprite", "wolf_sit_1.sprite", "wolf_sit_2.sprite", "wolf_sit_3.sprite"]
 frame_ms = 500
 
-[animations."cat_sit@4x"]
-frames   = ["cat_sit_0@4x.sprite", "cat_sit_1@4x.sprite", "cat_sit_2@4x.sprite", "cat_sit_3@4x.sprite"]
+[animations."wolf_sit@4x"]
+frames   = ["wolf_sit_0@4x.sprite", "wolf_sit_1@4x.sprite", "wolf_sit_2@4x.sprite", "wolf_sit_3@4x.sprite"]
 frame_ms = 500
 
-[animations.cat_sleep]
-frames   = ["cat_sleep_0.sprite", "cat_sleep_1.sprite", "cat_sleep_2.sprite", "cat_sleep_3.sprite"]
+[animations.wolf_sleep]
+frames   = ["wolf_sleep_0.sprite", "wolf_sleep_1.sprite", "wolf_sleep_2.sprite", "wolf_sleep_3.sprite"]
 frame_ms = 750
 
-[animations."cat_sleep@4x"]
-frames   = ["cat_sleep_0@4x.sprite", "cat_sleep_1@4x.sprite", "cat_sleep_2@4x.sprite", "cat_sleep_3@4x.sprite"]
+[animations."wolf_sleep@4x"]
+frames   = ["wolf_sleep_0@4x.sprite", "wolf_sleep_1@4x.sprite", "wolf_sleep_2@4x.sprite", "wolf_sleep_3@4x.sprite"]
 frame_ms = 750
 
-[animations.dog_walk]
-frames   = ["dog_walk_0.sprite", "dog_walk_1.sprite", "dog_walk_2.sprite", "dog_walk_3.sprite", "dog_walk_4.sprite", "dog_walk_5.sprite", "dog_walk_6.sprite", "dog_walk_7.sprite"]
+[animations.owlbear_walk]
+frames   = ["owlbear_walk_0.sprite", "owlbear_walk_1.sprite", "owlbear_walk_2.sprite", "owlbear_walk_3.sprite", "owlbear_walk_4.sprite", "owlbear_walk_5.sprite", "owlbear_walk_6.sprite", "owlbear_walk_7.sprite"]
 frame_ms = 250
 stride   = 2
 
-[animations."dog_walk@4x"]
-frames   = ["dog_walk_0@4x.sprite", "dog_walk_1@4x.sprite", "dog_walk_2@4x.sprite", "dog_walk_3@4x.sprite", "dog_walk_4@4x.sprite", "dog_walk_5@4x.sprite", "dog_walk_6@4x.sprite", "dog_walk_7@4x.sprite"]
+[animations."owlbear_walk@4x"]
+frames   = ["owlbear_walk_0@4x.sprite", "owlbear_walk_1@4x.sprite", "owlbear_walk_2@4x.sprite", "owlbear_walk_3@4x.sprite", "owlbear_walk_4@4x.sprite", "owlbear_walk_5@4x.sprite", "owlbear_walk_6@4x.sprite", "owlbear_walk_7@4x.sprite"]
 frame_ms = 250
 
-[animations.dog_sit]
-frames   = ["dog_sit_0.sprite", "dog_sit_1.sprite", "dog_sit_2.sprite", "dog_sit_3.sprite"]
+[animations.owlbear_sit]
+frames   = ["owlbear_sit_0.sprite", "owlbear_sit_1.sprite", "owlbear_sit_2.sprite", "owlbear_sit_3.sprite"]
 frame_ms = 500
 
-[animations."dog_sit@4x"]
-frames   = ["dog_sit_0@4x.sprite", "dog_sit_1@4x.sprite", "dog_sit_2@4x.sprite", "dog_sit_3@4x.sprite"]
+[animations."owlbear_sit@4x"]
+frames   = ["owlbear_sit_0@4x.sprite", "owlbear_sit_1@4x.sprite", "owlbear_sit_2@4x.sprite", "owlbear_sit_3@4x.sprite"]
 frame_ms = 500
 
-[animations.dog_sleep]
-frames   = ["dog_sleep_0.sprite", "dog_sleep_1.sprite", "dog_sleep_2.sprite", "dog_sleep_3.sprite"]
+[animations.owlbear_sleep]
+frames   = ["owlbear_sleep_0.sprite", "owlbear_sleep_1.sprite", "owlbear_sleep_2.sprite", "owlbear_sleep_3.sprite"]
 frame_ms = 750
 
-[animations."dog_sleep@4x"]
-frames   = ["dog_sleep_0@4x.sprite", "dog_sleep_1@4x.sprite", "dog_sleep_2@4x.sprite", "dog_sleep_3@4x.sprite"]
+[animations."owlbear_sleep@4x"]
+frames   = ["owlbear_sleep_0@4x.sprite", "owlbear_sleep_1@4x.sprite", "owlbear_sleep_2@4x.sprite", "owlbear_sleep_3@4x.sprite"]
+frame_ms = 750
+
+# The raven's hop covers more ground a stride than a paw's step.
+[animations.raven_walk]
+frames   = ["raven_walk_0.sprite", "raven_walk_1.sprite", "raven_walk_2.sprite", "raven_walk_3.sprite", "raven_walk_4.sprite", "raven_walk_5.sprite", "raven_walk_6.sprite", "raven_walk_7.sprite"]
+frame_ms = 250
+stride   = 3
+
+[animations."raven_walk@4x"]
+frames   = ["raven_walk_0@4x.sprite", "raven_walk_1@4x.sprite", "raven_walk_2@4x.sprite", "raven_walk_3@4x.sprite", "raven_walk_4@4x.sprite", "raven_walk_5@4x.sprite", "raven_walk_6@4x.sprite", "raven_walk_7@4x.sprite"]
+frame_ms = 250
+
+[animations.raven_sit]
+frames   = ["raven_sit_0.sprite", "raven_sit_1.sprite", "raven_sit_2.sprite", "raven_sit_3.sprite"]
+frame_ms = 500
+
+[animations."raven_sit@4x"]
+frames   = ["raven_sit_0@4x.sprite", "raven_sit_1@4x.sprite", "raven_sit_2@4x.sprite", "raven_sit_3@4x.sprite"]
+frame_ms = 500
+
+[animations.raven_sleep]
+frames   = ["raven_sleep_0.sprite", "raven_sleep_1.sprite", "raven_sleep_2.sprite", "raven_sleep_3.sprite"]
+frame_ms = 750
+
+[animations."raven_sleep@4x"]
+frames   = ["raven_sleep_0@4x.sprite", "raven_sleep_1@4x.sprite", "raven_sleep_2@4x.sprite", "raven_sleep_3@4x.sprite"]
 frame_ms = 750
 
 [animations.lobster_walk]

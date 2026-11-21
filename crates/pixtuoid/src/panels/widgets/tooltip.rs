@@ -808,7 +808,7 @@ mod tests {
     #[test]
     fn pet_tooltip_shows_pet_me_on_sit_anim() {
         use pixtuoid_scene::pet::PetKind;
-        let kind = PetKind::Dog;
+        let kind = PetKind::Owlbear;
         let sit = kind.sit_anim();
         let mut term = Terminal::new(TestBackend::new(40, 8)).unwrap();
         term.draw(|f| {
@@ -833,8 +833,8 @@ mod tests {
             "sit anim + not-on-cooldown should render 'Pet me!', got: {text:?}"
         );
         assert!(
-            !text.contains("woof"),
-            "sit arm must not fall through to the cooldown woof, got: {text:?}"
+            !text.contains(PetKind::Owlbear.reaction().trim()),
+            "sit arm must not fall through to the cooldown reaction, got: {text:?}"
         );
         assert!(
             !text.contains("sleeping"),

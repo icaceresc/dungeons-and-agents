@@ -715,8 +715,8 @@ fn grid_anchor(density: u16, key: char) -> (String, [(&'static str, String); 2])
         |n: u16| vec![vec![key.to_string(); usize::from(n)].join(" "); usize::from(n)].join("\n");
     (
         format!(
-            "[animations.cat_sit]\nframes=[\"c.sprite\"]\nframe_ms=100\n\
-             [animations.\"cat_sit@{density}x\"]\nframes=[\"c2.sprite\"]\nframe_ms=100\n"
+            "[animations.wolf_sit]\nframes=[\"c.sprite\"]\nframe_ms=100\n\
+             [animations.\"wolf_sit@{density}x\"]\nframes=[\"c2.sprite\"]\nframe_ms=100\n"
         ),
         [
             ("c.sprite", format!("@frame 0\n{}", square(1))),
@@ -2314,10 +2314,10 @@ fn glass_wall_v_clamps_past_right_edge() {
 #[test]
 fn pet_hearts_skip_dead_and_faded_hearts() {
     let bg = Rgb { r: 0, g: 0, b: 0 };
-    let cat_pos = Point { x: 20, y: 20 };
+    let wolf_pos = Point { x: 20, y: 20 };
     let painted_count = |elapsed_ms: u64| -> usize {
         let mut buf = RgbBuffer::filled(40, 40, bg);
-        let hearts: Vec<_> = crate::effects::pet_hearts(cat_pos, elapsed_ms).collect();
+        let hearts: Vec<_> = crate::effects::pet_hearts(wolf_pos, elapsed_ms).collect();
         super::effects::paint_effects(
             &mut buf,
             &hearts,
@@ -2812,7 +2812,7 @@ fn sim_step_decides_each_desks_props_from_its_occupant() {
 fn sim_step_roams_the_pet_and_holds_a_petted_one_where_it_stands() {
     let (scene, layout, _, now0, pack) = sim_rig();
     let coffee = HashMap::new();
-    let pet = crate::pet::Pet::defaulted(crate::pet::PetKind::Cat);
+    let pet = crate::pet::Pet::defaulted(crate::pet::PetKind::Wolf);
     let step = |pets| {
         let mut owned = OwnedSimStores::new();
         sim_step(
@@ -2840,7 +2840,7 @@ fn sim_step_roams_the_pet_and_holds_a_petted_one_where_it_stands() {
         pet: Some(&pet),
         petting: None,
     })
-    .expect("the cat roams");
+    .expect("the wolf roams");
     let hearts = |p: &crate::sim::PetPlacement| -> Vec<u64> {
         p.effects
             .iter()
@@ -2850,7 +2850,7 @@ fn sim_step_roams_the_pet_and_holds_a_petted_one_where_it_stands() {
     };
     assert!(
         hearts(&roaming).is_empty(),
-        "a roaming cat is not being petted"
+        "a roaming wolf is not being petted"
     );
 
     let petting = crate::pet::PetState {
@@ -2861,7 +2861,7 @@ fn sim_step_roams_the_pet_and_holds_a_petted_one_where_it_stands() {
         pet: Some(&pet),
         petting: Some(&petting),
     })
-    .expect("the petted cat");
+    .expect("the petted wolf");
     assert_eq!(
         held.pos, roaming.pos,
         "held where it stands, not where the click landed"
@@ -3614,7 +3614,7 @@ fn a_pet_tied_with_an_agent_sorts_under_them_in_both_looks() {
             _ => None,
         })
         .expect("the sitter");
-    let anim_name = PackPiece::CatWalk;
+    let anim_name = PackPiece::WolfWalk;
     let h = crate::pack::densest_frame(&pack, anim_name, 0, crate::render_scale::RenderScale::ONE)
         .logical
         .1;
@@ -3623,8 +3623,8 @@ fn a_pet_tied_with_an_agent_sorts_under_them_in_both_looks() {
         .map(|y| Point { x, y })
         .find(|&pos| sort_row_at(Pivot::Center, pos, h) == row)
         .expect("a pet position standing on the sitter's row");
-    let cat = crate::sim::PetPlacement {
-        kind: crate::pet::PetKind::Cat,
+    let wolf = crate::sim::PetPlacement {
+        kind: crate::pet::PetKind::Wolf,
         pos,
         sort_row: row,
         flip: false,
@@ -3633,8 +3633,8 @@ fn a_pet_tied_with_an_agent_sorts_under_them_in_both_looks() {
         effects: crate::effects::pet_hearts(pos, 300).collect(),
         hearts_rise: false,
     };
-    let pet = cat.target();
-    frame.pet = Some(cat);
+    let pet = wolf.target();
+    frame.pet = Some(wolf);
     let agent = HoverTarget::Agent(frame.agents[0].agent_id);
     let cell = Bounds {
         x: pos.x,
@@ -3680,10 +3680,10 @@ fn a_pet_tied_with_an_agent_sorts_under_them_in_both_looks() {
         .filter(|(_, p)| matches!(p.kind, PieceKind::Effect(_)) && p.span.layer == Layer::Creature)
         .map(|(i, _)| i)
         .collect();
-    assert!(!hearts.is_empty(), "premise: the cat wears hearts");
+    assert!(!hearts.is_empty(), "premise: the wolf wears hearts");
     assert!(
         hearts.iter().all(|&i| i < character),
-        "the cat's hearts sort under the sitter"
+        "the wolf's hearts sort under the sitter"
     );
 }
 
@@ -3703,11 +3703,11 @@ fn the_classic_layers_creatures_under_characters_in_any_queue_order() {
         y: layout.buf_h / 2,
     };
     frame.pet = Some(crate::sim::PetPlacement {
-        kind: crate::pet::PetKind::Cat,
+        kind: crate::pet::PetKind::Wolf,
         pos,
         sort_row: row,
         flip: false,
-        anim_name: PackPiece::CatWalk,
+        anim_name: PackPiece::WolfWalk,
         frame_idx: 0,
         effects: Vec::new(),
         hearts_rise: false,
@@ -3725,7 +3725,7 @@ fn the_classic_layers_creatures_under_characters_in_any_queue_order() {
     let mut queue = Vec::new();
     enqueue_characters(&pack, theme, &frame, &mut queue);
     enqueue_gateway_mascots(&pack, &frame.mascots, &mut queue);
-    enqueue_pet(&pack, frame.pet.as_ref().expect("the cat"), &mut queue);
+    enqueue_pet(&pack, frame.pet.as_ref().expect("the wolf"), &mut queue);
     drawable::sort_drawables(&mut queue);
     assert_eq!(
         queue
@@ -5007,7 +5007,7 @@ fn a_roaming_creature_is_never_sliced_by_the_canvas_edge() {
         SceneLayout::compute(crate::layout::Viewport::full(192, 128), None, 0).expect("layout");
     let boot = SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000);
     let src = pixtuoid_core::source::openclaw::SOURCE_NAME;
-    let pet = crate::pet::Pet::defaulted(crate::pet::PetKind::Cat);
+    let pet = crate::pet::Pet::defaulted(crate::pet::PetKind::Wolf);
 
     let mut escapes: Vec<String> = Vec::new();
     let mut walking = 0;

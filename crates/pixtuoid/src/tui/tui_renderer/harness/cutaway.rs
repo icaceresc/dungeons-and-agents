@@ -833,7 +833,7 @@ fn an_agent_under_the_cutaway_is_hit_tested_on_the_canvas() {
 /// carrying the name the image's badge shows.
 #[test]
 fn what_the_tooltip_names_is_what_a_click_acts_on_under_the_cutaway() {
-    let (mut r, _wire, _) = armed(140, 48, ImageProtocol::Kitty, vec![PetKind::Cat]);
+    let (mut r, _wire, _) = armed(140, 48, ImageProtocol::Kitty, vec![PetKind::Wolf]);
     super::hit_test::the_tooltip_names_what_a_click_acts_on(&mut r, |a| a.label.to_string());
 }
 
@@ -841,7 +841,7 @@ fn what_the_tooltip_names_is_what_a_click_acts_on_under_the_cutaway() {
 /// cutaway too, through the mouse handler itself.
 #[test]
 fn a_click_focuses_an_agent_and_pets_the_pet_under_the_cutaway() {
-    let (mut r, _wire, _) = armed(140, 48, ImageProtocol::Kitty, vec![PetKind::Cat]);
+    let (mut r, _wire, _) = armed(140, 48, ImageProtocol::Kitty, vec![PetKind::Wolf]);
     super::hit_test::a_click_acts_on_what_it_hits(&mut r);
 }
 

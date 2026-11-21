@@ -1126,7 +1126,7 @@ mod tests {
         let mut render = |anim_name: Piece| {
             let mut buf = RgbBuffer::filled(60, 60, Rgb { r: 0, g: 0, b: 0 });
             let effects =
-                crate::sim::pet_effects(PetKind::Cat, pos, anim_name, None, Motion::Full.beat(now));
+                crate::sim::pet_effects(PetKind::Wolf, pos, anim_name, None, Motion::Full.beat(now));
             let d = Drawable {
                 sort_row: pos.y,
                 layer: Layer::Creature,
@@ -1162,8 +1162,8 @@ mod tests {
             }
             n
         };
-        let sit = count_above(&render(PetKind::Cat.sit_anim()));
-        let sleep = count_above(&render(PetKind::Cat.sleep_anim()));
+        let sit = count_above(&render(PetKind::Wolf.sit_anim()));
+        let sleep = count_above(&render(PetKind::Wolf.sleep_anim()));
         assert!(
             sleep > sit,
             "sleep anim must add floating z's above the pet (sleep={sleep}, sit={sit})"

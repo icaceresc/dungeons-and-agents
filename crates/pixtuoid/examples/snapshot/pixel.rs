@@ -368,10 +368,10 @@ mod tests {
     fn the_renderer_path_paints_the_cutaway_with_its_pets_and_floors() {
         // Two floors.
         let scene = sample_scene(epoch(), 4, 6);
-        let cat = [Pet::defaulted(PetKind::Cat)];
+        let wolf = [Pet::defaulted(PetKind::Wolf)];
         let up = [(0, 1)];
-        let frame = renderer_frame(&scene, Some(LookKind::Cutaway), &cat, &up);
-        assert_cutaway_over(&frame, &renderer_frame(&scene, None, &cat, &up));
+        let frame = renderer_frame(&scene, Some(LookKind::Cutaway), &wolf, &up);
+        assert_cutaway_over(&frame, &renderer_frame(&scene, None, &wolf, &up));
         assert!(
             office_band(&frame)
                 != office_band(&renderer_frame(&scene, Some(LookKind::Cutaway), &[], &up)),
@@ -379,7 +379,7 @@ mod tests {
         );
         assert!(
             office_band(&frame)
-                != office_band(&renderer_frame(&scene, Some(LookKind::Cutaway), &cat, &[])),
+                != office_band(&renderer_frame(&scene, Some(LookKind::Cutaway), &wolf, &[])),
             "the cutaway stayed on its floor"
         );
     }

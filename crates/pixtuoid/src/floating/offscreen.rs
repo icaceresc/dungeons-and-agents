@@ -1414,14 +1414,14 @@ mod tests {
             DaemonInstanceId::new("18789").expect("non-empty"),
         ));
         let pet = HoverTarget::Pet(PetHover {
-            kind: PetKind::Cat,
+            kind: PetKind::Wolf,
             centre: pixtuoid_scene::layout::Point { x: 0, y: 0 },
-            anim: pixtuoid_scene::pack::Piece::CatSit,
+            anim: pixtuoid_scene::pack::Piece::WolfSit,
         });
-        let cats = [Pet::defaulted(PetKind::Cat)];
+        let wolves = [Pet::defaulted(PetKind::Wolf)];
         let mut office = OfficeSession::new(crate::test_flash::pack_arc());
-        assert!(office.pet(PetKind::Cat, now));
-        let playing = office.showing_pets(&cats, now).petting;
+        assert!(office.pet(PetKind::Wolf, now));
+        let playing = office.showing_pets(&wolves, now).petting;
         assert!(playing.is_some(), "premise: a petting plays");
         for (under, petting, want) in [
             (Under::Corner, None, CursorIcon::NwseResize),
@@ -1531,11 +1531,11 @@ mod tests {
         assert_eq!(icon(&renderer, away, &open), CursorIcon::Grabbing);
     }
 
-    /// A petting upstairs leaves the cat downstairs to pet: back on the
+    /// A petting upstairs leaves the wolf downstairs to pet: back on the
     /// ground floor while it plays, the cursor there offers a click, its
     /// tooltip shows no cooldown, and a press pets it.
     #[test]
-    fn a_petting_upstairs_leaves_the_cat_downstairs_to_pet() {
+    fn a_petting_upstairs_leaves_the_wolf_downstairs_to_pet() {
         use pixtuoid_scene::hit::{HitAction, HoverTarget, PetHover, SceneHit};
         use pixtuoid_scene::pet::{Pet, PetKind};
         let pack = crate::test_flash::pack_arc();
@@ -1552,7 +1552,7 @@ mod tests {
         let at = window_geometry(window, pack.max_density_variant(), Zoom::default());
         let size = (window.width, window.height);
         let mut renderer = OfficeRenderer::new(pack);
-        renderer.set_pets(vec![Pet::defaulted(PetKind::Cat)]);
+        renderer.set_pets(vec![Pet::defaulted(PetKind::Wolf)]);
         let show = |renderer: &mut OfficeRenderer, now| {
             assert!(renderer.render_live(at, frame(&scene, theme, now), size));
             renderer.presented();
@@ -1563,16 +1563,16 @@ mod tests {
         let slide = slide_length();
         let t0 = start + slide;
         show(&mut renderer, t0);
-        renderer.pet(PetKind::Cat, t0);
+        renderer.pet(PetKind::Wolf, t0);
         assert!(
             renderer.showing_pets(t0).petting.is_some(),
-            "premise: the cat upstairs purrs"
+            "premise: the wolf upstairs reacts"
         );
         renderer.navigate(0, t0);
         let t1 = t0 + slide;
         show(&mut renderer, t1);
         assert_eq!(renderer.nav().current(), 0, "premise: downstairs");
-        let (on_cat, anim) = (0..at.logical().h)
+        let (on_wolf, anim) = (0..at.logical().h)
             .flat_map(|y| {
                 (0..at.logical().w).map(move |x| (unit_centre(x, at), unit_centre(y, at)))
             })
@@ -1582,20 +1582,20 @@ mod tests {
                 }
                 _ => None,
             })
-            .expect("the window shows the cat downstairs");
+            .expect("the window shows the wolf downstairs");
         assert_eq!(
-            renderer.cursor_icon(on_cat, size, &crate::panels::ModalState::closed(), t1),
+            renderer.cursor_icon(on_wolf, size, &crate::panels::ModalState::closed(), t1),
             winit::window::CursorIcon::Pointer,
             "the cursor offers a click"
         );
-        let hit = renderer.drawn_hit_at(on_cat, at).expect("the cat");
+        let hit = renderer.drawn_hit_at(on_wolf, at).expect("the wolf");
         assert_eq!(
             pixtuoid_scene::tooltip::for_hit(hit, &scene, t1, renderer.showing_pets(t1)),
             Some(pixtuoid_scene::tooltip::pet(
-                PetKind::Cat,
+                PetKind::Wolf,
                 anim,
                 false,
-                PetKind::Cat.default_name()
+                PetKind::Wolf.default_name()
             )),
             "the tooltip shows no cooldown"
         );
@@ -1603,10 +1603,10 @@ mod tests {
             scale_factor: 1.0,
             now: t1,
         };
-        assert_eq!(renderer.press_at(on_cat, size, pressing), Press::Pointer);
+        assert_eq!(renderer.press_at(on_wolf, size, pressing), Press::Pointer);
         assert_eq!(
-            renderer.release(on_cat),
-            Some(HitAction::Pet(PetKind::Cat)),
+            renderer.release(on_wolf),
+            Some(HitAction::Pet(PetKind::Wolf)),
             "a press pets it"
         );
     }

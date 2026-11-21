@@ -2,7 +2,7 @@
 """Render the README's Buy Me a Coffee button in the office's own pixels.
 
 A coworker from the sprite pack walks with a mug beside the live supporter
-count, the office cat sits on the carpet, and every colour is the pack's or
+count, the office wolf sits on the carpet, and every colour is the pack's or
 the star chart's palette. It is drawn here and published to the `bmc-button`
 branch by `.github/workflows/bmc-button.yml`, the way the star chart is,
 because no hosted badge can draw it.
@@ -46,7 +46,7 @@ BMC_LINK = re.compile(r"https://buymeacoffee\.com/([\w-]+)")
 # supporters" the creator page shows.
 CREATOR_URL = "https://app.buymeacoffee.com/api/creators/slug/{slug}"
 
-AGENT, CAT = "walking_coffee", "cat_sit"
+AGENT, WOLF = "walking_coffee", "wolf_sit"
 TITLE = "Buy me a coffee"
 # One button pixel; the sprites are drawn a size up so the coworker reads at a glance.
 PX, SPRITE_PX = 3, 4
@@ -65,7 +65,7 @@ SHADOW_OPACITY = 0.35
 
 class Layout(NamedTuple):
     agent_x: int
-    cat_x: int
+    wolf_x: int
     text_x: int
 
 
@@ -107,9 +107,9 @@ def count_label(count: int) -> tuple[str, str]:
 
 def layout(pack: Pack) -> Layout:
     agent_x = 5 * PX
-    cat_x = WIDTH - 3 * PX - sprite_size(pack, CAT, SPRITE_PX)[0]
+    wolf_x = WIDTH - 3 * PX - sprite_size(pack, WOLF, SPRITE_PX)[0]
     return Layout(
-        agent_x, cat_x, agent_x + sprite_size(pack, AGENT, SPRITE_PX)[0] + 5 * PX
+        agent_x, wolf_x, agent_x + sprite_size(pack, AGENT, SPRITE_PX)[0] + 5 * PX
     )
 
 
@@ -125,7 +125,7 @@ def render_svg(count: int, theme: str, pack: Pack) -> str:
     pal = THEMES[theme]
     lay = layout(pack)
     agent, agent_css = animation(pack, AGENT, lay.agent_x, FLOOR_Y + FOOTING, SPRITE_PX)
-    cat, cat_css = animation(pack, CAT, lay.cat_x, FLOOR_Y + FOOTING, SPRITE_PX)
+    wolf, wolf_css = animation(pack, WOLF, lay.wolf_x, FLOOR_Y + FOOTING, SPRITE_PX)
     num, word = count_label(count)
     heart = mask_path(HEART, lay.text_x, LABEL_Y + LABEL_PX, LABEL_PX)
     num_x = lay.text_x + len(HEART[0]) * LABEL_PX + 2 * PX
@@ -141,7 +141,7 @@ def render_svg(count: int, theme: str, pack: Pack) -> str:
             [
                 f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {WIDTH + PX} {HEIGHT + PX}" width="{WIDTH + PX}" height="{HEIGHT + PX}" shape-rendering="crispEdges" role="img" aria-labelledby="t">',
                 f'<title id="t">{TITLE}: {num}{word}</title>',
-                f"<style>{''.join(agent_css + cat_css)}</style>",
+                f"<style>{''.join(agent_css + wolf_css)}</style>",
                 (
                     f'<pattern id="carpet" width="{2 * tile}" height="{2 * tile}" patternUnits="userSpaceOnUse">'
                     f'<rect width="{2 * tile}" height="{2 * tile}" fill="{pal.carpet_dark}"/>'
@@ -154,7 +154,7 @@ def render_svg(count: int, theme: str, pack: Pack) -> str:
                 f'<rect x="{PX}" y="{FLOOR_Y}" width="{WIDTH - 2 * PX}" height="{CARPET_H}" fill="url(#carpet)"/>',
                 f'<path fill="{pal.trim}" d="{frame}{_run(PX, FLOOR_Y - PX, WIDTH - 2 * PX, PX)}"/>',
                 agent,
-                cat,
+                wolf,
                 f'<path fill="{pal.title}" d="{text_path(TITLE, lay.text_x, TITLE_Y, TITLE_PX)}"/>',
                 f'<path fill="{pack.palette[HEART_KEY]}" d="{heart}"/>',
                 f'<path fill="{pal.star}" d="{text_path(num, num_x, LABEL_Y, LABEL_PX)}"/>',
@@ -285,7 +285,7 @@ class SelfTest(unittest.TestCase):
         )
 
     def test_pack_animations_have_uniform_frames(self) -> None:
-        pack = load_pack(PACK_DIR, (AGENT, CAT))
+        pack = load_pack(PACK_DIR, (AGENT, WOLF))
         for name, (frames, frame_ms) in pack.animations.items():
             self.assertTrue(
                 frame_ms > 0 and len(frames) > 1,
@@ -302,7 +302,7 @@ class SelfTest(unittest.TestCase):
     def test_render_draws_every_frame_and_names_the_count(self) -> None:
         import xml.etree.ElementTree as ET
 
-        pack = load_pack(PACK_DIR, (AGENT, CAT))
+        pack = load_pack(PACK_DIR, (AGENT, WOLF))
         ns = "{http://www.w3.org/2000/svg}"
         for theme in ("light", "dark"):
             root = ET.fromstring(render_svg(3, theme, pack))
@@ -318,13 +318,13 @@ class SelfTest(unittest.TestCase):
                     f"{theme}: {name} must draw all {len(frames)} frames",
                 )
 
-    def test_text_never_reaches_the_cat(self) -> None:
-        pack = load_pack(PACK_DIR, (AGENT, CAT))
+    def test_text_never_reaches_the_wolf(self) -> None:
+        pack = load_pack(PACK_DIR, (AGENT, WOLF))
         lay = layout(pack)
         for count in (0, 1, 999, 1500, 123_456, 999_999, 10**6):
             self.assertTrue(
-                lay.text_x + count_line_width(count) < lay.cat_x,
-                f"count {count}: the label runs into the cat",
+                lay.text_x + count_line_width(count) < lay.wolf_x,
+                f"count {count}: the label runs into the wolf",
             )
 
     def test_label_clears_the_carpet(self) -> None:
@@ -338,7 +338,7 @@ class SelfTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             paths = write_buttons(
-                3, pathlib.Path(tmp) / "nested", load_pack(PACK_DIR, (AGENT, CAT))
+                3, pathlib.Path(tmp) / "nested", load_pack(PACK_DIR, (AGENT, WOLF))
             )
             self.assertTrue(
                 sorted(p.name for p in paths)
@@ -361,7 +361,7 @@ def main(argv: list[str]) -> int:
     slug = button_slug(funding, README_PATH.read_text(encoding="utf-8"))
     count = supporter_count(fetch_creator(slug))
     for p in write_buttons(
-        count, pathlib.Path(argv[1]), load_pack(PACK_DIR, (AGENT, CAT))
+        count, pathlib.Path(argv[1]), load_pack(PACK_DIR, (AGENT, WOLF))
     ):
         print(p)
     print(f"{slug}: {count} supporters", file=sys.stderr)

@@ -8,7 +8,7 @@ use pixtuoid_scene::hit::HoverTarget;
 #[test]
 fn pet_hit_test_resolves_at_pet_position() {
     let scene = scene_with(vec![running("/ph/0.jsonl", 0, "Edit", t0())], 16);
-    let mut r = build(120, 44, vec![PetKind::Cat]);
+    let mut r = build(120, 44, vec![PetKind::Wolf]);
     r.render(&scene, t0()).unwrap();
     let PetHover { centre: pos, .. } = r.drawn_pet().expect("pet placed");
     assert!(
@@ -267,7 +267,7 @@ fn the_drawn_geometry_answers_every_cell_as_the_half_block_does() {
             current_pid: Some(1),
         },
     );
-    let cat = pixtuoid_scene::pet::Pet::defaulted(PetKind::Cat);
+    let wolf = pixtuoid_scene::pet::Pet::defaulted(PetKind::Wolf);
     for (cols, rows) in [(80, 30), (120, 52), (157, 41)] {
         let mut term = Terminal::new(TestBackend::new(cols, rows)).expect("test backend");
         let mut floor = PerFloor::new(pack_arc());
@@ -281,7 +281,7 @@ fn the_drawn_geometry_answers_every_cell_as_the_half_block_does() {
             now,
             Conditions::default(),
         );
-        ctx.pets.pet = Some(&cat);
+        ctx.pets.pet = Some(&wolf);
         let drawn = draw_scene(&mut term, &mut ctx)
             .expect("draw")
             .expect("drawn");
@@ -364,10 +364,10 @@ fn a_stills_tooltip_names_a_lead_on_another_floor() {
 /// mouse handler itself.
 #[test]
 fn a_click_focuses_an_agent_and_pets_the_pet() {
-    a_click_acts_on_what_it_hits(&mut build(140, 48, vec![PetKind::Cat]));
+    a_click_acts_on_what_it_hits(&mut build(140, 48, vec![PetKind::Wolf]));
 }
 
-/// [`a_click_focuses_an_agent_and_pets_the_pet`] on `r`, a renderer with a cat.
+/// [`a_click_focuses_an_agent_and_pets_the_pet`] on `r`, a renderer with a wolf.
 pub(super) fn a_click_acts_on_what_it_hits<B>(r: &mut TuiRenderer<B>)
 where
     B: Backend<Error: Send + Sync + 'static> + std::borrow::Borrow<TestBackend>,
@@ -433,18 +433,18 @@ where
         r.press(on_pet.0, on_pet.1, now);
         r.release(on_pet.0, on_pet.1)
     };
-    let pets = Some(pixtuoid_scene::hit::HitAction::Pet(PetKind::Cat));
-    assert_eq!(names(r), pets, "premise: a click there pets the cat");
+    let pets = Some(pixtuoid_scene::hit::HitAction::Pet(PetKind::Wolf));
+    assert_eq!(names(r), pets, "premise: a click there pets the wolf");
     assert_eq!(names(r), pets, "premise: and naming it records nothing");
     let mut pet = |r: &mut TuiRenderer<B>, at| {
         click(r, &mut ui, on_pet, |_| panic!("the pet is no agent"), at);
         names(r)
     };
-    assert_eq!(pet(r, now), None, "the click pets the cat: it purrs");
+    assert_eq!(pet(r, now), None, "the click pets the wolf: it reacts");
     assert_eq!(
         pet(r, now + Duration::from_millis(1)),
         None,
-        "a second click while it purrs pets nothing"
+        "a second click while it reacts pets nothing"
     );
     // A press on the agent that drags lifts it: the next frame draws it
     // under the pointer, and a release clicks nothing but sets it down.
@@ -498,7 +498,7 @@ where
 }
 
 /// A petting plays on the floor it was given on: back downstairs while the
-/// cat upstairs still purrs, a click on the cat downstairs pets it.
+/// wolf upstairs still reacts, a click on the wolf downstairs pets it.
 #[test]
 fn a_petting_upstairs_leaves_the_pet_downstairs_to_pet() {
     use crossterm::event::{KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
@@ -511,7 +511,7 @@ fn a_petting_upstairs_leaves_the_pet_downstairs_to_pet() {
         None,
         crate::doctor::DriftSeen::default(),
     );
-    let mut r = build(140, 48, vec![PetKind::Cat]);
+    let mut r = build(140, 48, vec![PetKind::Wolf]);
     let on_pet = |r: &TuiRenderer<TestBackend>| {
         r.frame_buffer()
             .area()
@@ -523,7 +523,7 @@ fn a_petting_upstairs_leaves_the_pet_downstairs_to_pet() {
                 )
             })
             .map(|p| (p.x, p.y))
-            .expect("the cat's cell")
+            .expect("the wolf's cell")
     };
     let press_release = |r: &mut TuiRenderer<TestBackend>, (col, row), now| {
         r.press(col, row, now);
@@ -550,14 +550,14 @@ fn a_petting_upstairs_leaves_the_pet_downstairs_to_pet() {
             },
             &mut ui,
             &mut r,
-            click_cx(&scene, |_| panic!("the cat is no agent")),
+            click_cx(&scene, |_| panic!("the wolf is no agent")),
             now,
         );
     }
     assert_eq!(
         press_release(&mut r, upstairs, now),
         None,
-        "premise: the cat upstairs purrs"
+        "premise: the wolf upstairs reacts"
     );
     r.navigate_floor(0, now);
     now += slide;
@@ -566,8 +566,8 @@ fn a_petting_upstairs_leaves_the_pet_downstairs_to_pet() {
     let downstairs = on_pet(&r);
     assert_eq!(
         press_release(&mut r, downstairs, now),
-        Some(HitAction::Pet(PetKind::Cat)),
-        "nobody petted the cat downstairs"
+        Some(HitAction::Pet(PetKind::Wolf)),
+        "nobody petted the wolf downstairs"
     );
 }
 
@@ -677,13 +677,13 @@ fn a_panel_opened_mid_carry_still_sets_the_figure_down() {
 #[test]
 fn what_the_tooltip_names_is_what_a_click_acts_on() {
     let (cols, rows) = (140, 48);
-    the_tooltip_names_what_a_click_acts_on(&mut build(cols, rows, vec![PetKind::Cat]), |a| {
+    the_tooltip_names_what_a_click_acts_on(&mut build(cols, rows, vec![PetKind::Wolf]), |a| {
         format!("\u{25b8}{}", a.label)
     });
 }
 
 /// [`what_the_tooltip_names_is_what_a_click_acts_on`] on `r`, a renderer with
-/// a cat, where a hovered agent shows `agent_says`.
+/// a wolf, where a hovered agent shows `agent_says`.
 pub(super) fn the_tooltip_names_what_a_click_acts_on<B>(
     r: &mut TuiRenderer<B>,
     agent_says: impl Fn(&AgentSlot) -> String,
@@ -722,12 +722,12 @@ pub(super) fn the_tooltip_names_what_a_click_acts_on<B>(
             Some(SceneHit::Figure(HoverTarget::Agent(id))) => (0, agent_says(&scene.agents[id])),
             Some(SceneHit::Figure(HoverTarget::Pet(pet))) => (
                 1,
-                if pet.anim == PetKind::Cat.sleep_anim() {
+                if pet.anim == PetKind::Wolf.sleep_anim() {
                     "sleeping"
-                } else if pet.anim == PetKind::Cat.sit_anim() {
+                } else if pet.anim == PetKind::Wolf.sit_anim() {
                     "Pet me!"
                 } else {
-                    PetKind::Cat.default_name()
+                    PetKind::Wolf.default_name()
                 }
                 .to_string(),
             ),
@@ -742,7 +742,7 @@ pub(super) fn the_tooltip_names_what_a_click_acts_on<B>(
     }
     assert_eq!(
         seen, [true; 4],
-        "premise: agents, the cat, a gateway and the coffee"
+        "premise: agents, the wolf, a gateway and the coffee"
     );
     // A stride, not every cell: each probe is a full render.
     for ((col, row), says) in named.iter().step_by(3) {

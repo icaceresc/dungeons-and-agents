@@ -118,7 +118,7 @@ fn shrinking_under_the_minimum_drops_the_last_frames_hit_targets() {
     // The scene-size refusal, then the layout-compute refusal (clears the scene
     // minimum, under `MIN_LAYOUT_W`).
     for (small_cols, small_rows) in [too_small_terminal(), (28, 40)] {
-        let mut r = build(cols, rows, vec![PetKind::Cat]);
+        let mut r = build(cols, rows, vec![PetKind::Wolf]);
         r.render(&scene, t0()).expect("render");
         let cell = (0..cols)
             .flat_map(|c| (0..rows).map(move |row| (c, row)))
@@ -414,7 +414,7 @@ fn floor_transition_clears_stale_pet_position() {
     scene.agents.insert(a, slot(a, 0, 0, t0()));
     scene.agents.insert(b, slot(b, 1, 0, t0())); // floor 1 ⇒ navigate_floor(1) valid
 
-    let mut r = build(100, 40, vec![PetKind::Cat]);
+    let mut r = build(100, 40, vec![PetKind::Wolf]);
     let mut now = t0();
     for _ in 0..3 {
         r.render(&scene, now).expect("render");

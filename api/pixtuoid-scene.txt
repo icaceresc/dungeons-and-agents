@@ -1651,9 +1651,6 @@ pub pixtuoid_scene::pack::Piece::AttackRangerBack
 pub pixtuoid_scene::pack::Piece::BackCouch
 pub pixtuoid_scene::pack::Piece::Bookshelf
 pub pixtuoid_scene::pack::Piece::BulletinBoard
-pub pixtuoid_scene::pack::Piece::CatSit
-pub pixtuoid_scene::pack::Piece::CatSleep
-pub pixtuoid_scene::pack::Piece::CatWalk
 pub pixtuoid_scene::pack::Piece::ChristmasTree
 pub pixtuoid_scene::pack::Piece::ChristmasTreeShort
 pub pixtuoid_scene::pack::Piece::CoatRack
@@ -1662,9 +1659,6 @@ pub pixtuoid_scene::pack::Piece::DeskChair
 pub pixtuoid_scene::pack::Piece::DeskCup
 pub pixtuoid_scene::pack::Piece::DeskFront
 pub pixtuoid_scene::pack::Piece::DeskNorth
-pub pixtuoid_scene::pack::Piece::DogSit
-pub pixtuoid_scene::pack::Piece::DogSleep
-pub pixtuoid_scene::pack::Piece::DogWalk
 pub pixtuoid_scene::pack::Piece::Door
 pub pixtuoid_scene::pack::Piece::ExitSign
 pub pixtuoid_scene::pack::Piece::FilingCabinet
@@ -1683,6 +1677,9 @@ pub pixtuoid_scene::pack::Piece::MeetingSofa
 pub pixtuoid_scene::pack::Piece::MeetingSofaNorth
 pub pixtuoid_scene::pack::Piece::MeetingTable
 pub pixtuoid_scene::pack::Piece::NoticeBoard
+pub pixtuoid_scene::pack::Piece::OwlbearSit
+pub pixtuoid_scene::pack::Piece::OwlbearSleep
+pub pixtuoid_scene::pack::Piece::OwlbearWalk
 pub pixtuoid_scene::pack::Piece::Pantry
 pub pixtuoid_scene::pack::Piece::PantryBin
 pub pixtuoid_scene::pack::Piece::PantrySmall
@@ -1694,6 +1691,9 @@ pub pixtuoid_scene::pack::Piece::PlantTall
 pub pixtuoid_scene::pack::Piece::Poinsettia
 pub pixtuoid_scene::pack::Piece::Presents
 pub pixtuoid_scene::pack::Piece::Printer
+pub pixtuoid_scene::pack::Piece::RavenSit
+pub pixtuoid_scene::pack::Piece::RavenSleep
+pub pixtuoid_scene::pack::Piece::RavenWalk
 pub pixtuoid_scene::pack::Piece::Seated
 pub pixtuoid_scene::pack::Piece::SeatedBack
 pub pixtuoid_scene::pack::Piece::SeatedSleeping
@@ -1715,6 +1715,9 @@ pub pixtuoid_scene::pack::Piece::WalkingCoffee
 pub pixtuoid_scene::pack::Piece::WallClock
 pub pixtuoid_scene::pack::Piece::WaterCooler
 pub pixtuoid_scene::pack::Piece::Whiteboard
+pub pixtuoid_scene::pack::Piece::WolfSit
+pub pixtuoid_scene::pack::Piece::WolfSleep
+pub pixtuoid_scene::pack::Piece::WolfWalk
 impl core::clone::Clone for pixtuoid_scene::pack::Piece
 pub fn pixtuoid_scene::pack::Piece::clone(&self) -> Self
 impl core::cmp::Eq for pixtuoid_scene::pack::Piece
@@ -1739,7 +1742,7 @@ impl core::str::traits::FromStr for pixtuoid_scene::pack::Piece
 pub type pixtuoid_scene::pack::Piece::Err = strum::ParseError
 pub fn pixtuoid_scene::pack::Piece::from_str(&str) -> core::result::Result<pixtuoid_scene::pack::Piece, <Self as core::str::traits::FromStr>::Err>
 impl enum_map::internal::Enum for pixtuoid_scene::pack::Piece
-pub type pixtuoid_scene::pack::Piece::Array<__EnumMapInternalV> = [__EnumMapInternalV; 64]
+pub type pixtuoid_scene::pack::Piece::Array<__EnumMapInternalV> = [__EnumMapInternalV; 75]
 pub fn pixtuoid_scene::pack::Piece::from_usize(usize) -> Self
 pub fn pixtuoid_scene::pack::Piece::into_usize(self) -> usize
 impl strum::VariantArray for pixtuoid_scene::pack::Piece
@@ -1754,12 +1757,13 @@ impl core::marker::UnsafeUnpin for pixtuoid_scene::pack::Piece
 impl core::panic::unwind_safe::RefUnwindSafe for pixtuoid_scene::pack::Piece
 impl core::panic::unwind_safe::UnwindSafe for pixtuoid_scene::pack::Piece
 pub enum pixtuoid_scene::pack::Walk
-pub pixtuoid_scene::pack::Walk::CatWalk
-pub pixtuoid_scene::pack::Walk::DogWalk
 pub pixtuoid_scene::pack::Walk::LobsterWalk
+pub pixtuoid_scene::pack::Walk::OwlbearWalk
+pub pixtuoid_scene::pack::Walk::RavenWalk
 pub pixtuoid_scene::pack::Walk::Walking
 pub pixtuoid_scene::pack::Walk::WalkingBack
 pub pixtuoid_scene::pack::Walk::WalkingCoffee
+pub pixtuoid_scene::pack::Walk::WolfWalk
 impl pixtuoid_scene::pack::Walk
 pub fn pixtuoid_scene::pack::Walk::piece(self) -> pixtuoid_scene::pack::Piece
 impl core::clone::Clone for pixtuoid_scene::pack::Walk
@@ -1774,7 +1778,7 @@ pub fn pixtuoid_scene::pack::Walk::hash<__H: core::hash::Hasher>(&self, &mut __H
 impl core::marker::Copy for pixtuoid_scene::pack::Walk
 impl core::marker::StructuralPartialEq for pixtuoid_scene::pack::Walk
 impl enum_map::internal::Enum for pixtuoid_scene::pack::Walk
-pub type pixtuoid_scene::pack::Walk::Array<__EnumMapInternalV> = [__EnumMapInternalV; 6]
+pub type pixtuoid_scene::pack::Walk::Array<__EnumMapInternalV> = [__EnumMapInternalV; 7]
 pub fn pixtuoid_scene::pack::Walk::from_usize(usize) -> Self
 pub fn pixtuoid_scene::pack::Walk::into_usize(self) -> usize
 impl strum::VariantArray for pixtuoid_scene::pack::Walk
@@ -1823,13 +1827,15 @@ pub mod pixtuoid_scene::pathfind
 pub fn pixtuoid_scene::pathfind::point_in_walkable_cell(&pixtuoid_scene::walkable::WalkableMask, pixtuoid_scene::layout::Point) -> bool
 pub mod pixtuoid_scene::pet
 pub enum pixtuoid_scene::pet::PetKind
-pub pixtuoid_scene::pet::PetKind::Cat
-pub pixtuoid_scene::pet::PetKind::Dog
+pub pixtuoid_scene::pet::PetKind::Owlbear
+pub pixtuoid_scene::pet::PetKind::Raven
+pub pixtuoid_scene::pet::PetKind::Wolf
 impl pixtuoid_scene::pet::PetKind
 pub const pixtuoid_scene::pet::PetKind::ALL: &'static [pixtuoid_scene::pet::PetKind]
 pub fn pixtuoid_scene::pet::PetKind::config_name(self) -> &'static str
 pub fn pixtuoid_scene::pet::PetKind::default_name(self) -> &'static str
 pub fn pixtuoid_scene::pet::PetKind::from_config_name(&str) -> core::option::Option<Self>
+pub fn pixtuoid_scene::pet::PetKind::reaction(self) -> &'static str
 pub fn pixtuoid_scene::pet::PetKind::sit_anim(self) -> pixtuoid_scene::pack::Piece
 pub fn pixtuoid_scene::pet::PetKind::sleep_anim(self) -> pixtuoid_scene::pack::Piece
 pub fn pixtuoid_scene::pet::PetKind::walk_anim(self) -> pixtuoid_scene::pack::Walk

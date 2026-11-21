@@ -32,8 +32,8 @@ impl Piece {
             | SeatedBack | TypingBack | AttackMage | AttackMageBack | AttackKnight
             | AttackKnightBack | AttackRanger | AttackRangerBack | AttackBerserker
             | AttackBerserkerBack => PieceKind::Character,
-            CatWalk | CatSit | CatSleep | DogWalk | DogSit | DogSleep | LobsterWalk
-            | LobsterRest => PieceKind::Creature,
+            WolfWalk | WolfSit | WolfSleep | OwlbearWalk | OwlbearSit | OwlbearSleep | RavenWalk
+            | RavenSit | RavenSleep | LobsterWalk | LobsterRest => PieceKind::Creature,
             _ => PieceKind::Furniture,
         }
     }
@@ -543,7 +543,7 @@ mod tests {
             "[animations.typing]\nframes=[\"f.sprite\", \"f.sprite\"]\nframe_ms=400\n\
              [animations.typing_back]\nframes=[\"f.sprite\", \"f.sprite\"]\nframe_ms=250\n\
              [animations.fish_tank]\nframes=[\"f.sprite\"]\nframe_ms=300\n\
-             [animations.cat_walk]\nframes=[\"f.sprite\", \"f.sprite\"]\nframe_ms=300\nstride=2\n\
+             [animations.wolf_walk]\nframes=[\"f.sprite\", \"f.sprite\"]\nframe_ms=300\nstride=2\n\
              [animations.vending_machine]\nframes=[\"f.sprite\", \"f.sprite\"]\nframe_ms=300\n",
         );
         let report = validate_loops(
@@ -552,7 +552,7 @@ mod tests {
                 (Piece::Typing, 0),
                 (Piece::TypingBack, 0),
                 (Piece::FishTank, 0),
-                (Piece::CatWalk, 0),
+                (Piece::WolfWalk, 0),
                 (Piece::VendingMachine, 1),
             ],
             125,

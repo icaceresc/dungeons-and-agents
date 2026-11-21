@@ -441,15 +441,15 @@ fn furniture_tooltip_on_hover_over_empty_desk() {
 #[test]
 fn pet_tooltip_on_hover() {
     let scene = scene_with(vec![running("/tt/p.jsonl", 0, "Edit", t0())], 16);
-    let mut r = build(140, 48, vec![PetKind::Cat]);
+    let mut r = build(140, 48, vec![PetKind::Wolf]);
     r.render(&scene, t0()).unwrap();
-    let PetHover { centre: pos, .. } = r.drawn_pet().expect("cat placed");
+    let PetHover { centre: pos, .. } = r.drawn_pet().expect("wolf placed");
     r.set_mouse_pos(Some((pos.x, pos.y / 2)));
     r.render(&scene, t0()).unwrap();
     let text = frame_text(r.frame_buffer());
     assert!(
         text.contains("Pet me!"),
-        "hovering the cat, sitting at home, shows its tooltip"
+        "hovering the wolf, sitting at home, shows its tooltip"
     );
 }
 
@@ -473,21 +473,21 @@ fn until_the_pet_walks(
 #[test]
 fn pet_tooltip_shows_custom_name() {
     let scene = scene_with(vec![running("/tt/cn.jsonl", 0, "Edit", t0())], 16);
-    let cat = pixtuoid_scene::pet::Pet {
-        kind: PetKind::Cat,
+    let wolf = pixtuoid_scene::pet::Pet {
+        kind: PetKind::Wolf,
         name: "Luna".to_string(),
     };
-    let mut r = build_pets(140, 48, vec![cat]);
+    let mut r = build_pets(140, 48, vec![wolf]);
     let (PetHover { centre: pos, .. }, now) = until_the_pet_walks(&mut r, &scene);
     r.set_mouse_pos(Some((pos.x, pos.y / 2)));
     r.render(&scene, now).unwrap();
     let text = frame_text(r.frame_buffer());
     assert!(
         text.contains("Luna"),
-        "hovering the cat shows its custom name; got:\n{text}"
+        "hovering the wolf shows its custom name; got:\n{text}"
     );
     assert!(
-        !text.contains(PetKind::Cat.default_name()),
+        !text.contains(PetKind::Wolf.default_name()),
         "custom name replaces the default, not appended"
     );
 }
@@ -495,14 +495,14 @@ fn pet_tooltip_shows_custom_name() {
 #[test]
 fn pet_tooltip_falls_back_to_default_name_when_not_configured() {
     let scene = scene_with(vec![running("/tt/fb.jsonl", 0, "Edit", t0())], 16);
-    let mut r = build(140, 48, vec![PetKind::Cat]);
+    let mut r = build(140, 48, vec![PetKind::Wolf]);
     let (PetHover { centre: pos, .. }, now) = until_the_pet_walks(&mut r, &scene);
     r.set_mouse_pos(Some((pos.x, pos.y / 2)));
     r.render(&scene, now).unwrap();
     let text = frame_text(r.frame_buffer());
     assert!(
-        text.contains(PetKind::Cat.default_name()),
-        "an unconfigured cat falls back to the default name; got:\n{text}"
+        text.contains(PetKind::Wolf.default_name()),
+        "an unconfigured wolf falls back to the default name; got:\n{text}"
     );
 }
 

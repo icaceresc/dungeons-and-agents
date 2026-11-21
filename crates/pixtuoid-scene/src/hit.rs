@@ -139,14 +139,14 @@ mod tests {
             width: 1,
             height: 1,
         };
-        let cat = HoverTarget::Pet(crate::hit::PetHover {
-            kind: crate::pet::PetKind::Cat,
+        let wolf = HoverTarget::Pet(crate::hit::PetHover {
+            kind: crate::pet::PetKind::Wolf,
             centre: crate::layout::Point { x: mid.x, y: mid.y },
-            anim: crate::pack::Piece::CatWalk,
+            anim: crate::pack::Piece::WolfWalk,
         });
         assert!(matches!(
-            scene_hit(Some(&cat), None, &layout, mid, Occasion::default()),
-            Some(SceneHit::Figure(t)) if *t == cat
+            scene_hit(Some(&wolf), None, &layout, mid, Occasion::default()),
+            Some(SceneHit::Figure(t)) if *t == wolf
         ));
         assert_eq!(
             scene_hit(None, None, &layout, mid, Occasion::default()),
@@ -162,13 +162,13 @@ mod tests {
         let now = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_000_000);
         let id = AgentId::from_parts("claude-code", "s");
         let pet = HoverTarget::Pet(PetHover {
-            kind: PetKind::Dog,
+            kind: PetKind::Owlbear,
             centre: crate::layout::Point { x: 0, y: 0 },
-            anim: crate::pack::Piece::DogSit,
+            anim: crate::pack::Piece::OwlbearSit,
         });
         let playing = PetState {
             petted_at: now,
-            kind: PetKind::Dog,
+            kind: PetKind::Owlbear,
         };
         let act = |hit: SceneHit<'_>, petting| hit.action(petting);
         assert_eq!(
@@ -177,7 +177,7 @@ mod tests {
         );
         assert_eq!(
             act(SceneHit::Figure(&pet), None),
-            Some(HitAction::Pet(PetKind::Dog))
+            Some(HitAction::Pet(PetKind::Owlbear))
         );
         assert_eq!(act(SceneHit::Figure(&pet), Some(&playing)), None);
         assert_eq!(act(SceneHit::Star, None), Some(HitAction::Open(REPO_URL)));
