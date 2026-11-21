@@ -1382,7 +1382,13 @@ impl FloorScene {
 pub fn project_floor_scene(scene: &SceneState, floor_idx: usize) -> FloorScene {
     let mut s = SceneState::default();
     for slot in floor_agents(scene, floor_idx) {
-        s.agents.insert(slot.agent_id, slot.clone());
+        let mut slot = slot.clone();
+        // On its way to another floor, it walks out to the door as one leaving
+        // does, and is gone from here once it takes its new desk.
+        if let Some(since) = scene.relocating(slot.agent_id) {
+            slot.exiting_at.get_or_insert(since);
+        }
+        s.agents.insert(slot.agent_id, slot);
     }
     // Daemon presences are global, not per-desk — ground floor only, so the
     // mascot renders exactly once.

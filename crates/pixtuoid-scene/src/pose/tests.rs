@@ -973,53 +973,76 @@ fn entry_walk_coordinates_are_continuous() {
     );
 }
 
+/// Each frame of `floor` of `scene` from `from` through `office`, a frame of
+/// [`PAINT_FRAME`] apart: `id`'s pose and top-left there.
+fn floor_frames(
+    office: &mut crate::floor::OfficeSession,
+    scene: &pixtuoid_core::SceneState,
+    (floor, id): (usize, AgentId),
+    from: SystemTime,
+    n: u32,
+) -> Vec<(Option<Pose>, Option<Point>)> {
+    use crate::floor::{Conditions, FloorInputs, PetInputs, project_floor_scene};
+    (0..n)
+        .map(|i| {
+            let now = from + PAINT_FRAME * i;
+            office.prepare(scene, now);
+            let floor_scene = project_floor_scene(scene, floor);
+            let (per_floor, per_office) = office.floor_mut(floor).expect("a floor seated on");
+            let stepped = crate::floor::step_floor(
+                per_floor,
+                &mut per_office.coffee,
+                &mut per_office.chitchat,
+                FloorInputs {
+                    scene: &floor_scene,
+                    now,
+                    conditions: Conditions::default(),
+                    pets: PetInputs {
+                        pet: None,
+                        petting: None,
+                    },
+                },
+                crate::layout::Viewport::full(120, 96),
+            )
+            .expect("it lays out");
+            let pose = stepped.frame.poses.get(&id).copied().flatten();
+            let at = (stepped.frame.characters.iter())
+                .find(|c| stepped.frame.agents[c.agent_idx].agent_id == id)
+                .map(|c| c.top_left);
+            (pose, at)
+        })
+        .collect()
+}
+
+fn walking(pose: &Option<Pose>) -> bool {
+    matches!(pose, Some(Pose::Walking { .. }))
+}
+
+/// The longest jump between two frames that both draw the figure.
+fn max_jump(frames: &[(Option<Pose>, Option<Point>)]) -> i32 {
+    (frames.windows(2))
+        .filter_map(|w| Some((w[0].1?, w[1].1?)))
+        .map(|(a, b)| {
+            (i32::from(a.x) - i32::from(b.x))
+                .abs()
+                .max((i32::from(a.y) - i32::from(b.y)).abs())
+        })
+        .max()
+        .unwrap_or(0)
+}
+
 /// An agent seated on another floor and then back on this one walks in from
 /// the door again, frame by frame, instead of popping onto its desk: the floor
 /// it left drops its finished entry leg, which would otherwise gate the new
 /// walk off (`OfficeSession::evict_missing`).
 #[test]
 fn an_agent_back_on_a_floor_walks_in_from_the_door_again() {
-    use crate::floor::{Conditions, FloorInputs, OfficeSession, PetInputs, project_floor_scene};
-    use crate::layout::Viewport;
     use pixtuoid_core::SceneState;
 
     let t0 = SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000);
-    let mut office = OfficeSession::new(Arc::new(crate::pack::test_office()));
+    let mut office = crate::floor::OfficeSession::new(Arc::new(crate::pack::test_office()));
     let mut scene = SceneState::uniform(4);
     let id = AgentId::from_transcript_path("/snap.jsonl");
-    // Each frame of `floor` from `from`: the agent's pose and top-left.
-    let mut frames = |scene: &SceneState, floor: usize, from: SystemTime, n: u32| {
-        (0..n)
-            .map(|i| {
-                let now = from + PAINT_FRAME * i;
-                office.prepare(scene, now);
-                let floor_scene = project_floor_scene(scene, floor);
-                let (per_floor, per_office) = office.floor_mut(floor).expect("a floor seated on");
-                let stepped = crate::floor::step_floor(
-                    per_floor,
-                    &mut per_office.coffee,
-                    &mut per_office.chitchat,
-                    FloorInputs {
-                        scene: &floor_scene,
-                        now,
-                        conditions: Conditions::default(),
-                        pets: PetInputs {
-                            pet: None,
-                            petting: None,
-                        },
-                    },
-                    Viewport::full(120, 96),
-                )
-                .expect("it lays out");
-                let pose = stepped.frame.poses.get(&id).copied().flatten();
-                let at = (stepped.frame.characters.iter())
-                    .find(|c| stepped.frame.agents[c.agent_idx].agent_id == id)
-                    .map(|c| c.top_left);
-                (pose, at)
-            })
-            .collect::<Vec<_>>()
-    };
-    let walking = |pose: &Option<Pose>| matches!(pose, Some(Pose::Walking { .. }));
     let entry_frames = frames_in(Duration::from_millis(ENTRY_ANIMATION_MS));
 
     let seat = |scene: &mut SceneState, floor: usize, at: SystemTime| {
@@ -1030,7 +1053,7 @@ fn an_agent_back_on_a_floor_walks_in_from_the_door_again() {
         scene.agents.insert(id, slot);
     };
     seat(&mut scene, 0, t0);
-    let first = frames(&scene, 0, t0, entry_frames);
+    let first = floor_frames(&mut office, &scene, (0, id), t0, entry_frames);
     assert!(walking(&first[0].0), "premise: it walks in the first time");
     assert!(
         !walking(&first[first.len() - 1].0),
@@ -1039,28 +1062,95 @@ fn an_agent_back_on_a_floor_walks_in_from_the_door_again() {
 
     let away = t0 + Duration::from_secs(30);
     seat(&mut scene, 1, away);
-    frames(&scene, 1, away, entry_frames);
+    floor_frames(&mut office, &scene, (1, id), away, entry_frames);
 
     let back = away + Duration::from_secs(30);
     seat(&mut scene, 0, back);
-    let again = frames(&scene, 0, back, entry_frames);
+    let again = floor_frames(&mut office, &scene, (0, id), back, entry_frames);
     assert!(walking(&again[0].0), "it walks in again: {:?}", again[0].0);
     assert!(
         again.iter().filter(|(pose, _)| walking(pose)).count() > 20,
         "the walk-in runs many frames"
     );
-    let max_step = (again.windows(2))
-        .filter_map(|w| Some((w[0].1?, w[1].1?)))
-        .map(|(a, b)| {
-            (i32::from(a.x) - i32::from(b.x))
-                .abs()
-                .max((i32::from(a.y) - i32::from(b.y)).abs())
-        })
-        .max()
-        .unwrap_or(0);
+    let jump = max_jump(&again);
     assert!(
-        max_step <= MAX_FRAME_STEP_PX,
-        "the walk-in teleported: {max_step}px"
+        jump <= MAX_FRAME_STEP_PX,
+        "the walk-in teleported: {jump}px"
+    );
+}
+
+/// Under the campaign an agent leaving the camp for the dungeon walks out to
+/// the camp's door, frame by frame, and is gone from it, then walks in from
+/// the dungeon's door once it takes its desk there: it never pops from one
+/// floor to the other.
+#[test]
+fn a_campaign_move_walks_out_of_one_floor_then_into_the_next() {
+    use pixtuoid_core::SceneState;
+    use pixtuoid_core::state::reducer::EXIT_GRACE_WINDOW;
+    use pixtuoid_core::state::{MAX_FLOORS, SeatPolicy};
+
+    let t0 = SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000);
+    let mut office = crate::floor::OfficeSession::new(Arc::new(crate::pack::test_office()));
+    let mut caps = [0; MAX_FLOORS];
+    (caps[0], caps[1]) = (1, 1);
+    let mut scene = SceneState::new(caps).with_seat_policy(SeatPolicy::Campaign);
+    let id = AgentId::from_transcript_path("/snap.jsonl");
+    let rested = t0 - Duration::from_secs(600);
+    scene.agents.insert(
+        id,
+        AgentSlot {
+            desk: Some(FloorDesk::new(0, 0)),
+            arrived_at: Some(rested),
+            ..entry_slot(rested)
+        },
+    );
+    let settled = floor_frames(&mut office, &scene, (0, id), t0, 2);
+    assert!(
+        settled
+            .iter()
+            .all(|(pose, at)| !walking(pose) && at.is_some()),
+        "premise: seated in the camp"
+    );
+
+    let slot = scene.agents.get_mut(&id).expect("the agent");
+    (slot.state, slot.state_started_at) = (ActivityState::Running { item: None }, t0);
+    scene.set_capacities(caps, t0);
+    assert_eq!(scene.relocating(id), Some(t0), "premise: it walks out");
+    let walk_out = floor_frames(
+        &mut office,
+        &scene,
+        (0, id),
+        t0,
+        frames_in(EXIT_GRACE_WINDOW),
+    );
+    assert!(walking(&walk_out[0].0), "it sets off: {:?}", walk_out[0].0);
+    assert!(
+        walk_out.iter().filter(|(pose, _)| walking(pose)).count() > 20,
+        "the walk-out runs many frames"
+    );
+    let gone = walk_out.iter().position(|(_, at)| at.is_none());
+    assert!(
+        gone.is_some_and(|i| walk_out[i..].iter().all(|(_, at)| at.is_none())),
+        "it leaves through the door and stays gone"
+    );
+    let jump = max_jump(&walk_out);
+    assert!(
+        jump <= MAX_FRAME_STEP_PX,
+        "the walk-out teleported: {jump}px"
+    );
+
+    let done = t0 + EXIT_GRACE_WINDOW;
+    scene.set_capacities(caps, done);
+    assert_eq!(scene.agents[&id].desk, Some(FloorDesk::new(1, 0)));
+    let camp = floor_frames(&mut office, &scene, (0, id), done, 2);
+    assert!(camp.iter().all(|(_, at)| at.is_none()), "not in the camp");
+    let entry_frames = frames_in(Duration::from_millis(ENTRY_ANIMATION_MS));
+    let walk_in = floor_frames(&mut office, &scene, (1, id), done, entry_frames);
+    assert!(walking(&walk_in[0].0), "it walks in: {:?}", walk_in[0].0);
+    let jump = max_jump(&walk_in);
+    assert!(
+        jump <= MAX_FRAME_STEP_PX,
+        "the walk-in teleported: {jump}px"
     );
 }
 

@@ -85,11 +85,38 @@ fn first_free(
         .find(|desk| !taken.contains(desk))
 }
 
+/// How long a seated agent walks out to the door before it takes its desk on
+/// another floor: the exit walk's own budget, which the scene's walk is
+/// timed to.
+const WALK_OUT: Duration = super::reducer::EXIT_GRACE_WINDOW;
+
+/// A seated agent on its way to `to`, a desk of its other ground: it keeps its
+/// old desk, walking out from it from `since`, and takes `to` once the walk
+/// has had [`WALK_OUT`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) struct Move {
+    to: FloorDesk,
+    since: SystemTime,
+}
+
+impl Move {
+    pub(super) fn since(&self) -> SystemTime {
+        self.since
+    }
+}
+
+/// Whether `slot` is still walking in to the desk it took: an agent that never
+/// got there moves at once rather than walking out of a desk it never sat at.
+fn walking_in(slot: &AgentSlot, now: SystemTime) -> bool {
+    (slot.arrived_at).is_some_and(|at| now.duration_since(at).is_ok_and(|d| d < WALK_OUT))
+}
+
 /// Seat `scene` by the campaign, oldest first: an unseated agent that is
 /// staying takes the first free desk of its ground or, that ground full, of
 /// the other, walking in from its `arrival`; a seated one off its ground moves
-/// to a free desk of its ground, walking in from `now`, and otherwise stays
-/// where it overflowed to. A desk is free while no slot that `holds` sits at it.
+/// to a free desk of its ground, and otherwise stays where it overflowed to. A
+/// move walks out first ([`Move`]) and walks in from when it takes the desk. A
+/// desk is free while no slot that `holds` sits at it, nor a move heads to it.
 pub(super) fn seat(
     scene: &mut SceneState,
     holds: impl Fn(&AgentSlot) -> bool,
@@ -98,13 +125,40 @@ pub(super) fn seat(
 ) {
     #[cfg(test)]
     super::SEATINGS.with(|n| n.set(n.get() + 1));
-    let capacities = scene.floor_capacities;
-    let mut taken: BTreeSet<FloorDesk> = (scene.agents.values())
+    let SceneState {
+        agents,
+        floor_capacities: capacities,
+        moves,
+        ..
+    } = scene;
+    // A walk-out done takes its desk. An exit, a lost desk or a change of
+    // ground ends a move where it is, and a cancelled walk-out walks back in.
+    for (id, mv) in std::mem::take(moves) {
+        let Some(slot) = agents.get_mut(&id) else {
+            continue;
+        };
+        let ground = Ground::of(mv.to.floor);
+        if slot.exiting_at.is_some()
+            || slot.desk.is_none()
+            || mv.to.index.0 >= capacities[mv.to.floor]
+            || want(slot, now).is_some_and(|wanted| wanted != ground)
+        {
+            continue;
+        }
+        if now.duration_since(mv.since).is_ok_and(|d| d >= WALK_OUT) {
+            slot.desk = Some(mv.to);
+            slot.arrived_at = Some(now);
+        } else {
+            moves.insert(id, mv);
+        }
+    }
+    let mut taken: BTreeSet<FloorDesk> = (agents.values())
         .filter(|slot| holds(slot))
         .filter_map(|slot| slot.desk)
+        .chain(moves.values().map(|mv| mv.to))
         .collect();
-    let mut movers: Vec<(&mut AgentSlot, Ground)> = (scene.agents.values_mut())
-        .filter(|slot| slot.exiting_at.is_none())
+    let mut movers: Vec<(&mut AgentSlot, Ground)> = (agents.values_mut())
+        .filter(|slot| slot.exiting_at.is_none() && !moves.contains_key(&slot.agent_id))
         .filter_map(|slot| {
             let ground = want(slot, now)?;
             let off_ground = slot
@@ -115,17 +169,30 @@ pub(super) fn seat(
         .collect();
     movers.sort_by_key(|(slot, _)| (slot.created_at, slot.agent_id));
     for (slot, ground) in movers {
-        let Some(desk) = first_free(&capacities, &taken, ground, slot.desk.is_none()) else {
+        let Some(desk) = first_free(capacities, &taken, ground, slot.desk.is_none()) else {
             continue;
         };
         taken.insert(desk);
-        slot.arrived_at = match slot.desk.replace(desk) {
+        match slot.desk {
+            Some(_) if !walking_in(slot, now) => {
+                moves.insert(
+                    slot.agent_id,
+                    Move {
+                        to: desk,
+                        since: now,
+                    },
+                );
+            }
             Some(left) => {
                 taken.remove(&left);
-                Some(now)
+                slot.desk = Some(desk);
+                slot.arrived_at = Some(now);
             }
-            None => arrival(slot),
-        };
+            None => {
+                slot.desk = Some(desk);
+                slot.arrived_at = arrival(slot);
+            }
+        }
     }
 }
 
@@ -192,22 +259,100 @@ mod tests {
         );
     }
 
+    /// Reseat `scene` at `now`, then once more when a walk-out begun then is
+    /// done.
+    fn settle(scene: &mut SceneState, now: SystemTime) {
+        scene.reseat(now);
+        scene.reseat(now + WALK_OUT);
+    }
+
     #[test]
-    fn an_agent_starting_work_leaves_the_camp_for_the_dungeon_at_once() {
+    fn an_agent_starting_work_walks_out_of_the_camp_then_takes_a_dungeon_desk() {
         let (mut scene, ids) = campaign(CAPS, &[ActivityState::Idle]);
         scene.reseat(at(1));
-        enter(&mut scene, ids[0], RUNNING, at(5));
-        scene.reseat(at(5));
+        enter(&mut scene, ids[0], RUNNING, at(10));
+        scene.reseat(at(10));
+        assert_eq!(
+            desks(&scene, &ids),
+            [Some(FloorDesk::new(0, 0))],
+            "it holds its bedroll while it walks out"
+        );
+        assert_eq!(scene.relocating(ids[0]), Some(at(10)));
+        scene.reseat(at(10) + WALK_OUT - Duration::from_millis(1));
+        assert_eq!(desks(&scene, &ids), [Some(FloorDesk::new(0, 0))]);
+        scene.reseat(at(10) + WALK_OUT);
         assert_eq!(desks(&scene, &ids), [Some(FloorDesk::new(1, 0))]);
-        assert_eq!(scene.agents[&ids[0]].arrived_at, Some(at(5)));
+        assert_eq!(
+            scene.agents[&ids[0]].arrived_at,
+            Some(at(10) + WALK_OUT),
+            "it walks in from when it takes the desk"
+        );
+        assert_eq!(scene.relocating(ids[0]), None);
         let blocked = ActivityState::RequiresAction { reason: None };
-        enter(&mut scene, ids[0], blocked, at(6));
-        scene.reseat(at(6));
+        enter(&mut scene, ids[0], blocked, at(20));
+        settle(&mut scene, at(20));
         assert_eq!(
             desks(&scene, &ids),
             [Some(FloorDesk::new(1, 0))],
             "a blocked agent keeps its place in the fight"
         );
+    }
+
+    #[test]
+    fn one_still_walking_in_moves_at_once() {
+        let (mut scene, ids) = campaign(CAPS, &[ActivityState::Idle]);
+        scene.reseat(at(1));
+        enter(&mut scene, ids[0], RUNNING, at(2));
+        scene.reseat(at(2));
+        assert_eq!(desks(&scene, &ids), [Some(FloorDesk::new(1, 0))]);
+        assert_eq!(scene.relocating(ids[0]), None);
+    }
+
+    #[test]
+    fn a_walk_out_reserves_the_desk_it_heads_to() {
+        let caps = [1, 1, 0, 0, 0, 0, 0, 0, 0, 0];
+        let (mut scene, ids) = campaign(caps, &[ActivityState::Idle]);
+        scene.reseat(at(1));
+        enter(&mut scene, ids[0], RUNNING, at(10));
+        scene.reseat(at(10));
+        let late = AgentId::from_transcript_path("/p/late.jsonl");
+        let mut slot = make_slot(late, 0);
+        (slot.desk, slot.arrived_at, slot.state) = (None, None, RUNNING);
+        slot.created_at = at(10);
+        scene.agents.insert(late, slot);
+        scene.reseat(at(11));
+        assert_eq!(
+            scene.agents[&late].desk, None,
+            "neither the dungeon desk it heads to nor the bedroll it holds is free"
+        );
+        scene.reseat(at(10) + WALK_OUT);
+        assert_eq!(desks(&scene, &ids), [Some(FloorDesk::new(1, 0))]);
+        assert_eq!(scene.agents[&late].desk, Some(FloorDesk::new(0, 0)));
+    }
+
+    #[test]
+    fn a_change_of_heart_mid_walk_keeps_the_old_desk() {
+        let (mut scene, ids) = campaign(CAPS, &[RUNNING]);
+        scene.reseat(at(1));
+        enter(&mut scene, ids[0], ActivityState::Idle, at(10));
+        scene.reseat(at(10) + REST_AFTER);
+        assert!(scene.relocating(ids[0]).is_some(), "premise: walking out");
+        enter(&mut scene, ids[0], RUNNING, at(26));
+        settle(&mut scene, at(26));
+        assert_eq!(desks(&scene, &ids), [Some(FloorDesk::new(1, 0))]);
+        assert_eq!(scene.relocating(ids[0]), None);
+    }
+
+    #[test]
+    fn a_session_ending_mid_walk_leaves_from_its_old_desk() {
+        let (mut scene, ids) = campaign(CAPS, &[ActivityState::Idle]);
+        scene.reseat(at(1));
+        enter(&mut scene, ids[0], RUNNING, at(10));
+        scene.reseat(at(10));
+        scene.agents.get_mut(&ids[0]).expect("a slot").exiting_at = Some(at(11));
+        settle(&mut scene, at(11));
+        assert_eq!(desks(&scene, &ids), [Some(FloorDesk::new(0, 0))]);
+        assert_eq!(scene.relocating(ids[0]), None);
     }
 
     #[test]
@@ -221,9 +366,13 @@ mod tests {
             [Some(FloorDesk::new(1, 0))],
             "a gap between turns stays in the dungeon"
         );
-        scene.reseat(at(10) + REST_AFTER);
+        assert_eq!(scene.relocating(ids[0]), None);
+        settle(&mut scene, at(10) + REST_AFTER);
         assert_eq!(desks(&scene, &ids), [Some(FloorDesk::new(0, 0))]);
-        assert_eq!(scene.agents[&ids[0]].arrived_at, Some(at(10) + REST_AFTER));
+        assert_eq!(
+            scene.agents[&ids[0]].arrived_at,
+            Some(at(10) + REST_AFTER + WALK_OUT)
+        );
     }
 
     #[test]
@@ -265,7 +414,10 @@ mod tests {
             "no bedroll is free, so it stays where it overflowed to"
         );
         enter(&mut scene, ids[0], RUNNING, at(31));
-        scene.reseat(at(31));
+        // The bedroll frees once the fighter has walked out; the sleeper then
+        // walks out of the dungeon to it.
+        settle(&mut scene, at(31));
+        scene.reseat(at(31) + WALK_OUT * 2);
         assert_eq!(
             desks(&scene, &ids),
             [
@@ -291,7 +443,8 @@ mod tests {
             ]
         );
         enter(&mut scene, ids[0], ActivityState::Idle, at(4));
-        scene.reseat(at(4) + REST_AFTER);
+        settle(&mut scene, at(4) + REST_AFTER);
+        scene.reseat(at(4) + REST_AFTER + WALK_OUT * 2);
         assert_eq!(
             desks(&scene, &ids),
             [
