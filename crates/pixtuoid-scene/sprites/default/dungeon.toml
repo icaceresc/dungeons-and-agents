@@ -31,21 +31,6 @@ windows = false
 "ɚ" = { of = "ɘ", level = -5 }   # bone, darkest
 "ɜ" = { of = "ɛ", level = -3 }   # flame, its dark red tips
 
-# The strike: typing becomes a four-frame sword loop, every class's until
-# each swings its own. The base repeats the office's two typing frames, since a
-# variant draws as many frames as its base.
-[animations.typing]
-frames = ["typing_0.sprite", "typing_1.sprite", "typing_0.sprite", "typing_1.sprite"]
-
-[animations."typing@4x"]
-frames = ["dungeon_typing_0@4x.sprite", "dungeon_typing_1@4x.sprite", "dungeon_typing_2@4x.sprite", "dungeon_typing_3@4x.sprite"]
-
-[animations.typing_back]
-frames = ["typing_back_0.sprite", "typing_back_1.sprite", "typing_back_0.sprite", "typing_back_1.sprite"]
-
-[animations."typing_back@4x"]
-frames = ["dungeon_typing_back_0@4x.sprite", "dungeon_typing_back_1@4x.sprite", "dungeon_typing_back_2@4x.sprite", "dungeon_typing_back_3@4x.sprite"]
-
 # The lairs: a monster on each desk's own canvas, keeping its `cup` and
 # `tower` marks and a torch whose flame burns in the bulb key; its eyes or
 # sigil in the screen keys, so the fighter's tool lights them.

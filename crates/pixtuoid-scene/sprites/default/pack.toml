@@ -287,67 +287,67 @@ frame_ms = 125
 # Each class's attack, played where an office worker types (`Class::attack`),
 # from the front and from behind: scripts/gen-art.py's ATTACKS.
 [animations.attack_mage]
-frames   = ["attack_mage_0.sprite", "attack_mage_1.sprite"]
+frames   = ["attack_mage_0.sprite", "attack_mage_1.sprite", "attack_mage_2.sprite", "attack_mage_3.sprite"]
 frame_ms = 125
 
 [animations."attack_mage@4x"]
-frames   = ["attack_mage_0@4x.sprite", "attack_mage_1@4x.sprite"]
+frames   = ["attack_mage_0@4x.sprite", "attack_mage_1@4x.sprite", "attack_mage_2@4x.sprite", "attack_mage_3@4x.sprite"]
 frame_ms = 125
 
 [animations.attack_mage_back]
-frames   = ["attack_mage_back_0.sprite", "attack_mage_back_1.sprite"]
+frames   = ["attack_mage_back_0.sprite", "attack_mage_back_1.sprite", "attack_mage_back_2.sprite", "attack_mage_back_3.sprite"]
 frame_ms = 125
 
 [animations."attack_mage_back@4x"]
-frames   = ["attack_mage_back_0@4x.sprite", "attack_mage_back_1@4x.sprite"]
+frames   = ["attack_mage_back_0@4x.sprite", "attack_mage_back_1@4x.sprite", "attack_mage_back_2@4x.sprite", "attack_mage_back_3@4x.sprite"]
 frame_ms = 125
 
 [animations.attack_knight]
-frames   = ["attack_knight_0.sprite", "attack_knight_1.sprite"]
+frames   = ["attack_knight_0.sprite", "attack_knight_1.sprite", "attack_knight_2.sprite", "attack_knight_3.sprite"]
 frame_ms = 125
 
 [animations."attack_knight@4x"]
-frames   = ["attack_knight_0@4x.sprite", "attack_knight_1@4x.sprite"]
+frames   = ["attack_knight_0@4x.sprite", "attack_knight_1@4x.sprite", "attack_knight_2@4x.sprite", "attack_knight_3@4x.sprite"]
 frame_ms = 125
 
 [animations.attack_knight_back]
-frames   = ["attack_knight_back_0.sprite", "attack_knight_back_1.sprite"]
+frames   = ["attack_knight_back_0.sprite", "attack_knight_back_1.sprite", "attack_knight_back_2.sprite", "attack_knight_back_3.sprite"]
 frame_ms = 125
 
 [animations."attack_knight_back@4x"]
-frames   = ["attack_knight_back_0@4x.sprite", "attack_knight_back_1@4x.sprite"]
+frames   = ["attack_knight_back_0@4x.sprite", "attack_knight_back_1@4x.sprite", "attack_knight_back_2@4x.sprite", "attack_knight_back_3@4x.sprite"]
 frame_ms = 125
 
 [animations.attack_ranger]
-frames   = ["attack_ranger_0.sprite", "attack_ranger_1.sprite"]
+frames   = ["attack_ranger_0.sprite", "attack_ranger_1.sprite", "attack_ranger_2.sprite", "attack_ranger_3.sprite"]
 frame_ms = 125
 
 [animations."attack_ranger@4x"]
-frames   = ["attack_ranger_0@4x.sprite", "attack_ranger_1@4x.sprite"]
+frames   = ["attack_ranger_0@4x.sprite", "attack_ranger_1@4x.sprite", "attack_ranger_2@4x.sprite", "attack_ranger_3@4x.sprite"]
 frame_ms = 125
 
 [animations.attack_ranger_back]
-frames   = ["attack_ranger_back_0.sprite", "attack_ranger_back_1.sprite"]
+frames   = ["attack_ranger_back_0.sprite", "attack_ranger_back_1.sprite", "attack_ranger_back_2.sprite", "attack_ranger_back_3.sprite"]
 frame_ms = 125
 
 [animations."attack_ranger_back@4x"]
-frames   = ["attack_ranger_back_0@4x.sprite", "attack_ranger_back_1@4x.sprite"]
+frames   = ["attack_ranger_back_0@4x.sprite", "attack_ranger_back_1@4x.sprite", "attack_ranger_back_2@4x.sprite", "attack_ranger_back_3@4x.sprite"]
 frame_ms = 125
 
 [animations.attack_berserker]
-frames   = ["attack_berserker_0.sprite", "attack_berserker_1.sprite"]
+frames   = ["attack_berserker_0.sprite", "attack_berserker_1.sprite", "attack_berserker_2.sprite", "attack_berserker_3.sprite"]
 frame_ms = 125
 
 [animations."attack_berserker@4x"]
-frames   = ["attack_berserker_0@4x.sprite", "attack_berserker_1@4x.sprite"]
+frames   = ["attack_berserker_0@4x.sprite", "attack_berserker_1@4x.sprite", "attack_berserker_2@4x.sprite", "attack_berserker_3@4x.sprite"]
 frame_ms = 125
 
 [animations.attack_berserker_back]
-frames   = ["attack_berserker_back_0.sprite", "attack_berserker_back_1.sprite"]
+frames   = ["attack_berserker_back_0.sprite", "attack_berserker_back_1.sprite", "attack_berserker_back_2.sprite", "attack_berserker_back_3.sprite"]
 frame_ms = 125
 
 [animations."attack_berserker_back@4x"]
-frames   = ["attack_berserker_back_0@4x.sprite", "attack_berserker_back_1@4x.sprite"]
+frames   = ["attack_berserker_back_0@4x.sprite", "attack_berserker_back_1@4x.sprite", "attack_berserker_back_2@4x.sprite", "attack_berserker_back_3@4x.sprite"]
 frame_ms = 125
 
 [animations.desk]

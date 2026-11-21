@@ -5447,8 +5447,8 @@ fn a_fighter_keys_on_the_art_its_seat_resolves_to() {
     let (mut scene, layout, id, now0, _) = sim_rig();
     let pack = OfficeArt::parse(crate::pack::test_pack_wearing(
         "knight",
-        "[animations.attack_knight_back]\nframes   = [\"attack_knight_back_0.sprite\", \"attack_knight_back_1.sprite\"]\nframe_ms = 125",
-        "[animations.attack_knight_back]\nframes   = [\"attack_knight_back_0.sprite\", \"attack_knight_back_1.sprite\"]\nframe_ms = 250",
+        "[animations.attack_knight_back]\nframes   = [\"attack_knight_back_0.sprite\", \"attack_knight_back_1.sprite\", \"attack_knight_back_2.sprite\", \"attack_knight_back_3.sprite\"]\nframe_ms = 125",
+        "[animations.attack_knight_back]\nframes   = [\"attack_knight_back_0.sprite\", \"attack_knight_back_1.sprite\", \"attack_knight_back_2.sprite\", \"attack_knight_back_3.sprite\"]\nframe_ms = 250",
     ))
     .expect("the test pack parses");
     let back = layout

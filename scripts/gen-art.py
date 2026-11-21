@@ -2311,12 +2311,367 @@ POSES |= {
 TYPING_FRAMES = 2
 
 
-def typing_loop(view):
-    """The typing loop's bodies seen from `view` ("front", or "back" from
-    behind), frame by frame."""
-    if view == "front":
-        return [seated_front(hands_typing(i)) for i in range(TYPING_FRAMES)]
-    return [seated_rear(elbows_typing(i)) for i in range(TYPING_FRAMES)]
+# ---- the attacks: what a working adventurer does in place of typing ---------------
+# Drawn in the body frames, so a class layer dresses them as it dresses the
+# typist; nothing reaches the canvas's edge columns, which the outline needs.
+# A seat facing the viewer shows only what rises over its lair, so a front
+# view's blow lands high; a back view's flies over the head, at the foe.
+#
+# The knight swings a sword. Per frame, on the pose grid: the sword hand's
+# top-left, the blade's tip, the slash trailing the cut (empty for none) and
+# where the blow lands in sparks (None for none). Frame 0 is the guard a
+# resting beat shows (`typing_frame`). A seat facing the viewer shows only
+# what rises over its lair, so its cut and its hit are drawn high.
+class Swing(NamedTuple):
+    hand: tuple
+    tip: tuple
+    slash: tuple
+    sparks: tuple | None
+    title: str
+
+
+STRIKE_FRONT = [
+    Swing((24, 25), (27, 3), (), None, "on guard, the blade upright beside the head"),
+    Swing((25, 9), (3, 2), (), None, "the blade raised back over the head"),
+    Swing(
+        (17, 27),
+        (14, 43),
+        ((28, 1), (30, 12), (28, 23), (20, 30)),
+        None,
+        "the cut, down at the foe, a slash trailing it",
+    ),
+    Swing((20, 27), (16, 43), (), (13, 31), "the blow landing in sparks"),
+]
+STRIKE_BACK = [
+    Swing((24, 28), (27, 5), (), None, "on guard, the blade upright beside the head"),
+    Swing((24, 9), (29, 27), (), None, "the blade cocked back over the shoulder"),
+    Swing(
+        (24, 18),
+        (19, 6),
+        ((30, 4), (24, 0), (12, 0), (3, 5)),
+        None,
+        "the cut, over the head at the foe, a slash trailing it",
+    ),
+    Swing((24, 20), (18, 8), (), (8, 2), "the blow landing in sparks beyond the head"),
+]
+
+
+def sword(g, hand, tip, dy):
+    """The sword in the fist at `hand`: an iron blade lit along one edge from
+    its crossguard to `tip`, the guard across it and a leather grip in the
+    fist."""
+    hx, hy = hand[0] + S / 2, hand[1] + S / 2 + dy
+    tx, ty = tip[0] + 0.5, tip[1] + 0.5 + dy
+    length = math.hypot(tx - hx, ty - hy)
+    ux, uy = (tx - hx) / length, (ty - hy) / length
+    gx, gy = hx + ux * 3, hy + uy * 3
+    stem(g, [(gx, gy), (tx, ty)], 1.0, IRON)
+    stem(g, [(gx + uy * 0.8, gy - ux * 0.8), (tx, ty)], 0.4, IRON_LT)
+    stem(g, [(gx - uy * 3, gy + ux * 3), (gx + uy * 3, gy - ux * 3)], 0.7, IRON_SH)
+    stem(g, [(hx - ux, hy - uy), (gx, gy)], 0.7, LEATHER)
+
+
+def slash(g, pts, dy):
+    """The cut's trail: a pale arc through `pts`, brightest at its head."""
+    shifted = [(x + 0.5, y + 0.5 + dy) for x, y in pts]
+    stem(g, shifted, 0.5, IRON_HI)
+    stem(g, shifted[-2:], 0.6, WHITE)
+
+
+def sparks(g, x, y, dy):
+    """A blow's sparks bursting from (x, y): a white heart, gold rays."""
+    rect(g, x, y + dy, x + 2, y + 2 + dy, WHITE)
+    for ax, ay in (
+        (-2, -2),
+        (3, -2),
+        (-2, 3),
+        (3, 3),
+        (0, -3),
+        (0, 4),
+        (-3, 0),
+        (4, 1),
+    ):
+        put(g, x + ax, y + ay + dy, GOLD)
+
+
+# Where each arm's sleeve leaves the shoulder, on the pose grid.
+WEST_SHOULDER, EAST_SHOULDER = (6.5, SHOULDER_Y + 3.5), (25.5, SHOULDER_Y + 3.5)
+
+
+def mail_arm(g, shoulder, hand, dy):
+    """A mailed sleeve from `shoulder` (on the pose grid) to the fist at
+    `hand`, its rings the pose grid's checker as `mail` lays them, in the
+    shade an arm turned from the light takes."""
+    sleeve = canvas(len(g[0]), len(g))
+    sx, sy = shoulder
+    stem(sleeve, [(sx, sy + dy), (hand[0] + 2, hand[1] + 2)], 1.6, IRON)
+    for y, row in enumerate(sleeve):
+        for x, k in enumerate(row):
+            if k != T:
+                mail(g, x, y - dy, x + 1, y - dy + 1, dy, shade=True)
+
+
+def armed(view, hands, weapon, behind_head=False):
+    """A seated adventurer's frame with its fists at `hands` (west, east),
+    each a fist's top-left on the pose grid, or None for the west hand
+    resting on its knee, and `weapon(g, dy)` drawn between the sleeves and
+    the fists; `behind_head` passes the sleeves and the weapon behind the
+    head, which a raised arm or a shouldered haft would otherwise draw
+    across the face."""
+
+    def draw(g, dy):
+        tabard(g, dy, SEAT_Y, back=view == "back", sleeves=False)
+        west, east = hands
+        if west is None:
+            mail(g, 5, SHOULDER_Y + 2, TABARD_X0, CUFF_Y, dy)
+            mitt(g, 4, SEAT_Y + dy)
+        else:
+            mail_arm(g, WEST_SHOULDER, (west[0], west[1] + dy), dy)
+        mail_arm(g, EAST_SHOULDER, (east[0], east[1] + dy), dy)
+        weapon(g, dy)
+        if behind_head:
+            bald_head(view, g, dy)
+        for fist in hands:
+            if fist is not None:
+                mitt(g, fist[0], fist[1] + dy)
+
+    return draw
+
+
+def striking(view, swing):
+    """A seated swordsman's frame: the off hand on its knee, the sword in the
+    east fist at `swing.hand`, the slash and the sparks over all."""
+
+    def weapon(g, dy):
+        sword(g, swing.hand, swing.tip, dy)
+        if swing.slash:
+            slash(g, swing.slash, dy)
+        if swing.sparks:
+            sparks(g, *swing.sparks, dy)
+
+    return armed(view, (None, swing.hand), weapon)
+
+
+# The mage thrusts a staff and looses a spell: per frame, its east fist, the
+# staff's foot and head, and the spell at the head (0 none, 1 gathering,
+# 2 the flash and its bolt, 3 the afterglow).
+class Cast(NamedTuple):
+    hand: tuple
+    foot: tuple
+    head: tuple
+    spell: int
+
+
+CAST = {
+    "front": [
+        Cast((25, 22), (28, 34), (27, 3), 0),
+        Cast((25, 12), (28, 26), (27, 2), 1),
+        Cast((25, 20), (28, 33), (27, 3), 2),
+        Cast((25, 22), (28, 34), (27, 3), 3),
+    ],
+    "back": [
+        Cast((25, 24), (28, 36), (27, 4), 0),
+        Cast((25, 14), (28, 28), (27, 2), 1),
+        Cast((25, 22), (28, 34), (27, 3), 2),
+        Cast((25, 24), (28, 36), (27, 4), 3),
+    ],
+}
+# Where the flash's bolt strikes, per view: down the staff's side at the foe
+# before a seat facing the viewer; a back-turned seat's foe is beyond the
+# hood, so its flash looses no bolt anyone would see.
+BOLT_TO = {"front": (30, 32), "back": None}
+
+
+def staff(g, foot, head, dy):
+    """A wooden staff from `foot` to `head`, lit along one side, an orb of
+    pale crystal set at its head."""
+    (fx, fy), (hx, hy) = foot, head
+    stem(g, [(fx + 0.5, fy + 0.5 + dy), (hx + 0.5, hy + 0.5 + dy)], 0.8, WOOD)
+    stem(g, [(fx, fy + dy), (hx, hy + dy)], 0.3, WOOD_LT)
+    disc(g, hx + 0.5, hy + 0.5 + dy, 2.2, CYAN)
+    put(g, hx, hy - 1 + dy, WHITE)
+
+
+def spell(g, head, phase, bolt_to, dy):
+    """The spell at the staff's `head`: motes gathering, a flash ringed in
+    blue with its bolt jagging to `bolt_to`, or a fading afterglow."""
+    hx, hy = head[0] + 0.5, head[1] + 0.5 + dy
+    if phase == 1:
+        for ax, ay in ((-3, -2), (3, -1), (-2, 3), (2, 3)):
+            put(g, int(hx + ax), int(hy + ay), CYAN)
+    elif phase == 2:
+        if bolt_to is not None:
+            bx, by = bolt_to
+            pts = [(hx, hy)]
+            for t in (0.3, 0.6, 1.0):
+                jag = 1 if len(pts) % 2 else -1
+                pts.append(
+                    (hx + (bx - hx) * t + jag * (t < 1), hy + (by + dy - hy) * t)
+                )
+            stem(g, pts, 0.6, CYAN)
+        for ax, ay in ((-3, 0), (3, 0), (0, 3), (-2, -2), (2, -2), (-2, 2), (2, 2)):
+            put(g, int(hx + ax), int(hy + ay), BLUE)
+        disc(g, hx, hy, 2.4, WHITE)
+    elif phase == 3:
+        for ax, ay in ((-3, -3), (3, -2), (0, -4)):
+            put(g, int(hx + ax), int(hy + ay), BLUE)
+
+
+def casting(view, cast):
+    """A seated mage's frame: the staff in the east fist, the spell at its
+    head."""
+
+    def weapon(g, dy):
+        staff(g, cast.foot, cast.head, dy)
+        spell(g, cast.head, cast.spell, BOLT_TO[view], dy)
+
+    return armed(view, (None, cast.hand), weapon)
+
+
+# The ranger draws and looses: per frame, the bow fist (west), the string
+# fist (east; None resting), whether the string is drawn to it, and a loosed
+# arrow's tail and head (None for none).
+class Shot(NamedTuple):
+    bow_hand: tuple
+    string_hand: tuple | None
+    drawn: bool
+    flight: tuple | None
+    behind_head: bool = False
+
+
+SHOT = {
+    "front": [
+        Shot((2, 18), None, False, None),
+        Shot((2, 18), (8, 18), True, None, behind_head=True),
+        Shot((2, 18), None, False, ((3, 25), (1, 32))),
+        Shot((2, 16), (4, 16), True, None, behind_head=True),
+    ],
+    "back": [
+        Shot((2, 18), None, False, None),
+        Shot((2, 18), (6, 18), True, None),
+        Shot((2, 18), None, False, ((3, 6), (3, 0))),
+        Shot((2, 16), (4, 16), True, None),
+    ],
+}
+# The rows from the bow's grip to each limb's tip.
+BOW_HALF = 12
+
+
+def bow(g, grip, string, dy):
+    """A wooden bow held at `grip` (its fist's top-left), its limbs curving
+    west of the string; the string straight, or drawn back to `string` with
+    an arrow nocked on it."""
+    gx, gy = grip[0] + 1.5, grip[1] + 2 + dy
+    top, bottom = (gx + 1, gy - BOW_HALF), (gx + 1, gy + BOW_HALF)
+    stem(g, [top, (gx - 1, gy - 6), (gx, gy)], 0.6, WOOD)
+    stem(g, [(gx, gy), (gx - 1, gy + 6), bottom], 0.6, WOOD)
+    if string is None:
+        stem(g, [top, bottom], 0.3, OFFWHITE_SH)
+        return
+    sx, sy = string[0] + 1.5, string[1] + 2 + dy
+    stem(g, [top, (sx, sy), bottom], 0.3, OFFWHITE_SH)
+    stem(g, [(sx, sy), (gx - 1, sy)], 0.4, WOOD_LT)  # the arrow
+    rect(g, int(gx) - 2, int(sy), int(gx), int(sy) + 1, IRON_LT)
+    put(g, int(sx) + 1, int(sy) - 1, RED)  # its fletching
+    put(g, int(sx) + 1, int(sy) + 1, RED)
+
+
+def arrow_flight(g, tail, head, dy):
+    """A loosed arrow flying from `tail` to `head`, a streak trailing it."""
+    (tx, ty), (hx, hy) = tail, head
+    stem(g, [(tx + 0.5, ty + 0.5 + dy), (hx + 0.5, hy + 0.5 + dy)], 0.4, WOOD_LT)
+    put(g, hx, hy + dy, IRON_LT)
+    put(g, tx, ty + dy, RED)
+    back = (tx + (tx - hx) / 2 + 0.5, ty + (ty - hy) / 2 + 0.5 + dy)
+    stem(g, [(tx + 0.5, ty + 0.5 + dy), back], 0.3, IRON_HI)
+
+
+def shooting(view, shot):
+    """A seated archer's frame: the bow in the west fist, the string fist
+    drawing, loosed or reaching back for the next arrow."""
+
+    def weapon(g, dy):
+        bow(g, shot.bow_hand, shot.string_hand if shot.drawn else None, dy)
+        if shot.flight:
+            arrow_flight(g, *shot.flight, dy)
+
+    hands = (shot.bow_hand, shot.string_hand or (24, SEAT_Y))
+    return armed(view, hands, weapon, shot.behind_head)
+
+
+# The berserker chops with a two-handed axe: per frame, both fists on the
+# haft (west, east), the haft's butt and the axe head's centre, the slash its
+# fall trails and where it lands in sparks.
+class Chop(NamedTuple):
+    hands: tuple
+    butt: tuple
+    head: tuple
+    slash: tuple
+    sparks: tuple | None
+    behind_head: bool = False
+
+
+CHOP = {
+    "front": [
+        Chop(((19, 26), (24, 22)), (16, 34), (25, 9), (), None, behind_head=True),
+        Chop(((12, 8), (17, 6)), (15, 22), (15, 2), (), None, behind_head=True),
+        Chop(
+            ((12, 28), (17, 29)),
+            (16, 16),
+            (16, 37),
+            ((18, 0), (27, 5), (28, 14), (26, 22)),
+            None,
+            behind_head=True,
+        ),
+        Chop(((12, 28), (17, 29)), (16, 17), (16, 38), (), (15, 31), behind_head=True),
+    ],
+    "back": [
+        Chop(((19, 28), (24, 24)), (16, 36), (25, 6), (), None),
+        Chop(((18, 12), (23, 9)), (18, 22), (24, 1), (), None),
+        Chop(
+            ((11, 12), (19, 12)),
+            (15, 24),
+            (15, -1),
+            ((29, 4), (24, 0), (8, 0), (3, 3)),
+            None,
+        ),
+        Chop(((11, 14), (19, 14)), (15, 26), (15, 0), (), (5, 1)),
+    ],
+}
+
+
+def axe(g, butt, head, dy):
+    """A two-handed axe: a long haft from `butt` to `head` and there a broad
+    iron bit swept toward the figure's middle, so it stays on the canvas, its
+    edge lit."""
+    (bx, by), (hx, hy) = butt, head
+    stem(g, [(bx + 0.5, by + 0.5 + dy), (hx + 0.5, hy + 0.5 + dy)], 0.8, WOOD_SH)
+    length = math.hypot(hx - bx, hy - by)
+    ux, uy = (hx - bx) / length, (hy - by) / length
+    px, py = -uy, ux  # across the haft
+    side = 1 if px * (FIG_CX - hx) >= 0 else -1  # swept toward the middle
+    cx, cy = hx + 0.5, hy + 0.5 + dy
+    edge = 6
+    for t in range(edge + 1):
+        reach = 2.5 + t / edge
+        a = (cx - ux * reach + px * side * t, cy - uy * reach + py * side * t)
+        b = (cx + ux * reach + px * side * t, cy + uy * reach + py * side * t)
+        stem(g, [a, b], 0.6, IRON_LT if t == edge else IRON)
+    disc(g, cx, cy, 1.2, IRON_SH)
+
+
+def chopping(view, chop):
+    """A seated berserker's frame: both fists on the axe's haft, the slash
+    and the sparks over all."""
+
+    def weapon(g, dy):
+        axe(g, chop.butt, chop.head, dy)
+        if chop.slash:
+            slash(g, chop.slash, dy)
+        if chop.sparks:
+            sparks(g, *chop.sparks, dy)
+
+    return armed(view, chop.hands, weapon, chop.behind_head)
 
 
 # Each class's attack: the bodies of its frames seen from a view, a working
@@ -2324,23 +2679,28 @@ def typing_loop(view):
 # an agent wears). pack.toml registers `attack_<class>` and `attack_<class>_back`
 # by hand, @Sx and 1x, each listing a file per frame.
 def attack_mage(view):
-    """The mage's attack, a spell cast: a placeholder, the typing loop."""
-    return typing_loop(view)
+    """The mage's attack: the staff held, raised as the spell gathers,
+    thrust as it flashes and looses its bolt, and its afterglow."""
+    return [casting(view, c) for c in CAST[view]]
 
 
 def attack_knight(view):
-    """The knight's attack, a sword swing: a placeholder, the typing loop."""
-    return typing_loop(view)
+    """The knight's attack: guard, the blade raised, the cut and its slash,
+    the blow landing in sparks."""
+    swings = STRIKE_FRONT if view == "front" else STRIKE_BACK
+    return [striking(view, sw) for sw in swings]
 
 
 def attack_ranger(view):
-    """The ranger's attack, a loosed arrow: a placeholder, the typing loop."""
-    return typing_loop(view)
+    """The ranger's attack: the bow held, drawn, loosed with the arrow
+    flying at the foe, and the hand reaching back for the next."""
+    return [shooting(view, shot) for shot in SHOT[view]]
 
 
 def attack_berserker(view):
-    """The berserker's attack, an axe blow: a placeholder, the typing loop."""
-    return typing_loop(view)
+    """The berserker's attack: the axe held across, heaved overhead, chopped
+    down with its slash, and the blow landing in sparks."""
+    return [chopping(view, c) for c in CHOP[view]]
 
 
 ATTACKS = {
@@ -7520,11 +7880,11 @@ CAMP = {
 DUNGEON = "dungeon_"
 # Rough stone, a monster's hide, a spider's chitin, bone and a torch's flame:
 # one base each in [palette], the rest their [ramps].
-STONE, STONE_LT, STONE_HI, STONE_SH, STONE_DK = "ɢ", "ɣ", "ɦ", "ɧ", "ɨ"
+ROCK, ROCK_LT, ROCK_HI, ROCK_SH, ROCK_DK = "ɢ", "ɣ", "ɦ", "ɧ", "ɨ"
 HIDE, HIDE_LT, HIDE_SH, HIDE_DK = "ɐ", "ɑ", "ɒ", "ɓ"
 CHITIN, CHITIN_LT, CHITIN_HI, CHITIN_SH = "ɔ", "ɕ", "ɖ", "ɗ"
 BONE, BONE_SH, BONE_DK = "ɘ", "ə", "ɚ"
-FLAME, FLAME_TIP = "ɛ", "ɜ"
+TORCH_FLAME, TORCH_TIP = "ɛ", "ɜ"
 
 
 def boulder(g, cx, cy, rx, ry, seed):
@@ -7541,13 +7901,13 @@ def boulder(g, cx, cy, rx, ry, seed):
             if nx * nx + ny * ny <= edge * edge:
                 lit = -(0.62 * nx + 0.78 * ny)
                 g[y][x] = (
-                    STONE_HI
+                    ROCK_HI
                     if lit > 0.62
-                    else STONE_LT
+                    else ROCK_LT
                     if lit > 0.25
-                    else STONE
+                    else ROCK
                     if lit > -0.4
-                    else STONE_SH
+                    else ROCK_SH
                 )
                 rock.add((x, y))
     sx = int(cx + rx * 0.4 * (rng.random() - 0.5))
@@ -7555,7 +7915,7 @@ def boulder(g, cx, cy, rx, ry, seed):
     for i in range(4):
         x, y = sx + i // 2, sy + i
         if (x, y) in rock:
-            g[y][x] = STONE_DK
+            g[y][x] = ROCK_DK
     return rock
 
 
@@ -7583,7 +7943,7 @@ def torch(g, x, top, foot):
                     g,
                     x - 1 + fx,
                     top - len(flame) + fy,
-                    FLAME_TIP if k == VERMILION else k,
+                    TORCH_TIP if k == VERMILION else k,
                 )
 
 
@@ -7598,8 +7958,8 @@ def bones(g, x, y, flip=False):
     sx = x + 9 * d
     rect(g, sx - 2, y - 2, sx + 2, y + 2, BONE)
     rect(g, sx - 1, y + 2, sx + 1, y + 3, BONE_SH)
-    put(g, sx - 1, y - 1, STONE_DK)
-    put(g, sx + 1 - (d < 0), y - 1, STONE_DK)
+    put(g, sx - 1, y - 1, ROCK_DK)
+    put(g, sx + 1 - (d < 0), y - 1, ROCK_DK)
 
 
 def spider_leg(g, hip, knee, foot):
@@ -7844,14 +8204,14 @@ def stair_arch():
     frames = []
     for gap in DOOR_GAPS:
         g = canvas(w, h)
-        rect(g, 1, 1, w - 1, h - 1, STONE)
+        rect(g, 1, 1, w - 1, h - 1, ROCK)
         for y in range(1, h - 1, 6):  # the coursed blocks
-            rect(g, 1, y, w - 1, y + 1, STONE_SH)
+            rect(g, 1, y, w - 1, y + 1, ROCK_SH)
             off = 4 if (y // 6) % 2 else 10
             for x in range(off, w - 1, 12):
-                rect(g, x, y, x + 1, y + 6, STONE_SH)
-        rect(g, 1, 1, w - 1, 2, STONE_LT)
-        rect(g, 1, 1, 2, h - 1, STONE_LT)
+                rect(g, x, y, x + 1, y + 6, ROCK_SH)
+        rect(g, 1, 1, w - 1, 2, ROCK_LT)
+        rect(g, 1, 1, 2, h - 1, ROCK_LT)
         x0, x1, top, foot = 10, w - 10, 14, h - 2
         mid = (x0 + x1) / 2
         for y in range(top - 10, foot):  # the arch's opening
@@ -7868,11 +8228,11 @@ def stair_arch():
             y = foot - (i + 1) * step_h
             inset = i * 2
             tread, riser = (
-                (STONE_HI, STONE_SH),
-                (STONE_LT, STONE_DK),
-                (STONE, STONE_DK),
-                (STONE_SH, SHADOW),
-                (STONE_DK, SHADOW),
+                (ROCK_HI, ROCK_SH),
+                (ROCK_LT, ROCK_DK),
+                (ROCK, ROCK_DK),
+                (ROCK_SH, SHADOW),
+                (ROCK_DK, SHADOW),
             )[i]
             rect(g, x0 + inset, y, x1 - inset, y + 3, tread)
             rect(g, x0 + inset, y + 3, x1 - inset, y + step_h, riser)
@@ -7881,9 +8241,9 @@ def stair_arch():
                 a = math.pi * (0.5 + side * t / 16)
                 vx = mid + math.cos(a) * ((x1 - x0) / 2 + 2)
                 vy = top - math.sin(a) * 12
-                put(g, int(vx), int(vy), STONE_HI)
-        rect(g, x0 - 2, top, x0, foot, STONE_LT)
-        rect(g, x1, top, x1 + 2, foot, STONE_SH)
+                put(g, int(vx), int(vy), ROCK_HI)
+        rect(g, x0 - 2, top, x0, foot, ROCK_LT)
+        rect(g, x1, top, x1 + 2, foot, ROCK_SH)
         raised = gap * (foot - top + 10) // DOOR_GAPS[-1]
         bottom = foot - raised
 
@@ -7896,7 +8256,7 @@ def stair_arch():
             for x in range(x0, x1):
                 if y >= top or g[y][x] == SHADOW:  # inside the arch
                     g[y][x] = IRON if g[y][x] == IRON_SH else IRON_SH
-        rect(g, 1, foot, w - 1, foot + 1, STONE_LT)  # the threshold
+        rect(g, 1, foot, w - 1, foot + 1, ROCK_LT)  # the threshold
         for tx in (4, w - 7):  # a torch either side, lighting the way down
             torch(g, tx, 22, 30)
         union_outline(g)
@@ -7904,120 +8264,9 @@ def stair_arch():
     return frames
 
 
-# ---- the strike: the shared attack the seated typing loop becomes --------------
-# Every class swings one sword. Per frame, on the pose grid: the sword hand's
-# top-left, the blade's tip, the slash trailing the cut (empty for none) and
-# where the blow lands in sparks (None for none). Frame 0 is the guard a
-# resting beat shows (`typing_frame`). A seat facing the viewer shows only
-# what rises over its lair, so its cut and its hit are drawn high.
-class Swing(NamedTuple):
-    hand: tuple
-    tip: tuple
-    slash: tuple
-    sparks: tuple | None
-    title: str
-
-
-STRIKE_FRONT = [
-    Swing((24, 25), (27, 3), (), None, "on guard, the blade upright beside the head"),
-    Swing((25, 9), (3, 2), (), None, "the blade raised back over the head"),
-    Swing(
-        (17, 27),
-        (14, 43),
-        ((28, 1), (30, 12), (28, 23), (20, 30)),
-        None,
-        "the cut, down at the foe, a slash trailing it",
-    ),
-    Swing((20, 27), (16, 43), (), (13, 31), "the blow landing in sparks"),
-]
-STRIKE_BACK = [
-    Swing((24, 28), (27, 5), (), None, "on guard, the blade upright beside the head"),
-    Swing((24, 9), (29, 27), (), None, "the blade cocked back over the shoulder"),
-    Swing(
-        (24, 18),
-        (19, 6),
-        ((30, 4), (24, 0), (12, 0), (3, 5)),
-        None,
-        "the cut, over the head at the foe, a slash trailing it",
-    ),
-    Swing((24, 20), (18, 8), (), (8, 2), "the blow landing in sparks beyond the head"),
-]
-
-
-def sword(g, hand, tip, dy):
-    """The sword in the fist at `hand`: an iron blade lit along one edge from
-    its crossguard to `tip`, the guard across it and a leather grip in the
-    fist."""
-    hx, hy = hand[0] + S / 2, hand[1] + S / 2 + dy
-    tx, ty = tip[0] + 0.5, tip[1] + 0.5 + dy
-    length = math.hypot(tx - hx, ty - hy)
-    ux, uy = (tx - hx) / length, (ty - hy) / length
-    gx, gy = hx + ux * 3, hy + uy * 3
-    stem(g, [(gx, gy), (tx, ty)], 1.0, IRON)
-    stem(g, [(gx + uy * 0.8, gy - ux * 0.8), (tx, ty)], 0.4, IRON_LT)
-    stem(g, [(gx - uy * 3, gy + ux * 3), (gx + uy * 3, gy - ux * 3)], 0.7, IRON_SH)
-    stem(g, [(hx - ux, hy - uy), (gx, gy)], 0.7, LEATHER)
-
-
-def slash(g, pts, dy):
-    """The cut's trail: a pale arc through `pts`, brightest at its head."""
-    shifted = [(x + 0.5, y + 0.5 + dy) for x, y in pts]
-    stem(g, shifted, 0.5, IRON_HI)
-    stem(g, shifted[-2:], 0.6, WHITE)
-
-
-def sparks(g, x, y, dy):
-    """A blow's sparks bursting from (x, y): a white heart, gold rays."""
-    rect(g, x, y + dy, x + 2, y + 2 + dy, WHITE)
-    for ax, ay in (
-        (-2, -2),
-        (3, -2),
-        (-2, 3),
-        (3, 3),
-        (0, -3),
-        (0, 4),
-        (-3, 0),
-        (4, 1),
-    ):
-        put(g, x + ax, y + ay + dy, GOLD)
-
-
-def mail_arm(g, shoulder, hand, dy):
-    """A mailed sleeve from `shoulder` to the fist at `hand`, its rings the
-    pose grid's checker as `mail` lays them, in the shade an arm turned from
-    the light takes."""
-    sleeve = canvas(len(g[0]), len(g))
-    stem(sleeve, [shoulder, (hand[0] + 2, hand[1] + 2)], 1.6, IRON)
-    for y, row in enumerate(sleeve):
-        for x, k in enumerate(row):
-            if k != T:
-                mail(g, x, y - dy, x + 1, y - dy + 1, dy, shade=True)
-
-
-def striking(view, swing):
-    """A seated swordsman's frame: the body at rest, its off hand on its
-    knee, and the sword arm's mail from the shoulder to the fist at
-    `swing.hand`; the sword in the fist, the slash and the sparks over all."""
-
-    def draw(g, dy):
-        tabard(g, dy, SEAT_Y, back=view == "back", sleeves=False)
-        mail(g, 5, SHOULDER_Y + 2, TABARD_X0, CUFF_Y, dy)
-        mitt(g, 4, SEAT_Y + dy)
-        hx, hy = swing.hand
-        mail_arm(g, (25.5, SHOULDER_Y + 3.5 + dy), (hx, hy + dy), dy)
-        sword(g, swing.hand, swing.tip, dy)
-        mitt(g, hx, hy + dy)
-        if swing.slash:
-            slash(g, swing.slash, dy)
-        if swing.sparks:
-            sparks(g, *swing.sparks, dy)
-
-    return draw
-
-
 # ---- the dungeon's furnishings, on the office fixtures' canvases ------------------
-def barrel():
-    """A barrel where the office's filing cabinet stood: wooden staves bellied
+def cask():
+    """A cask where the office's filing cabinet stood: wooden staves bellied
     between iron hoops, its lid catching the light."""
     w, h = 4 * S, 6 * S
     g = canvas(w, h)
@@ -8064,14 +8313,14 @@ def stalagmite():
                     g,
                     x,
                     y,
-                    STONE_LT
+                    ROCK_LT
                     if x < cx - reach / 3
-                    else STONE
+                    else ROCK
                     if x < cx + reach / 3
-                    else STONE_SH,
+                    else ROCK_SH,
                 )
         for y in range(top + 4, 36, 6):
-            put(g, int(cx), y, STONE_DK)
+            put(g, int(cx), y, ROCK_DK)
     boulder(g, 12.0, 37.0, 11.0, 3.0, 32)
     union_outline(g)
     return g
@@ -8083,8 +8332,8 @@ def skull(g, x, y):
     rect(g, x + 1, y, x + 6, y + 1, BONE)
     rect(g, x, y + 1, x + 7, y + 5, BONE)
     rect(g, x + 1, y + 5, x + 6, y + 7, BONE_SH)
-    rect(g, x + 1, y + 2, x + 3, y + 4, STONE_DK)
-    rect(g, x + 4, y + 2, x + 6, y + 4, STONE_DK)
+    rect(g, x + 1, y + 2, x + 3, y + 4, ROCK_DK)
+    rect(g, x + 4, y + 2, x + 6, y + 4, ROCK_DK)
     put(g, x + 3, y + 4, BONE_DK)
     for tx in (x + 2, x + 4):
         put(g, tx, y + 6, BONE_DK)
@@ -8129,21 +8378,21 @@ def wall_torch():
     rect(g, 9, 5, 11, 9, WOOD_SH)
     rect(g, 9, 5, 10, 9, WOOD)
     for fx, fy, k in (
-        (9, 0, FLAME_TIP),
-        (8, 1, FLAME),
-        (9, 1, FLAME),
-        (10, 1, FLAME_TIP),
-        (8, 2, FLAME),
+        (9, 0, TORCH_TIP),
+        (8, 1, TORCH_FLAME),
+        (9, 1, TORCH_FLAME),
+        (10, 1, TORCH_TIP),
+        (8, 2, TORCH_FLAME),
         (9, 2, BULB),
-        (10, 2, FLAME),
-        (11, 2, FLAME),
-        (8, 3, FLAME),
+        (10, 2, TORCH_FLAME),
+        (11, 2, TORCH_FLAME),
+        (8, 3, TORCH_FLAME),
         (9, 3, BULB),
         (10, 3, BULB),
-        (11, 3, FLAME),
-        (8, 4, FLAME),
+        (11, 3, TORCH_FLAME),
+        (8, 4, TORCH_FLAME),
         (9, 4, BULB),
-        (10, 4, FLAME),
+        (10, 4, TORCH_FLAME),
     ):
         put(g, fx, fy, k)
     union_outline(g)
@@ -8194,14 +8443,14 @@ def brazier():
                     k = (
                         BULB
                         if i < height // 2
-                        else FLAME
+                        else TORCH_FLAME
                         if i < height - 1
-                        else FLAME_TIP
+                        else TORCH_TIP
                     )
                     rect(g, cx - half, 11 - i, cx + half + 1, 12 - i, k)
                     if half and i < height // 2:
-                        put(g, cx - half, 11 - i, FLAME)
-                        put(g, cx + half, 11 - i, FLAME)
+                        put(g, cx - half, 11 - i, TORCH_FLAME)
+                        put(g, cx + half, 11 - i, TORCH_FLAME)
         union_outline(g)
         frames.append(g)
     return frames
@@ -8291,8 +8540,8 @@ def weapon_rack():
     return g
 
 
-def parchment(g, x0, y0, x1, y1):
-    """A sheet of parchment, its west edge lit and its foot curling."""
+def poster_sheet(g, x0, y0, x1, y1):
+    """A sheet of poster_sheet, its west edge lit and its foot curling."""
     rect(g, x0, y0, x1, y1, TAN)
     rect(g, x0, y0, x0 + 1, y1, OFFWHITE)
     rect(g, x0, y1 - 1, x1, y1, BROWN)
@@ -8307,7 +8556,7 @@ def map_board():
         rect(g, x, 30, x + 2, h, WOOD_SH)
     rect(g, 2, 2, w - 2, 32, WOOD)
     rect(g, 2, 2, w - 2, 3, WOOD_LT)
-    parchment(g, 5, 5, w - 5, 30)
+    poster_sheet(g, 5, 5, w - 5, 30)
     coast = [(8, 20), (14, 14), (22, 16), (30, 9), (40, 12), (48, 8)]
     stem(g, coast, 0.4, BROWN)
     stem(g, [(26, 15), (28, 22), (24, 27)], 0.4, BLUE)
@@ -8321,9 +8570,9 @@ def map_board():
 
 
 def wanted(g, x0, y0, w, h):
-    """A wanted poster: a parchment with a crude face drawn on it and lines of
+    """A wanted poster: a poster_sheet with a crude face drawn on it and lines of
     script under."""
-    parchment(g, x0, y0, x0 + w, y0 + h)
+    poster_sheet(g, x0, y0, x0 + w, y0 + h)
     cx = x0 + w // 2
     ellipse(g, cx + 0.5, y0 + 5.0, 2.6, 3.0, BROWN)
     ellipse(g, cx + 0.5, y0 + 5.0, 1.6, 2.0, TAN)
@@ -8381,7 +8630,7 @@ def sounding(view):
         mail(g, 5, SHOULDER_Y + 2, TABARD_X0, CUFF_Y, dy)
         mitt(g, 4, SEAT_Y + dy)
         hand = (20, 22) if view == "front" else (24, 16)
-        mail_arm(g, (25.5, SHOULDER_Y + 3.5 + dy), (hand[0], hand[1] + dy), dy)
+        mail_arm(g, EAST_SHOULDER, (hand[0], hand[1] + dy), dy)
         if view == "front":
             horn(g, [(16, 23), (22, 24), (26, 20), (27, 13), (26, 6)], dy)
         else:
@@ -8420,19 +8669,6 @@ def stair_icon(up):
     return [list(r) for r in rows]
 
 
-POSES |= {
-    f"{DUNGEON}{name}_{i}": (
-        TYPING_ROWS,
-        view,
-        striking(view, swing),
-        f"{title}, striking, frame {i}: {swing.title}.",
-    )
-    for name, view, title, swings in (
-        ("typing", "front", "Front view", STRIKE_FRONT),
-        ("typing_back", "back", "Back view", STRIKE_BACK),
-    )
-    for i, swing in enumerate(swings)
-}
 # The dungeon's stand-ins, each drawn on the canvas of the piece it replaces.
 DUNGEON_PIECES = {
     "desk": lair_south,
@@ -8442,7 +8678,7 @@ DUNGEON_PIECES = {
     "token_tower": loot_pile,
     "token_sheet": falling_coin,
     "door": stair_arch,
-    "filing_cabinet": barrel,
+    "filing_cabinet": cask,
     "plant": mushrooms,
     "plant_tall": stalagmite,
     "plant_flower": bone_pile,
