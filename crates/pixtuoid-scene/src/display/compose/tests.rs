@@ -1856,3 +1856,36 @@ fn an_art_range_covers_the_units_its_pixels_lie_in() {
     let empty = units_box([9..9, 6..6], pen);
     assert_eq!((empty.width, empty.height), (0, 0), "{empty:?}");
 }
+
+/// A pack whose wall shows no windows (`[walls] windows = false`, a
+/// dungeon's) composes no window and lays no post between them: its wall band
+/// is solid wall, where the office's shows its sky.
+#[test]
+fn a_wall_without_windows_composes_neither_windows_nor_posts() {
+    let layout =
+        SceneLayout::compute(crate::layout::Viewport::full(160, 96), None, 0).expect("lays out");
+    let frame = empty_frame(&layout);
+    let shown = |pack: &OfficeArt| {
+        let list = list_at(
+            &frame,
+            Office {
+                layout: &layout,
+                pack,
+                theme: &crate::theme::NORMAL,
+                scale: RenderScale::ONE,
+            },
+            12,
+        );
+        let windows = (list.pieces().iter())
+            .filter(|p| matches!(p.kind, PieceKind::Window { .. }))
+            .count();
+        (windows, list.backdrop().posts.len())
+    };
+    let (windows, posts) = shown(&test_office());
+    assert!(
+        windows > 0 && posts > 0,
+        "premise: the office shows its sky"
+    );
+    let solid = crate::pack::test_office_with("[walls]\nwindows = false\n", &[]);
+    assert_eq!(shown(&solid), (0, 0));
+}

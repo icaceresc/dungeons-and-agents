@@ -157,7 +157,7 @@ impl<'a> PaintCtx<'a> {
             layout,
             pack,
             timing,
-            sky: crate::sky::Sky::at(timing, world.conditions.weather),
+            sky: crate::sky::Sky::at_hour(timing, world.conditions.weather, world.conditions.hour),
             window_sky: None,
             buf,
             cache: &mut caches.sprites,
@@ -212,18 +212,21 @@ pub(crate) fn paint_frame(ctx: &mut PaintCtx<'_>, frame: &SimFrame) -> Drawn {
     );
     let top_wall_h = ctx.layout.wall_band_h();
     let wall = crate::outside::Wall::of(ctx.layout);
-    paint_ground_and_walls(ctx.base_fill, ctx.buf, &wall, &moment, ctx.theme);
-    let window_moment = ctx
-        .window_sky
-        .map(|sky| Moment::resolve(sky, ctx.theme, frame.floor_place.altitude(), ctx.timing));
-    paint_windows(
-        ctx.buf,
-        wall,
-        window_moment.as_ref().unwrap_or(&moment),
-        ctx.pack,
-        ctx.theme,
-        ctx.outside,
-    );
+    let windows = ctx.pack.windows();
+    paint_ground_and_walls(ctx.base_fill, ctx.buf, (&wall, windows), &moment, ctx.theme);
+    if windows {
+        let window_moment = ctx
+            .window_sky
+            .map(|sky| Moment::resolve(sky, ctx.theme, frame.floor_place.altitude(), ctx.timing));
+        paint_windows(
+            ctx.buf,
+            wall,
+            window_moment.as_ref().unwrap_or(&moment),
+            ctx.pack,
+            ctx.theme,
+            ctx.outside,
+        );
+    }
     for spill in &lights.spills {
         paint_light(ctx.buf, spill, ctx.theme.lighting.sun_spill);
     }

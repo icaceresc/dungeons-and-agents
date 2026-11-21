@@ -7,6 +7,7 @@ pub(crate) static DRACULA: Theme = Theme {
     name: "dracula",
     display_name: "Dracula",
     kind: ThemeKind::Dark,
+    camp: None,
     surface: SurfaceColors {
         wall: Rgb {
             r: 40,

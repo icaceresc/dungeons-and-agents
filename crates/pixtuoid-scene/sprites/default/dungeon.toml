@@ -1,0 +1,9 @@
+# A dungeon: every campaign floor below the camp (`FloorRole::Dungeon`).
+# build.rs lays this over pack.toml as it lays camp.toml. Its sprites are
+# `dungeon_*.sprite` beside the office's.
+
+[walls]
+windows = false
+
+[animations."desk_chair@4x"]
+frames = ["dungeon_desk_chair@4x.sprite"]

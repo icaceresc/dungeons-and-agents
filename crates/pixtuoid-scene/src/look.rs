@@ -335,45 +335,78 @@ pub struct FrameNote {
     pub strike: bool,
 }
 
-/// The office's raster state, shared by every floor and both looks: the
-/// cutaway's art, and the outside's clouds and last views.
+/// The office's raster state, shared by every floor and both looks: for each
+/// pack and theme a floor was last drawn in, the cutaway's art and the
+/// outside's clouds and last views.
 #[derive(Debug, Default)]
 pub struct OfficeRaster {
-    pub(crate) cutaway: crate::cutaway::paint::CutawayCache,
-    pub(crate) outside: crate::outside::OutsideCache,
+    /// The latest first, at most [`Self::SERVED`].
+    servings: Vec<Serving>,
+    /// Whether the next serving drawn warms its clouds ([`Self::warm`]).
+    warming: bool,
+}
+
+/// The caches of one pack drawn in one theme.
+#[derive(Debug)]
+pub(crate) struct Serving {
     /// The pack and the theme every cache holds art of, by identity: the
     /// `Arc` keeps the pack's address its own while it is held.
-    serving: Option<(Arc<OfficeArt>, &'static Theme)>,
+    pack: Arc<OfficeArt>,
+    theme: &'static Theme,
+    pub(crate) cutaway: crate::cutaway::paint::CutawayCache,
+    pub(crate) outside: crate::outside::OutsideCache,
 }
 
 impl OfficeRaster {
+    /// How many servings it keeps: the two floors a slide draws each frame,
+    /// a campaign's camp and dungeon in their own packs and themes, so
+    /// neither empties the other's.
+    const SERVED: usize = 2;
+
     /// Have the next frame draw every cloud mass the coming second needs,
     /// not a few a frame: the boot frame, which no frame before it drew
     /// ahead for.
     #[doc(hidden)]
     pub fn warm(&mut self) {
-        self.outside.clouds.warm();
+        self.warming = true;
     }
 
     /// Drop the art of agents no longer in `scene`.
     pub(crate) fn evict_missing(&mut self, scene: &pixtuoid_core::SceneState) {
-        self.cutaway.evict_missing(scene);
+        for serving in &mut self.servings {
+            serving.cutaway.evict_missing(scene);
+        }
     }
 
-    /// Draw `pack` in `theme` from now on: every cache holds one pack's art
-    /// in one theme's colours, so a frame of another empties them first.
-    fn serve(&mut self, pack: &Arc<OfficeArt>, theme: &'static Theme) {
-        match &self.serving {
-            Some((p, t)) if Arc::ptr_eq(p, pack) && std::ptr::eq(*t, theme) => {}
-            Some(_) => {
-                *self = Self {
-                    serving: Some((Arc::clone(pack), theme)),
-                    ..Self::default()
-                }
-            }
-            // A warm before the first frame is for this one.
-            None => self.serving = Some((Arc::clone(pack), theme)),
+    /// The caches holding `pack`'s art in `theme`, the latest drawn: a frame
+    /// of another pack or theme takes the place of the one drawn longest ago.
+    fn serve(&mut self, pack: &Arc<OfficeArt>, theme: &'static Theme) -> &mut Serving {
+        let at = self
+            .servings
+            .iter()
+            .position(|s| Arc::ptr_eq(&s.pack, pack) && std::ptr::eq(s.theme, theme));
+        let serving = match at {
+            Some(at) => self.servings.remove(at),
+            None => Serving {
+                pack: Arc::clone(pack),
+                theme,
+                cutaway: crate::cutaway::paint::CutawayCache::default(),
+                outside: crate::outside::OutsideCache::default(),
+            },
+        };
+        self.servings.insert(0, serving);
+        self.servings.truncate(Self::SERVED);
+        let serving = &mut self.servings[0];
+        if std::mem::take(&mut self.warming) {
+            serving.outside.clouds.warm();
         }
+        serving
+    }
+
+    /// The serving drawn last, for a test reading its caches.
+    #[cfg(test)]
+    pub(crate) fn latest(&self) -> Option<&Serving> {
+        self.servings.first()
     }
 }
 
@@ -724,7 +757,7 @@ pub fn render(
         dim,
     } = inputs;
     let size = viewport.size;
-    office.raster.serve(&floor.raster.pack, theme);
+    let served = office.raster.serve(&floor.raster.pack, theme);
     let stepped = tracing::trace_span!(spans::COMPOSE)
         .in_scope(|| step_floor(floor, office.coffee, office.chitchat, world, viewport));
     let PerFloor { ctx, raster } = floor;
@@ -763,9 +796,10 @@ pub fn render(
     let _rasterize = tracing::trace_span!(spans::RASTERIZE).entered();
     let board =
         crate::neon_sign::wall_board(world.scene, gateway, world.conditions.motion, world.now);
-    let sky = crate::sky::Sky::at(
+    let sky = crate::sky::Sky::at_hour(
         world.conditions.motion.timing(world.now),
         world.conditions.weather,
+        world.conditions.hour,
     );
     raster.note = Some(FrameNote {
         repaint: None,
@@ -786,7 +820,7 @@ pub fn render(
                 (world, &pack),
                 &stepped.layout,
                 theme,
-                (&mut classic.caches, &mut office.raster.outside),
+                (&mut classic.caches, &mut served.outside),
                 &mut classic.buf,
                 &ctx.walks,
                 (debug_walkable, text),
@@ -849,7 +883,7 @@ pub fn render(
                     dim,
                     text,
                 },
-                (&mut office.raster.cutaway, &mut office.raster.outside),
+                (&mut served.cutaway, &mut served.outside),
             );
             if let Some(note) = &mut raster.note {
                 note.repaint = repaint.or(switched.then(|| crate::cutaway::canvas::Repaint {

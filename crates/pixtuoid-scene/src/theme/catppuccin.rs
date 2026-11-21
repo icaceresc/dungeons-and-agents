@@ -8,6 +8,7 @@ pub(crate) static CATPPUCCIN: Theme = Theme {
     name: "catppuccin",
     display_name: "Catppuccin",
     kind: ThemeKind::Dark,
+    camp: None,
     surface: SurfaceColors {
         wall: Rgb {
             r: 30,

@@ -29,10 +29,10 @@ pub struct OfficeRenderer {
 }
 
 impl OfficeRenderer {
-    /// A renderer drawing with `pack`.
-    pub fn new(pack: std::sync::Arc<pixtuoid_scene::pack::OfficeArt>) -> Self {
+    /// A renderer drawing `building`.
+    pub fn new(building: impl Into<pixtuoid_scene::floor::Building>) -> Self {
         Self {
-            session: OfficeSession::new(pack),
+            session: OfficeSession::new(building),
             pets: Vec::new(),
             pointer: Pointer::default(),
             audio: crate::audio::AudioHandle::disabled(),
@@ -57,7 +57,7 @@ impl OfficeRenderer {
     }
 
     /// Which floor shows, and the slide under way.
-    pub(crate) fn nav(&self) -> &pixtuoid_scene::floor::FloorNav {
+    pub fn nav(&self) -> &pixtuoid_scene::floor::FloorNav {
         self.session.nav()
     }
 
@@ -66,7 +66,8 @@ impl OfficeRenderer {
         self.session.n_floors()
     }
 
-    pub(crate) fn navigate(&mut self, target: usize, now: std::time::SystemTime) {
+    /// [`OfficeSession::navigate`].
+    pub fn navigate(&mut self, target: usize, now: std::time::SystemTime) {
         self.session.navigate(target, now);
     }
 

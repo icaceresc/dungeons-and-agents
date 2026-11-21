@@ -27,7 +27,7 @@ use crate::walk::WalkState;
 
 mod office;
 use office::FloorView;
-pub use office::{Feed, FloorNav, OfficeSession, REST_TICK};
+pub use office::{Building, Feed, FloorNav, OfficeSession, REST_TICK};
 
 pub use pixtuoid_core::state::MAX_FLOORS;
 
@@ -78,6 +78,8 @@ pub(crate) fn floor_capacity_scaled(
 pub struct Conditions {
     /// Which weather its windows show, and its rain sounds.
     pub weather: crate::sky::WeatherPolicy,
+    /// Which hour its sky shows, and its room's light and music with it.
+    pub hour: crate::sky::SkyHour,
     /// How its loops and walks move: [`Motion`](crate::anim::Motion).
     pub motion: crate::anim::Motion,
     /// Whether its host has lost the feed that fills it, which dims it as an
@@ -97,6 +99,50 @@ impl Conditions {
     pub fn with_motion(self, motion: crate::anim::Motion) -> Self {
         Self { motion, ..self }
     }
+
+    /// These conditions showing `hour`.
+    #[must_use]
+    pub fn with_hour(self, hour: crate::sky::SkyHour) -> Self {
+        Self { hour, ..self }
+    }
+}
+
+/// What a floor of a campaign is: the ground floor the camp, every floor
+/// below it a dungeon. Each draws its own pack
+/// ([`load_bundled_role_packs`](crate::pack::load_bundled_role_packs)).
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    enum_map::Enum,
+    strum::VariantArray,
+    strum::IntoStaticStr,
+)]
+#[strum(serialize_all = "snake_case")]
+pub enum FloorRole {
+    /// Floor 0: where the party rests.
+    Camp,
+    /// Every other floor: where it fights.
+    Dungeon,
+}
+
+impl FloorRole {
+    /// The role of floor `index`.
+    pub fn of(index: usize) -> Self {
+        if index == 0 {
+            Self::Camp
+        } else {
+            Self::Dungeon
+        }
+    }
+
+    /// Its id: the stem of the manifest its pack lays over `pack.toml`.
+    pub fn name(self) -> &'static str {
+        self.into()
+    }
 }
 
 /// Where a floor stands in its building. Only [`project_floor_scene`] says,
@@ -105,13 +151,29 @@ impl Conditions {
 pub struct FloorPlace {
     index: usize,
     floors: usize,
+    /// Its role, in a campaign; `None` in an office.
+    role: Option<FloorRole>,
 }
 
 impl FloorPlace {
-    /// Floor `index` of `floors`, as a test that draws no projection names one.
+    /// Floor `index` of `floors` of an office, as a test that draws no
+    /// projection names one.
     #[cfg(test)]
     pub(crate) const fn at(index: usize, floors: usize) -> Self {
-        Self { index, floors }
+        Self {
+            index,
+            floors,
+            role: None,
+        }
+    }
+
+    /// This floor as a campaign's.
+    #[must_use]
+    pub(crate) fn in_campaign(self) -> Self {
+        Self {
+            role: Some(FloorRole::of(self.index)),
+            ..self
+        }
     }
 
     /// Its zero-based index.
@@ -122,6 +184,11 @@ impl FloorPlace {
     /// How many floors its building has.
     pub(crate) fn floors(self) -> usize {
         self.floors
+    }
+
+    /// Its role, in a campaign; `None` in an office.
+    pub(crate) fn role(self) -> Option<FloorRole> {
+        self.role
     }
 
     /// Its floor of its building's floors, `(floor, floors)` counted from 1,
@@ -495,7 +562,7 @@ impl AudioObserver {
         scene: &SceneState,
         occupied: Option<&std::collections::HashSet<usize>>,
         waypoint_kind: impl Fn(usize) -> Option<crate::layout::WaypointKind>,
-        (floor_idx, weather): (usize, crate::sky::WeatherPolicy),
+        (floor_idx, conditions): (usize, Conditions),
         now: SystemTime,
     ) -> AudioFrame {
         // Reprime on floor switch: a fresh tracker primes silently next observe,
@@ -508,7 +575,11 @@ impl AudioObserver {
         // You hear the floor you're LOOKING AT — but rain stays global, since
         // it's weather, not agent activity.
         let counts = crate::tally::per_floor_counts(scene)[floor_idx];
-        let sky = crate::sky::Sky::at(crate::anim::Motion::Full.timing(now), weather);
+        let sky = crate::sky::Sky::at_hour(
+            crate::anim::Motion::Full.timing(now),
+            conditions.weather,
+            conditions.hour,
+        );
         let rain = sky.rain();
         let floor_ids = floor_agents(scene, floor_idx).map(|slot| &slot.agent_id);
         let events = self.cues.observe(floor_ids, occupied, waypoint_kind);
@@ -1254,6 +1325,15 @@ impl FloorScene {
     pub(crate) fn with_floor_seed(self, floor_seed: u64) -> Self {
         Self { floor_seed, ..self }
     }
+
+    /// This projection as a campaign's floor.
+    #[must_use]
+    pub(crate) fn in_campaign(self) -> Self {
+        Self {
+            floor_place: self.floor_place.in_campaign(),
+            ..self
+        }
+    }
 }
 
 /// Build floor `floor_idx`'s [`FloorScene`]: the agents holding a desk on it,
@@ -1275,6 +1355,7 @@ pub fn project_floor_scene(scene: &SceneState, floor_idx: usize) -> FloorScene {
         floor_place: FloorPlace {
             index: floor_idx,
             floors: num_floors(scene).max(floor_idx + 1),
+            role: None,
         },
         floor_seed: floor_seed(floor_idx),
     }

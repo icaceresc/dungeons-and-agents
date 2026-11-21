@@ -1216,7 +1216,8 @@ fn audio_observer_frame_composes_stems_and_music_from_the_scene() {
     let occupied = std::collections::HashSet::new();
     let mut obs = AudioObserver::default();
     let storm = crate::sky::WeatherPolicy::Forced(crate::sky::Weather::Storm);
-    let frame = obs.frame(&scene, Some(&occupied), |_| None, (0, storm), now);
+    let conditions = Conditions::default().with_weather(storm);
+    let frame = obs.frame(&scene, Some(&occupied), |_| None, (0, conditions), now);
     let sky = crate::sky::Sky::at(crate::anim::Motion::Full.timing(now), storm);
     let counts = crate::tally::per_floor_counts(&scene)[0];
     assert_eq!(
@@ -1259,7 +1260,7 @@ fn audio_observer_reprimes_on_floor_switch_so_the_new_floor_is_silent() {
         &scene,
         Some(&std::collections::HashSet::new()),
         printer,
-        (0, crate::sky::WeatherPolicy::default()),
+        (0, Conditions::default()),
         now,
     );
     assert_eq!(obs.primed_floor(), Some(0));
@@ -1271,7 +1272,7 @@ fn audio_observer_reprimes_on_floor_switch_so_the_new_floor_is_silent() {
         &scene,
         Some(&occ0),
         printer,
-        (1, crate::sky::WeatherPolicy::default()),
+        (1, Conditions::default()),
         now,
     );
     assert_eq!(obs.primed_floor(), Some(1));
@@ -1285,7 +1286,7 @@ fn audio_observer_reprimes_on_floor_switch_so_the_new_floor_is_silent() {
         &scene,
         Some(&occ01),
         printer,
-        (1, crate::sky::WeatherPolicy::default()),
+        (1, Conditions::default()),
         now,
     );
     assert!(
@@ -1306,7 +1307,9 @@ fn audio_observer_keeps_cue_edges_warm_so_delivery_resume_fires_no_volley() {
 
     let ground_clear = (
         0,
-        crate::sky::WeatherPolicy::Forced(crate::sky::Weather::Clear),
+        Conditions::default().with_weather(crate::sky::WeatherPolicy::Forced(
+            crate::sky::Weather::Clear,
+        )),
     );
     let _ = obs.frame(&empty, Some(&occ), |_| None, ground_clear, now);
     let arrival = obs.frame(&one, Some(&occ), |_| None, ground_clear, now);
@@ -4660,4 +4663,98 @@ fn who_sets_the_world_text_moves_nothing() {
         assert!(host == baked, "{:?}", look(scale, WorldText::Host));
         assert!(hidden == baked, "{:?}", look(scale, WorldText::Hidden));
     }
+}
+
+/// A campaign grows each floor in its role's pack, and its projections say
+/// which role they draw; an office draws every floor in its one pack and
+/// names no role.
+#[test]
+fn a_campaign_draws_each_floor_in_its_roles_pack() {
+    let packs = crate::pack::load_bundled_role_packs().expect("the role packs load");
+    let scene = make_scene(20, 16);
+    let mut campaign = OfficeSession::new(packs.clone());
+    campaign.prepare(&scene, SystemTime::UNIX_EPOCH);
+    assert_eq!(campaign.n_floors(), 2, "premise: a camp and a dungeon");
+    for floor in 0..campaign.n_floors() {
+        let role = FloorRole::of(floor);
+        let drawn = campaign.floor(floor).expect("grown").raster.pack();
+        assert!(std::ptr::eq(drawn, &**packs.of(role)), "floor {floor}");
+    }
+    assert_eq!(
+        campaign.footer_scene(&scene).floor_place().role(),
+        Some(FloorRole::Camp)
+    );
+    let office = OfficeSession::new(Arc::new(crate::pack::test_office()));
+    assert_eq!(office.footer_scene(&scene).floor_place().role(), None);
+}
+
+/// A campaign's camp is its camp pack drawn as an office would draw it in
+/// its theme's camp under the night: the session applies all three itself,
+/// whatever its host's hour.
+#[test]
+fn a_campaign_draws_its_camp_in_the_night_in_its_themes_camp() {
+    use crate::look::{Look, WorldText};
+    let packs = crate::pack::load_bundled_role_packs().expect("the role packs load");
+    let noon = crate::localclock::at_hour(12);
+    let scene = make_scene(3, 8);
+    let host = &crate::theme::DARK_FANTASY;
+    let camp = host.for_role(FloorRole::Camp);
+    let look = Look::Cutaway {
+        scale: crate::render_scale::RenderScale::new(4).expect("nonzero"),
+        text: WorldText::Hidden,
+    };
+    let drawn = |mut office: OfficeSession, theme, conditions| {
+        let _ = office.render(
+            look,
+            crate::look::RenderInputs {
+                world: FloorInputs {
+                    scene: &scene,
+                    now: noon,
+                    conditions,
+                    pets: PetInputs::default(),
+                },
+                theme,
+                viewport: PAINTED,
+                gateway: None,
+                debug_walkable: false,
+                dim: crate::look::Dim::NONE,
+            },
+            &[],
+            theme.surface.bg_fallback,
+        );
+        let picture = office.picture().expect("drawn");
+        picture.pixels().as_slice().to_vec()
+    };
+    let in_camp = || OfficeSession::new(Arc::clone(packs.of(FloorRole::Camp)));
+    let campaign = drawn(
+        OfficeSession::new(packs.clone()),
+        host,
+        Conditions::default(),
+    );
+    let night = Conditions::default().with_hour(crate::sky::SkyHour::Night);
+    assert!(campaign == drawn(in_camp(), camp, night));
+    assert!(
+        campaign != drawn(in_camp(), camp, Conditions::default()),
+        "premise: the camp at noon is not the camp at night"
+    );
+}
+
+/// A campaign is heard at night whatever the clock: its music plays the
+/// night's at noon, where an office's plays the day's.
+#[test]
+fn a_campaign_is_heard_at_night_at_noon() {
+    let noon = crate::localclock::at_hour(12);
+    let scene = make_scene(3, 8);
+    let daylight = |mut office: OfficeSession| {
+        office
+            .hear(&scene, Conditions::default(), noon)
+            .music
+            .daylight
+    };
+    let packs = crate::pack::load_bundled_role_packs().expect("the role packs load");
+    assert_eq!(
+        daylight(OfficeSession::new(Arc::new(crate::pack::test_office()))),
+        1.0
+    );
+    assert_eq!(daylight(OfficeSession::new(packs)), 0.0);
 }
