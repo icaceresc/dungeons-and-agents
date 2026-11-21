@@ -8,6 +8,7 @@ pub static NORMAL: Theme = Theme {
     display_name: "Coworking",
     kind: ThemeKind::Light,
     camp: None,
+    board: Board::Neon,
     surface: SurfaceColors {
         wall: Rgb {
             r: 56,

@@ -40,6 +40,8 @@ pub struct Theme {
     /// The theme a campaign's camp is drawn in, where it has its own: the
     /// same office under the open sky ([`Self::for_role`]).
     pub(crate) camp: Option<&'static Theme>,
+    /// How the wall board is built.
+    pub(crate) board: Board,
     /// Room-shell colors (walls, carpet, window frame).
     pub surface: SurfaceColors,
     /// Office-fixture colors (cubicles, runner, skyline, clock, shadow).
@@ -75,6 +77,18 @@ impl Theme {
     pub fn source_hue(&self, prefix: &str) -> Rgb {
         self.source.by_prefix(prefix).unwrap_or(self.ui.label_idle)
     }
+}
+
+/// How a theme builds the wall board: its information is the same in each.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Board {
+    /// A neon tube round a dark panel, its light thrown on the wall, its
+    /// brand in [`UiColors::neon_brand`].
+    Neon,
+    /// A board that lights nothing: its `face` in a `frame`, its brand in
+    /// `ink`, the frame turning toward [`UiColors::neon_alert`] while someone
+    /// waits on its user.
+    Plain { face: Rgb, frame: Rgb, ink: Rgb },
 }
 
 /// The room shell: perimeter walls, carpet, and window frame.

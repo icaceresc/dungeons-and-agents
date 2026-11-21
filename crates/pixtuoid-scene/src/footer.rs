@@ -388,19 +388,20 @@ pub fn build_footer(inputs: &FooterInputs<'_>, budget: u16) -> FooterModel {
         None => format!("{}", counts.total),
     };
 
-    // The cross-floor `▲F{n}` cue: any OTHER floor holding a requires-action agent.
+    // The cross-floor `▲F{n}` cue: any OTHER floor holding a requires-action
+    // agent, named as its floor indicator names it.
     let cross_floor = of_floors.and_then(|_| {
         (0..MAX_FLOORS)
             .find(|&fl| fl != inputs.place.index() && ctx.per_floor[fl].requires_action > 0)
-            .map(|fl| fl + 1)
+            .map(|fl| inputs.place.elsewhere(fl).name())
     });
-    let floor_suffix = match of_floors {
-        Some((floor, floors)) => {
+    let floor_suffix = match inputs.place.label() {
+        Some(label) => {
             let cross = match cross_floor {
-                Some(n) => format!(" {}F{n}", Icon::Alert.terminal()),
+                Some(name) => format!(" {}{name}", Icon::Alert.terminal()),
                 None => String::new(),
             };
-            format!(" F{floor}/{floors}{cross} [\u{2191}\u{2193}]")
+            format!(" {label}{cross} [\u{2191}\u{2193}]")
         }
         None => String::new(),
     };

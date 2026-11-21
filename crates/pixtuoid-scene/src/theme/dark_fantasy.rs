@@ -105,6 +105,24 @@ pub(crate) static DARK_FANTASY_CAMP: Theme = Theme {
         ..KEEP.furniture
     },
     camp: None,
+    // The camp's board is a wooden signboard, its words burnt in pale.
+    board: Board::Plain {
+        face: Rgb {
+            r: 96,
+            g: 68,
+            b: 42,
+        },
+        frame: Rgb {
+            r: 54,
+            g: 37,
+            b: 23,
+        },
+        ink: Rgb {
+            r: 236,
+            g: 214,
+            b: 166,
+        },
+    },
     ..KEEP
 };
 
@@ -114,6 +132,24 @@ const KEEP: Theme = Theme {
     display_name: "Dark Fantasy",
     kind: ThemeKind::Dark,
     camp: None,
+    // The keep's board is a stone plaque in an iron frame, its words carved.
+    board: Board::Plain {
+        face: Rgb {
+            r: 56,
+            g: 58,
+            b: 64,
+        },
+        frame: Rgb {
+            r: 104,
+            g: 108,
+            b: 116,
+        },
+        ink: Rgb {
+            r: 206,
+            g: 198,
+            b: 176,
+        },
+    },
     surface: SurfaceColors {
         wall: Rgb {
             r: 62,

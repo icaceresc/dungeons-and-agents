@@ -345,7 +345,7 @@ mod tests {
                 let board = build_board(
                     counts,
                     3_700,
-                    Some((2, 3)),
+                    Some("F2/3"),
                     None,
                     gateway,
                     Motion::Full,

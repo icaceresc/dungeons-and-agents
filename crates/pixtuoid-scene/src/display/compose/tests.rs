@@ -721,7 +721,7 @@ fn the_board_writes_inside_the_signs_interior() {
         let board = crate::neon_sign::build_board(
             counts,
             99 * 3_600,
-            Some((12, 12)),
+            Some("F12/12"),
             None,
             gateway,
             crate::anim::Motion::Full,

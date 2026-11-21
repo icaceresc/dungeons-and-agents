@@ -9,6 +9,7 @@ pub(crate) static GRUVBOX: Theme = Theme {
     display_name: "Gruvbox",
     kind: ThemeKind::Dark,
     camp: None,
+    board: Board::Neon,
     surface: SurfaceColors {
         wall: Rgb {
             r: 40,

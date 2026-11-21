@@ -445,7 +445,7 @@ fn lights(
             agents: &frame.agents,
             seated: &frame.seated_agents,
             indoor_scale: frame.indoor_scale,
-            neon: frame.neon,
+            neon: crate::floor::board_light(frame.neon, theme),
             beat: moment.timing.beat,
             bulbs: crate::lighting::DeskBulbs::of(pack),
             text,

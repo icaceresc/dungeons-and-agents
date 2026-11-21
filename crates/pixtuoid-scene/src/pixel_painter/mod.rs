@@ -204,7 +204,7 @@ pub(crate) fn paint_frame(ctx: &mut PaintCtx<'_>, frame: &SimFrame) -> Drawn {
             agents,
             seated: &frame.seated_agents,
             indoor_scale: frame.indoor_scale,
-            neon: frame.neon,
+            neon: crate::floor::board_light(frame.neon, ctx.theme),
             beat: ctx.timing.beat,
             bulbs: crate::lighting::DeskBulbs::of(ctx.pack),
             text: ctx.text,
