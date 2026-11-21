@@ -287,8 +287,12 @@ pub fn agent(office: &SceneState, id: AgentId, now: SystemTime) -> Option<Toolti
                 .unwrap_or((d.trim_end_matches(':'), ""));
             if !tool.is_empty() {
                 state.push(TipSpan::new(" \u{b7} ", TipTone::Plain));
-                // The hue comes from the TYPED kind, never a re-parse of the name.
-                state.push(TipSpan::new(tool, TipTone::Tool(*tool_kind)));
+                // The hue and the skill come from the TYPED kind, never a
+                // re-parse of the name alone.
+                state.push(TipSpan::new(
+                    crate::skill::label(tool, *tool_kind),
+                    TipTone::Tool(*tool_kind),
+                ));
             }
             if !rest.is_empty() {
                 detail = Some(detail_line(rest));

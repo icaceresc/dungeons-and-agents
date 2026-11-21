@@ -339,6 +339,7 @@ impl SkyView {
     /// `bay`'s window over `rows`, on a grid of `d` cells to the unit, its
     /// glass showing this sky under the golden hour's cast wherever `front`
     /// stands nothing before it. A cell `front` fills never resolves the sky.
+    #[cfg(test)]
     pub(crate) fn window(
         &self,
         bay: WindowBay,
@@ -346,13 +347,22 @@ impl SkyView {
         d: Density,
         front: impl Fn(crate::outside::Cell) -> Option<Rgb>,
     ) -> WindowView {
-        let pane = self.pane(
-            bay.x,
-            bay.w,
-            glass_rows(rows.end.saturating_sub(rows.start)),
-            d,
-        );
-        WindowView::new(bay, rows, d, |cell| {
+        self.window_in(bay, rows, d, front, true)
+    }
+
+    /// [`Self::window`] framed in its joinery or, unless `framed`, sky to its
+    /// edges.
+    pub(crate) fn window_in(
+        &self,
+        bay: WindowBay,
+        rows: std::ops::Range<u16>,
+        d: Density,
+        front: impl Fn(crate::outside::Cell) -> Option<Rgb>,
+        framed: bool,
+    ) -> WindowView {
+        let h = rows.end.saturating_sub(rows.start);
+        let pane = self.pane(bay.x, bay.w, if framed { glass_rows(h) } else { h }, d);
+        WindowView::new_in(bay, rows, d, framed, |cell| {
             front(cell).unwrap_or_else(|| {
                 let open = pane.colour(cell.at, cell.glass_offset.1);
                 self.blaze.map_or(open, |b| b.over(open))
@@ -615,6 +625,7 @@ mod tests {
             span: 0..160,
             band_h: 40,
             bays: Vec::new(),
+            open: false,
         };
         SkyView::of(&moment.outlook(theme), &wall, theme)
     }
@@ -653,6 +664,7 @@ mod tests {
                 },
                 bay,
             ],
+            open: false,
         };
         let bays = wall.bays_span();
         let share = (heart.0 - f32::from(bays.start)) / f32::from(bays.end - bays.start);

@@ -69,7 +69,10 @@ impl BoardTone {
     /// painters share, so a `theme.ui` role change lands in ONE place.
     pub fn rgb(self, theme: &Theme) -> Rgb {
         match self {
-            BoardTone::Brand => theme.ui.neon_brand,
+            BoardTone::Brand => match theme.board {
+                crate::theme::Board::Neon => theme.ui.neon_brand,
+                crate::theme::Board::Plain { ink, .. } => ink,
+            },
             BoardTone::Star => theme.ui.neon_star,
             BoardTone::Running => theme.ui.label_running,
             BoardTone::RequiresAction => theme.ui.label_requires_action,
@@ -455,8 +458,8 @@ fn board_mood_at(counts: StateCounts, now_ms: u64) -> Vec<BoardSegment> {
     }
 }
 
-/// Assemble the whole board model. `of_floors` is the drawn floor's `FloorPlace::of_floors`,
-/// `(floor, floors)` counted from 1, `None` drawing none; `headline` is the day's count in
+/// Assemble the whole board model. `floor` is the drawn floor's `FloorPlace::label`,
+/// `None` drawing none; `headline` is the day's count in
 /// words, which yields first when the row can't hold it; `gateway` is the
 /// [`gateway_rollup`](crate::tally::gateway_rollup), where `None` suppresses the
 /// chip; `now` on `motion`'s beat drives L2's flap. The context separators (`"  "`)
@@ -464,7 +467,7 @@ fn board_mood_at(counts: StateCounts, now_ms: u64) -> Vec<BoardSegment> {
 pub fn build_board(
     counts: StateCounts,
     uptime_secs: u64,
-    of_floors: Option<(usize, usize)>,
+    floor: Option<&str>,
     headline: Option<&str>,
     gateway: Option<DaemonState>,
     motion: crate::anim::Motion,
@@ -474,11 +477,8 @@ pub fn build_board(
         format!("up {}", compact_hms(uptime_secs)),
         BoardTone::Dim,
     )];
-    if let Some((floor, floors)) = of_floors {
-        context.push(BoardSegment::new(
-            format!("  F{floor}/{floors}"),
-            BoardTone::Dim,
-        ));
+    if let Some(floor) = floor {
+        context.push(BoardSegment::new(format!("  {floor}"), BoardTone::Dim));
     }
     let chip = gateway.map_or_else(Vec::new, |state| {
         let tone = gateway_tone(state);
@@ -520,7 +520,7 @@ pub(crate) fn wall_board(
     build_board(
         scene_stats(drawn),
         scene_uptime_secs(drawn, now),
-        place.of_floors(),
+        place.label().as_deref(),
         headline.as_deref(),
         gateway,
         motion,
@@ -1135,7 +1135,7 @@ mod tests {
         let b2 = build_board(
             c,
             30,
-            Some((2, 3)),
+            Some("F2/3"),
             None,
             Some(DaemonState::Running),
             Motion::Full,
@@ -1151,7 +1151,7 @@ mod tests {
         build_board(
             counts(1, 0, 0),
             30,
-            Some((2, 3)),
+            Some("F2/3"),
             Some(today),
             gateway,
             Motion::Full,

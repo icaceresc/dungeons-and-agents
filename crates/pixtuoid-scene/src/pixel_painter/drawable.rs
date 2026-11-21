@@ -416,7 +416,7 @@ pub(super) fn paint_drawable(kind: &DrawableKind<'_>, c: &mut DrawableCtx<'_>) {
         DrawableKind::RoomWall { piece, rows } => {
             crate::cutaway::wall::paint_wall(
                 buf,
-                crate::glass::WallTrim::of(theme),
+                crate::glass::WallTrim::of(theme).built_by(pack),
                 *piece,
                 rows.clone(),
                 crate::display::pen::Pen::UNIT,

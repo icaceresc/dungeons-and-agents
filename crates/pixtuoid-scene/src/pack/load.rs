@@ -55,11 +55,21 @@ struct WallsToml {
     /// Whether it shows windows, and the posts between them; a dungeon's is
     /// solid stone.
     windows: bool,
+    /// Whether it opens on the sky instead: one view across its whole run of
+    /// glass, with no frame or post; a camp's.
+    open: bool,
+    /// Whether the room walls are stone laid in courses, not glass; a
+    /// dungeon's.
+    stone: bool,
 }
 
 impl Default for WallsToml {
     fn default() -> Self {
-        Self { windows: true }
+        Self {
+            windows: true,
+            open: false,
+            stone: false,
+        }
     }
 }
 
@@ -291,6 +301,8 @@ fn build_pack(parsed: PackToml, get_src: &mut dyn FnMut(&str) -> Result<String>)
         character_outline,
         icons,
         windows: parsed.walls.windows,
+        open_air: parsed.walls.open,
+        stone_walls: parsed.walls.stone,
         densities: Vec::new(),
     };
     pack.count_densities();

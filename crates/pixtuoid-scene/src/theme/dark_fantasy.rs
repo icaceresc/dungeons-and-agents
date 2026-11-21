@@ -86,25 +86,43 @@ pub(crate) static DARK_FANTASY_CAMP: Theme = Theme {
         ..KEEP.lighting
     },
     furniture: FurnitureColors {
-        // The lounge's rug is a hide by the fire.
+        // Every mat the camp lays is woven straw on the earth.
         rug_field: Rgb {
-            r: 92,
-            g: 70,
-            b: 46,
+            r: 118,
+            g: 98,
+            b: 58,
         },
         rug_trim: Rgb {
-            r: 58,
-            g: 43,
-            b: 29,
+            r: 80,
+            g: 64,
+            b: 38,
         },
         rug_accent: Rgb {
-            r: 128,
-            g: 100,
-            b: 64,
+            r: 146,
+            g: 124,
+            b: 76,
         },
         ..KEEP.furniture
     },
     camp: None,
+    // The camp's board is a wooden signboard, its words burnt in pale.
+    board: Board::Plain {
+        face: Rgb {
+            r: 96,
+            g: 68,
+            b: 42,
+        },
+        frame: Rgb {
+            r: 54,
+            g: 37,
+            b: 23,
+        },
+        ink: Rgb {
+            r: 236,
+            g: 214,
+            b: 166,
+        },
+    },
     ..KEEP
 };
 
@@ -114,6 +132,24 @@ const KEEP: Theme = Theme {
     display_name: "Dark Fantasy",
     kind: ThemeKind::Dark,
     camp: None,
+    // The keep's board is a stone plaque in an iron frame, its words carved.
+    board: Board::Plain {
+        face: Rgb {
+            r: 56,
+            g: 58,
+            b: 64,
+        },
+        frame: Rgb {
+            r: 104,
+            g: 108,
+            b: 116,
+        },
+        ink: Rgb {
+            r: 206,
+            g: 198,
+            b: 176,
+        },
+    },
     surface: SurfaceColors {
         wall: Rgb {
             r: 62,
@@ -162,20 +198,21 @@ const KEEP: Theme = Theme {
             g: 31,
             b: 36,
         },
+        // The corridor's runner is a worn flagstone path.
         runner_base: Rgb {
-            r: 72,
-            g: 30,
-            b: 28,
+            r: 70,
+            g: 66,
+            b: 60,
         },
         runner_stripe: Rgb {
-            r: 118,
-            g: 92,
-            b: 48,
+            r: 84,
+            g: 79,
+            b: 70,
         },
         runner_edge: Rgb {
-            r: 40,
-            g: 18,
-            b: 18,
+            r: 44,
+            g: 42,
+            b: 40,
         },
         neon_panel_bg: Rgb {
             r: 26,
@@ -308,19 +345,20 @@ const KEEP: Theme = Theme {
             g: 30,
             b: 20,
         },
+        // Every mat is trodden dark earth.
         rug_field: Rgb {
-            r: 82,
-            g: 30,
-            b: 30,
+            r: 66,
+            g: 55,
+            b: 43,
         },
         rug_trim: Rgb {
-            r: 40,
-            g: 16,
-            b: 16,
+            r: 42,
+            g: 35,
+            b: 28,
         },
         rug_accent: Rgb {
-            r: 150,
-            g: 118,
+            r: 92,
+            g: 78,
             b: 58,
         },
         magazine: Rgb {

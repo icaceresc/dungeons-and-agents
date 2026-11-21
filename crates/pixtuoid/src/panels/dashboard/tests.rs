@@ -389,7 +389,11 @@ fn build_rows_carries_requires_action_and_running_state() {
         rows[0].state,
         RowState::RequiresAction(Some(Arc::from("permission")))
     );
-    assert_eq!(rows[1].state, RowState::Running(Some(Arc::from("Edit x"))));
+    assert_eq!(
+        rows[1].state,
+        RowState::Running(Some(Arc::from("Golpe (Edit) x"))),
+        "a running row names its tool as its skill"
+    );
 }
 
 /// A row reads its agent's name as that floor's badges do: two namesakes on a

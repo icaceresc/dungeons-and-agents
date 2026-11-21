@@ -168,41 +168,61 @@ impl FooterModel {
 
 const TOOL_TALLY_CAP: usize = 4;
 
-/// One aggregate tool-tally entry: the raw display `token` (kept verbatim), the
-/// TYPED [`ToolKind`] for the hue, and how many Running slots show it.
+/// One aggregate tool-tally entry: the tool as its detail names it
+/// ([`skill::tool_of`](crate::skill::tool_of), kept verbatim), the TYPED
+/// [`ToolKind`] for the hue and the skill, and how many Running slots show it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ToolTally {
-    pub token: String,
+    pub tool: String,
     pub kind: ToolKind,
     pub count: usize,
 }
 
-/// The aggregate tool tally: group Running slots by their raw display token (the
-/// first alphanumeric run of the detail, kept verbatim) but carry the TYPED
-/// [`ToolKind`] for the hue — a Task slot displays "Delegating" yet tints via
-/// `kind = Task`, never the name. Sorted by count desc then name, capped at
-/// [`TOOL_TALLY_CAP`].
+/// The aggregate tool tally: group Running slots by the tool their detail
+/// names but carry the TYPED [`ToolKind`] for the hue and the skill — a Task
+/// slot displays "Delegating" yet tints and reads via `kind = Task`, never the
+/// name. Sorted by count desc then name, capped at [`TOOL_TALLY_CAP`].
 pub(crate) fn footer_tool_tally(scene: &SceneState) -> Vec<ToolTally> {
     let mut tool_counts: HashMap<String, (ToolKind, usize)> = HashMap::new();
     for slot in scene.agents.values() {
         if let ActivityState::Running {
             item: Some(ToolUse { detail, kind, .. }),
         } = &slot.state
-            && let Some(token) = detail
+            && let Some(tool) = detail
                 .as_deref()
-                .and_then(|d| d.split(|c: char| !c.is_alphanumeric()).next())
+                .map(crate::skill::tool_of)
                 .filter(|t| !t.is_empty())
         {
-            tool_counts.entry(token.to_string()).or_insert((*kind, 0)).1 += 1;
+            tool_counts.entry(tool.to_string()).or_insert((*kind, 0)).1 += 1;
         }
     }
     let mut tools: Vec<ToolTally> = tool_counts
         .into_iter()
-        .map(|(token, (kind, count))| ToolTally { token, kind, count })
+        .map(|(tool, (kind, count))| ToolTally { tool, kind, count })
         .collect();
-    tools.sort_by(|a, b| b.count.cmp(&a.count).then(a.token.cmp(&b.token)));
+    tools.sort_by(|a, b| b.count.cmp(&a.count).then(a.tool.cmp(&b.tool)));
     tools.truncate(TOOL_TALLY_CAP);
     tools
+}
+
+/// `tools` as the footer writes them, each a label, the kind it tints in and
+/// its count: each tool its skill with the tool beside it (`Hechizo (Bash)`),
+/// or, `compact`, one per skill, their counts summed (`Hechizo`), in the
+/// tally's order.
+fn tool_labels(tools: &[ToolTally], compact: bool) -> Vec<(String, ToolKind, usize)> {
+    let mut out: Vec<(String, ToolKind, usize)> = Vec::new();
+    for t in tools {
+        if !compact {
+            out.push((crate::skill::label(&t.tool, t.kind), t.kind, t.count));
+            continue;
+        }
+        let name = crate::skill::Skill::of(&t.tool, t.kind).name();
+        match out.iter_mut().find(|(label, ..)| label == name) {
+            Some(entry) => entry.2 += t.count,
+            None => out.push((name.to_owned(), t.kind, t.count)),
+        }
+    }
+    out
 }
 
 /// The per-frame inputs `build_footer` renders: `counts`, `tools` and the
@@ -368,19 +388,20 @@ pub fn build_footer(inputs: &FooterInputs<'_>, budget: u16) -> FooterModel {
         None => format!("{}", counts.total),
     };
 
-    // The cross-floor `▲F{n}` cue: any OTHER floor holding a requires-action agent.
+    // The cross-floor `▲F{n}` cue: any OTHER floor holding a requires-action
+    // agent, named as its floor indicator names it.
     let cross_floor = of_floors.and_then(|_| {
         (0..MAX_FLOORS)
             .find(|&fl| fl != inputs.place.index() && ctx.per_floor[fl].requires_action > 0)
-            .map(|fl| fl + 1)
+            .map(|fl| inputs.place.elsewhere(fl).name())
     });
-    let floor_suffix = match of_floors {
-        Some((floor, floors)) => {
+    let floor_suffix = match inputs.place.label() {
+        Some(label) => {
             let cross = match cross_floor {
-                Some(n) => format!(" {}F{n}", Icon::Alert.terminal()),
+                Some(name) => format!(" {}{name}", Icon::Alert.terminal()),
                 None => String::new(),
             };
-            format!(" F{floor}/{floors}{cross} [\u{2191}\u{2193}]")
+            format!(" {label}{cross} [\u{2191}\u{2193}]")
         }
         None => String::new(),
     };
@@ -404,7 +425,9 @@ pub fn build_footer(inputs: &FooterInputs<'_>, budget: u16) -> FooterModel {
         );
     }
 
-    let seg_full = {
+    // Full, its tools named as skills with their tools beside them, then the
+    // same with one name per skill where that does not fit.
+    let full = |compact: bool| {
         let mut segs = vec![FooterSegment::new(
             format!(" {count_str}"),
             FooterTone::Neutral,
@@ -422,13 +445,14 @@ pub fn build_footer(inputs: &FooterInputs<'_>, budget: u16) -> FooterModel {
         }
         if !inputs.tools.is_empty() {
             segs.push(FooterSegment::new(" · ".to_string(), FooterTone::Neutral));
-            for (i, t) in inputs.tools.iter().enumerate() {
+            let labels = tool_labels(&inputs.tools, compact);
+            for (i, (label, kind, count)) in labels.into_iter().enumerate() {
                 if i > 0 {
                     segs.push(FooterSegment::new(" ".to_string(), FooterTone::Neutral));
                 }
                 segs.push(FooterSegment::new(
-                    format!("{}\u{d7}{}", t.token, t.count),
-                    FooterTone::Tool(t.kind),
+                    format!("{label}\u{d7}{count}"),
+                    FooterTone::Tool(kind),
                 ));
             }
         }
@@ -485,7 +509,7 @@ pub fn build_footer(inputs: &FooterInputs<'_>, budget: u16) -> FooterModel {
     };
 
     fit_tiers(
-        [seg_full, seg_medium, seg_min],
+        [full(false), full(true), seg_medium, seg_min],
         &quit,
         ctx.keys_alert,
         budget,
@@ -620,10 +644,47 @@ mod tests {
         }
     }
 
+    /// The footer names each running tool as its skill with the tool beside
+    /// it, and where that does not fit, one name per skill with its tools'
+    /// counts summed, before the tools drop out.
+    #[test]
+    fn the_footer_names_its_tools_as_skills() {
+        let mut scene = SceneState::uniform(16);
+        let running = [
+            ("Bash: ls", ToolKind::Bash),
+            ("Bash: make", ToolKind::Bash),
+            ("exec_command", ToolKind::Other),
+            ("Edit: x.rs", ToolKind::Edit),
+        ];
+        for (i, (detail, kind)) in running.into_iter().enumerate() {
+            let slot = running_slot(&format!("/p/skill{i}.jsonl"), detail, kind);
+            scene.agents.insert(slot.agent_id, slot);
+        }
+        let tools = footer_tool_tally(&scene);
+        let at = |budget| build_footer(&inputs(&scene, &tools, false, None, None), budget).text();
+        let wide = at(200);
+        for label in [
+            "Hechizo (Bash)\u{d7}2",
+            "Golpe (Edit)\u{d7}1",
+            "Hechizo (exec_command)\u{d7}1",
+        ] {
+            assert!(wide.contains(label), "{label} in {wide:?}");
+        }
+        let compact = (0..200u16)
+            .rev()
+            .map(at)
+            .find(|line| !line.contains("(Bash)"))
+            .expect("a width too narrow for the full names");
+        assert!(
+            compact.contains("Hechizo\u{d7}3") && compact.contains("Golpe\u{d7}1"),
+            "the compact names: {compact:?}"
+        );
+    }
+
     #[test]
     fn tool_tally_skips_empty_leading_token() {
         let mut scene = SceneState::uniform(16);
-        // Leading '/' ⇒ first token after split-on-non-alphanumeric is "".
+        // Leading '/' ⇒ the detail opens with no tool name.
         let slot = running_slot("/p/lead.jsonl", "/usr/bin/thing", ToolKind::Other);
         scene.agents.insert(slot.agent_id, slot);
         let tools = footer_tool_tally(&scene);

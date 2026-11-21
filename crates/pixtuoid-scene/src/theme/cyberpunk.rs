@@ -8,6 +8,7 @@ pub static CYBERPUNK: Theme = Theme {
     display_name: "Cyberpunk",
     kind: ThemeKind::Dark,
     camp: None,
+    board: Board::Neon,
     surface: SurfaceColors {
         wall: Rgb {
             r: 22,

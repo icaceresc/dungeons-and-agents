@@ -721,7 +721,7 @@ fn the_board_writes_inside_the_signs_interior() {
         let board = crate::neon_sign::build_board(
             counts,
             99 * 3_600,
-            Some((12, 12)),
+            Some("F12/12"),
             None,
             gateway,
             crate::anim::Motion::Full,
@@ -2062,4 +2062,38 @@ fn neighbouring_lairs_hold_different_foes() {
     };
     assert_ne!(held(0), held(1), "neighbouring lairs stand different foes");
     assert_eq!(held(2), held(0), "the pick goes round the foe's frames");
+}
+
+/// A wall open to the sky (`[walls] open = true`, a camp's) composes one view
+/// across its whole run of glass, with no joinery in it and no post beside
+/// it.
+#[test]
+fn a_wall_open_to_the_sky_composes_one_frameless_view() {
+    let layout =
+        SceneLayout::compute(crate::layout::Viewport::full(160, 96), None, 0).expect("lays out");
+    let frame = empty_frame(&layout);
+    let pack = crate::pack::test_office_with("[walls]\nopen = true\n", &[]);
+    let list = list_at(
+        &frame,
+        Office {
+            layout: &layout,
+            pack: &pack,
+            theme: &crate::theme::NORMAL,
+            scale: RenderScale::ONE,
+        },
+        23,
+    );
+    let views: Vec<_> = (list.pieces().iter())
+        .filter_map(|p| match &p.kind {
+            PieceKind::Window { view, .. } => Some((p.span, std::sync::Arc::clone(view))),
+            _ => None,
+        })
+        .collect();
+    let [(span, view)] = &views[..] else {
+        panic!("one view, not {}", views.len());
+    };
+    let run = crate::layout::window_run(layout.wall_span());
+    assert_eq!((span.x0, span.x1 + 1), (run.start, run.end));
+    assert_eq!(view.joinery().count(), 0, "no frame, mullion or transom");
+    assert!(list.backdrop().posts.is_empty(), "no post");
 }

@@ -827,6 +827,22 @@ fn paint_wall(backdrop: &Backdrop, scale: RenderScale, pen: Pen, buf: &mut RgbBu
     let w = scale.to_buffer(backdrop.size.w);
     let wall = Ramp::from_base(tones.wall);
     slab(buf, 0, 0, w, scale.to_buffer(band_h), &wall, scale);
+    if backdrop.masonry {
+        let unit = pen.density();
+        let cell = |ax, ay| ArtRect {
+            x: ArtPx(ax),
+            y: ArtPx(ay),
+            w: ArtPx(1),
+            h: ArtPx(1),
+        };
+        for ay in 0..pen.art(backdrop.trim_row).0 {
+            for ax in 0..pen.art(backdrop.size.w).0 {
+                if crate::glass::is_mortar(ax, ay, unit) {
+                    pen.fill(buf, cell(ax, ay), tones.wall_trim);
+                }
+            }
+        }
+    }
     let rows = backdrop.window_rows.clone();
     let window_h = rows.end - rows.start;
     for post in &backdrop.posts {

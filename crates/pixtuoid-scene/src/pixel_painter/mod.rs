@@ -204,16 +204,24 @@ pub(crate) fn paint_frame(ctx: &mut PaintCtx<'_>, frame: &SimFrame) -> Drawn {
             agents,
             seated: &frame.seated_agents,
             indoor_scale: frame.indoor_scale,
-            neon: frame.neon,
+            neon: crate::floor::board_light(frame.neon, ctx.theme),
             beat: ctx.timing.beat,
             bulbs: crate::lighting::DeskBulbs::of(ctx.pack),
             text: ctx.text,
         },
     );
     let top_wall_h = ctx.layout.wall_band_h();
-    let wall = crate::outside::Wall::of(ctx.layout);
+    let wall = crate::outside::Wall::drawn(ctx.layout, ctx.pack);
     let windows = ctx.pack.windows();
-    paint_ground_and_walls(ctx.base_fill, ctx.buf, (&wall, windows), &moment, ctx.theme);
+    let framed = windows && !wall.open;
+    let masonry = ctx.pack.stone_walls() && !windows;
+    paint_ground_and_walls(
+        ctx.base_fill,
+        ctx.buf,
+        (&wall, framed, masonry),
+        &moment,
+        ctx.theme,
+    );
     if windows {
         let window_moment = ctx
             .window_sky

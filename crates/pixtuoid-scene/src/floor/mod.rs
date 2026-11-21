@@ -197,6 +197,37 @@ impl FloorPlace {
         (self.floors > 1).then_some((self.index + 1, self.floors))
     }
 
+    /// What every reader names it: an office's floor by its number (`F2`), a
+    /// campaign's by its role, the camp or a dungeon's depth below it (`D1`).
+    pub(crate) fn name(self) -> String {
+        match self.role {
+            None => format!("F{}", self.index + 1),
+            Some(FloorRole::Camp) => "Camp".to_owned(),
+            Some(FloorRole::Dungeon) => format!("D{}", self.index),
+        }
+    }
+
+    /// Where it stands among its building's floors, as a footer and the wall
+    /// board write it: an office's `F{floor}/{floors}`, a campaign's
+    /// [`name`](Self::name); none in a one-floor building.
+    pub(crate) fn label(self) -> Option<String> {
+        let (floor, floors) = self.of_floors()?;
+        Some(match self.role {
+            None => format!("F{floor}/{floors}"),
+            Some(_) => self.name(),
+        })
+    }
+
+    /// Floor `index` of the same building.
+    #[must_use]
+    pub(crate) fn elsewhere(self, index: usize) -> Self {
+        Self {
+            index,
+            role: self.role.map(|_| FloorRole::of(index)),
+            ..self
+        }
+    }
+
     /// 0.0 on the ground floor to 1.0 on the top; drives skyline depth, never
     /// lighting.
     pub(crate) fn altitude(self) -> f32 {
@@ -1041,9 +1072,36 @@ pub(crate) struct NeonLook {
 const NEON_TUBE_WHITEN: f32 = 0.38;
 /// How much of the hue the dark interior picks up at full power.
 const NEON_INTERIOR_TINT: f32 = 0.07;
+/// Ramp steps a plain board's frame darkens toward its outer edges, so it
+/// reads as a frame and not a band of paint.
+const BOARD_FRAME_EDGE: i8 = -2;
+/// How far a plain board's frame turns to the alert's hue: enough to read,
+/// not so far that wood or iron reads as a lit tube.
+const BOARD_ALERT_SHARE: f32 = 0.45;
+
+/// `levels` as `theme`'s board throws light: a plain board throws none.
+pub(crate) fn board_light(levels: NeonLevels, theme: &Theme) -> NeonLevels {
+    match theme.board {
+        crate::theme::Board::Neon => levels,
+        crate::theme::Board::Plain { .. } => NeonLevels {
+            power: 0.0,
+            ..levels
+        },
+    }
+}
 /// Map the sim's theme-free `levels` to this frame's colors; how strongly the
 /// halo throws them is the [`Lights`](crate::lighting::Lights)' call.
 pub(crate) fn neon_look(levels: NeonLevels, theme: &Theme) -> NeonLook {
+    if let crate::theme::Board::Plain { face, frame, .. } = theme.board {
+        // Its frame takes on the alert's hue, unlit; the board's own count of
+        // who waits says the rest.
+        let frame = frame.mix(theme.ui.neon_alert, levels.alert * BOARD_ALERT_SHARE);
+        return NeonLook {
+            tube: frame,
+            interior: face,
+            halo: frame.ramp(BOARD_FRAME_EDGE),
+        };
+    }
     let power = levels.power;
     let hue = theme.ui.neon_brand.mix(theme.ui.neon_alert, levels.alert);
     NeonLook {

@@ -61,6 +61,10 @@ pub(crate) struct Pack {
     icons: BTreeMap<String, Sprite>,
     /// Whether the north wall shows windows, from `[walls]`.
     windows: bool,
+    /// Whether the north band opens on the sky, from `[walls]`.
+    open_air: bool,
+    /// Whether the room walls are stone, from `[walls]`.
+    stone_walls: bool,
     /// [`Pack::density_variants`], counted once at load: a painter asks for it
     /// every frame.
     densities: Vec<Density>,
@@ -303,6 +307,18 @@ impl Pack {
     /// from `[walls]`.
     pub(crate) fn windows(&self) -> bool {
         self.windows
+    }
+
+    /// Whether the north band opens on the sky, from `[walls]`: one view
+    /// across the wall's run of glass, with no frame or post.
+    pub(crate) fn open_air(&self) -> bool {
+        self.open_air
+    }
+
+    /// Whether the room walls are stone laid in courses, not glass, from
+    /// `[walls]`.
+    pub(crate) fn stone_walls(&self) -> bool {
+        self.stone_walls
     }
 
     /// The icon `name`'s art, from `[icons]`.
@@ -642,6 +658,16 @@ impl OfficeArt {
     /// [`Pack::windows`].
     pub(crate) fn windows(&self) -> bool {
         self.pack.windows()
+    }
+
+    /// [`Pack::open_air`].
+    pub(crate) fn open_air(&self) -> bool {
+        self.pack.open_air()
+    }
+
+    /// [`Pack::stone_walls`].
+    pub(crate) fn stone_walls(&self) -> bool {
+        self.pack.stone_walls()
     }
 }
 

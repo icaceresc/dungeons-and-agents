@@ -6317,7 +6317,7 @@ fn the_classics_dark_carries_past_the_insets() {
         paint_ground_and_walls(
             &mut BaseFillCache::new(),
             &mut day,
-            (&crate::outside::Wall::of(&layout), true),
+            (&crate::outside::Wall::of(&layout), true, false),
             &Moment::resolve(
                 crate::sky::Sky::at_with(noon, crate::sky::Weather::Clear),
                 theme,

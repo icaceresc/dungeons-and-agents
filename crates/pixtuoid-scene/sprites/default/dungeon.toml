@@ -6,6 +6,7 @@
 
 [walls]
 windows = false
+stone = true
 
 # The dungeon's materials: rock, a monster's hide, a spider's chitin, bone and
 # a torch's flame.

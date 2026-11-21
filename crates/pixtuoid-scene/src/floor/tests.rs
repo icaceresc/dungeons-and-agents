@@ -4821,3 +4821,49 @@ fn a_campaign_is_heard_at_night_at_noon() {
     );
     assert_eq!(daylight(OfficeSession::new(packs)), 0.0);
 }
+
+/// A plain board (a camp's sign, a dungeon's plaque) lights nothing, shows its
+/// face and frame, and turns its frame to the alert's hue while someone
+/// waits; every theme a person picks but the fork's keeps its neon.
+#[test]
+fn a_plain_board_lights_nothing_and_frames_the_alert() {
+    use crate::theme::{ALL_THEMES, Board, DARK_FANTASY};
+    for &theme in ALL_THEMES {
+        if !std::ptr::eq(theme, &DARK_FANTASY) {
+            assert_eq!(theme.board, Board::Neon, "{}", theme.name);
+        }
+    }
+    for theme in [&DARK_FANTASY, DARK_FANTASY.for_role(FloorRole::Camp)] {
+        let Board::Plain { face, frame, .. } = theme.board else {
+            panic!("{} builds a plain board", theme.name);
+        };
+        let calm = neon_look(NeonLevels::CALM, theme);
+        assert_eq!((calm.interior, calm.tube), (face, frame), "{}", theme.name);
+        assert_ne!(
+            neon_look(NeonLevels::ALERT, theme).tube,
+            frame,
+            "{}",
+            theme.name
+        );
+        for levels in [NeonLevels::RUNNING, NeonLevels::ALERT] {
+            assert_eq!(board_light(levels, theme).power, 0.0, "{}", theme.name);
+        }
+    }
+    assert_eq!(
+        board_light(NeonLevels::RUNNING, &crate::theme::NORMAL),
+        NeonLevels::RUNNING
+    );
+}
+
+/// A campaign's floors are named by role wherever a floor is named: the
+/// footer and the board as the door's indicator; an office's by number.
+#[test]
+fn a_campaigns_floors_are_named_by_role() {
+    let office = |i| FloorPlace::at(i, 3);
+    assert_eq!(office(1).label().as_deref(), Some("F2/3"));
+    assert_eq!(office(1).in_campaign().label().as_deref(), Some("D1"));
+    assert_eq!(office(0).in_campaign().label().as_deref(), Some("Camp"));
+    assert_eq!(FloorPlace::at(0, 1).in_campaign().label(), None);
+    assert_eq!(office(2).in_campaign().elsewhere(0).name(), "Camp");
+    assert_eq!(office(2).elsewhere(0).name(), "F1");
+}

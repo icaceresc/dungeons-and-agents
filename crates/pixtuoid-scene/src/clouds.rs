@@ -1883,6 +1883,7 @@ mod tests {
             span: 0..crate::layout::WINDOW_W * 3,
             band_h: 32,
             bays: crate::layout::window_slots(0..crate::layout::WINDOW_W * 3).collect(),
+            open: false,
         };
         let (run, glass_h) = wall.glass();
         for motion in [Motion::Full, Motion::Calm] {
@@ -1926,6 +1927,7 @@ mod tests {
                                 span: wall.span.clone(),
                                 band_h: wall.band_h,
                                 bays: wall.bays.clone(),
+                                open: false,
                             },
                             d,
                             crate::glass_weather::GlassWeather::of(&moment),

@@ -24,6 +24,9 @@ pub(crate) struct Backdrop {
     pub(crate) window_rows: Range<u16>,
     /// The band's trim row ([`wall_trim_row`](crate::layout::wall_trim_row)).
     pub(crate) trim_row: u16,
+    /// Whether the band above its trim is stone laid in courses
+    /// ([`is_mortar`](crate::glass::is_mortar)).
+    pub(crate) masonry: bool,
     /// Each floor covering, in the layout's fixture order.
     pub(crate) coverings: Vec<(Bounds, Covering)>,
     pub(crate) tones: BackdropTones,
@@ -95,7 +98,7 @@ impl Covering {
 
 impl Backdrop {
     /// This backdrop with the posts between its windows only where its wall
-    /// shows `windows`.
+    /// frames `windows`.
     #[must_use]
     pub(crate) fn with_windows(self, windows: bool) -> Self {
         if windows {
@@ -106,6 +109,12 @@ impl Backdrop {
                 ..self
             }
         }
+    }
+
+    /// This backdrop with its band laid in stone courses where `masonry`.
+    #[must_use]
+    pub(crate) fn with_masonry(self, masonry: bool) -> Self {
+        Self { masonry, ..self }
     }
 
     /// `layout`'s backdrop in `theme`'s tones.
@@ -121,6 +130,7 @@ impl Backdrop {
             posts: crate::layout::window_posts(layout.wall_span()).collect(),
             window_rows: crate::layout::window_rows(band_h),
             trim_row: crate::layout::wall_trim_row(band_h),
+            masonry: false,
             coverings: layout
                 .fixtures()
                 .filter_map(|f| Covering::of(f.kind, theme).map(|c| (f.visual, c)))
