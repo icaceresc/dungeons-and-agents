@@ -1,0 +1,124 @@
+# A dungeon: every campaign floor below the camp. build.rs lays this over
+# pack.toml (crates/pixtuoid-scene/AGENTS.md#the-sprite-format), so it names
+# only what the dungeon redraws. Its sprites are scripts/gen-art.py's
+# `dungeon_*`, registered here by hand, each on the canvas of the piece it
+# stands in for.
+
+# The dungeon's materials: rock, a monster's hide, a spider's chitin, bone and
+# a torch's flame.
+[palette]
+"ɢ" = "#4a4540"   # rough stone: a boulder, the stair arch's blocks
+"ɐ" = "#5d7236"   # an orc's hide
+"ɔ" = "#4a3f58"   # a giant spider's chitin
+"ɘ" = "#d4c9a8"   # bone: a tusk, a fang, a skull
+"ɛ" = "#e0702c"   # a torch's flame round its bulb-key core
+
+[ramps]
+"ɣ" = { of = "ɢ", level = 2 }    # stone, lit
+"ɦ" = { of = "ɢ", level = 4 }    # stone, its brightest edge
+"ɧ" = { of = "ɢ", level = -2 }   # stone, shaded
+"ɨ" = { of = "ɢ", level = -5 }   # stone, a crack or a deep step
+"ɑ" = { of = "ɐ", level = 2 }    # hide, lit
+"ɒ" = { of = "ɐ", level = -2 }   # hide, shaded
+"ɓ" = { of = "ɐ", level = -5 }   # hide, darkest: a brow, a mouth
+"ɕ" = { of = "ɔ", level = 2 }    # chitin, lit
+"ɖ" = { of = "ɔ", level = 5 }    # chitin, a glint
+"ɗ" = { of = "ɔ", level = -2 }   # chitin, shaded: the legs' far segments
+"ə" = { of = "ɘ", level = -2 }   # bone, shaded
+"ɚ" = { of = "ɘ", level = -5 }   # bone, darkest
+"ɜ" = { of = "ɛ", level = -3 }   # flame, its dark red tips
+
+# The strike: typing becomes a four-frame sword loop, every class's until
+# each swings its own. The base repeats the office's two typing frames, since a
+# variant draws as many frames as its base.
+[animations.typing]
+frames = ["typing_0.sprite", "typing_1.sprite", "typing_0.sprite", "typing_1.sprite"]
+
+[animations."typing@4x"]
+frames = ["dungeon_typing_0@4x.sprite", "dungeon_typing_1@4x.sprite", "dungeon_typing_2@4x.sprite", "dungeon_typing_3@4x.sprite"]
+
+[animations.typing_back]
+frames = ["typing_back_0.sprite", "typing_back_1.sprite", "typing_back_0.sprite", "typing_back_1.sprite"]
+
+[animations."typing_back@4x"]
+frames = ["dungeon_typing_back_0@4x.sprite", "dungeon_typing_back_1@4x.sprite", "dungeon_typing_back_2@4x.sprite", "dungeon_typing_back_3@4x.sprite"]
+
+# The lairs: a monster on each desk's own canvas, keeping its `cup` and
+# `tower` marks and a torch whose flame burns in the bulb key; its eyes or
+# sigil in the screen keys, so the fighter's tool lights them.
+[animations."desk@4x"]
+frames = ["dungeon_desk@4x.sprite"]
+
+[animations."desk_north@4x"]
+frames = ["dungeon_desk_north@4x.sprite"]
+
+[animations."desk_front@4x"]
+frames = ["dungeon_desk_front@4x.sprite"]
+
+[animations."desk_chair@4x"]
+frames = ["dungeon_desk_chair@4x.sprite"]
+
+[animations."desk_cup@4x"]
+frames = ["dungeon_desk_cup@4x.sprite"]
+
+[animations."token_tower@4x"]
+frames = ["dungeon_token_tower@4x.sprite"]
+
+[animations."token_sheet@4x"]
+frames = ["dungeon_token_sheet@4x.sprite"]
+
+[animations."door@4x"]
+frames = ["dungeon_door@4x.sprite"]
+
+# Seated and waiting on its user: sounding a war horn under the `!`.
+[animations."seated@4x"]
+frames = ["dungeon_seated@4x.sprite"]
+
+[animations."seated_back@4x"]
+frames = ["dungeon_seated_back@4x.sprite"]
+
+# The furnishings, each on the office piece's canvas: a barrel, cave
+# growths and bones for the pot plants, a wall torch, a brazier, a
+# treasure chest, a weapon rack, a map and boards of wanted posters.
+[animations."filing_cabinet@4x"]
+frames = ["dungeon_filing_cabinet@4x.sprite"]
+
+[animations."plant@4x"]
+frames = ["dungeon_plant@4x.sprite"]
+
+[animations."plant_tall@4x"]
+frames = ["dungeon_plant_tall@4x.sprite"]
+
+[animations."plant_flower@4x"]
+frames = ["dungeon_plant_flower@4x.sprite"]
+
+[animations."plant_succulent@4x"]
+frames = ["dungeon_plant_succulent@4x.sprite"]
+
+[animations."exit_sign@4x"]
+frames = ["dungeon_exit_sign@4x.sprite"]
+
+[animations."printer@4x"]
+frames = ["dungeon_printer@4x.sprite"]
+
+[animations."vending_machine@4x"]
+frames = ["dungeon_vending_machine@4x.sprite"]
+
+[animations."bookshelf@4x"]
+frames = ["dungeon_bookshelf@4x.sprite"]
+
+[animations."whiteboard@4x"]
+frames = ["dungeon_whiteboard@4x.sprite"]
+
+[animations."bulletin_board@4x"]
+frames = ["dungeon_bulletin_board@4x.sprite"]
+
+[animations."notice_board@4x"]
+frames = ["dungeon_notice_board@4x.sprite"]
+
+# The floor indicator's arrows as flights of stairs. `alert` writes the up
+# arrow's glyph, and a glyph draws one art (`display::icon`'s tests).
+[icons]
+alert = "dungeon_icon_floor_up.sprite"
+floor_up = "dungeon_icon_floor_up.sprite"
+floor_down = "dungeon_icon_floor_down.sprite"
