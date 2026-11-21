@@ -167,8 +167,10 @@ fn row_for(
 fn row_state(state: &ActivityState) -> RowState {
     match state {
         ActivityState::Running {
-            item: Some(ToolUse { detail, .. }),
-        } => RowState::Running(detail.clone()),
+            item: Some(ToolUse { detail, kind, .. }),
+        } => RowState::Running(
+            (detail.as_deref()).map(|d| Arc::from(pixtuoid_scene::skill::skilled(d, *kind))),
+        ),
         ActivityState::Running { item: None } => RowState::Running(None),
         ActivityState::RequiresAction { reason } => RowState::RequiresAction(reason.clone()),
         ActivityState::Idle => RowState::Idle,

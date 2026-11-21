@@ -518,8 +518,8 @@ fn footer_full_width_mixed_states() {
         "\u{25cf}3 R",
         "\u{25d0}2 A",
         "\u{25cb}3 I",
-        "Edit\u{d7}2",
-        "Bash\u{d7}1",
+        "Golpe (Edit)\u{d7}2",
+        "Hechizo (Bash)\u{d7}1",
     ] {
         assert!(line.contains(frag), "missing {frag:?} in: {line}");
     }
@@ -734,8 +734,8 @@ fn footer_counts_agree_with_board_on_walkout() {
 
 #[test]
 fn footer_tool_hue_reads_kind_field() {
-    // A Task dispatch DISPLAYS "Delegating" but its typed kind is Task, so the hue
-    // must never come from a re-parse of the displayed string.
+    // A Task dispatch DISPLAYS "Delegating" but its typed kind is Task, so its
+    // skill and hue must never come from a re-parse of the displayed string.
     let theme = &pixtuoid_scene::theme::NORMAL;
     let s = scene_of(vec![running_kind(
         "Delegating",
@@ -745,7 +745,7 @@ fn footer_tool_hue_reads_kind_field() {
     let spans = build_status_spans(&inputs(&s, 0, None), 160, theme);
     let tool = spans
         .iter()
-        .find(|sp| sp.content.contains("Delegating"))
+        .find(|sp| sp.content.contains("Invocación"))
         .expect("tool segment present");
     let expected = to_color(
         theme

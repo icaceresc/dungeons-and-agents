@@ -89,6 +89,9 @@ pub(crate) mod pixel_painter;
 pub mod pose;
 pub mod render_scale;
 pub mod sim;
+// The fork's campaign vocabulary, which the binary's dashboard reads too.
+#[doc(hidden)]
+pub mod skill;
 pub mod sky;
 pub(crate) mod skyline;
 /// Sprite vocabulary: `Frame`/`Sprite`, the `RgbBuffer` blit target, and the

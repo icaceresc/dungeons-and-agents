@@ -33,7 +33,7 @@ fn dashboard_popup_renders_labels_states_and_live_tool() {
     assert!(text.contains("cc\u{b7}alpha"), "alpha row missing:\n{text}");
     assert!(text.contains("cc\u{b7}beta"), "beta row missing:\n{text}");
     assert!(
-        text.contains("Edit reducer.rs"),
+        text.contains("Golpe (Edit) reducer.rs"),
         "live tool detail missing:\n{text}"
     );
     assert!(text.contains("idle"), "idle state missing:\n{text}");
