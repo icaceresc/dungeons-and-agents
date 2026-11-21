@@ -491,7 +491,7 @@ pub(crate) fn resolve_desk_cap(
 }
 
 /// Resolve CLI + config into the one `&'static Theme` the runtime uses
-/// (CLI > config > `NORMAL`). The asymmetry is deliberate: a `--theme` typo is
+/// (CLI > config > `DARK_FANTASY`). The asymmetry is deliberate: a `--theme` typo is
 /// explicit user intent and hard-errors, while a config typo soft-warns and
 /// falls back so a stale config file never bricks startup.
 ///
@@ -503,7 +503,7 @@ pub(crate) fn resolve_theme(
     cli_theme: Option<&str>,
     warnings: &mut Vec<String>,
 ) -> Result<&'static pixtuoid_scene::theme::Theme> {
-    use pixtuoid_scene::theme::{ALL_THEMES, NORMAL, theme_by_name};
+    use pixtuoid_scene::theme::{ALL_THEMES, DARK_FANTASY, theme_by_name};
 
     // Validate the config theme even when the CLI overrides it — the warn is the
     // only signal that a persisted theme has gone stale.
@@ -523,7 +523,7 @@ pub(crate) fn resolve_theme(
             anyhow::anyhow!("unknown theme: {name}. Valid: {}", valid.join(", "))
         });
     }
-    Ok(config_theme.unwrap_or(&NORMAL))
+    Ok(config_theme.unwrap_or(&DARK_FANTASY))
 }
 
 /// Resolve CLI + config into the run's [`LookMode`](crate::graphics::LookMode)

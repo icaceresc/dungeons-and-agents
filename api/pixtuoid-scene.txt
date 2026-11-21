@@ -2350,6 +2350,7 @@ impl core::panic::unwind_safe::RefUnwindSafe for pixtuoid_scene::theme::UiColors
 impl core::panic::unwind_safe::UnwindSafe for pixtuoid_scene::theme::UiColors
 pub static pixtuoid_scene::theme::ALL_THEMES: &[&pixtuoid_scene::theme::Theme]
 pub static pixtuoid_scene::theme::CYBERPUNK: pixtuoid_scene::theme::Theme
+pub static pixtuoid_scene::theme::DARK_FANTASY: pixtuoid_scene::theme::Theme
 pub static pixtuoid_scene::theme::NORMAL: pixtuoid_scene::theme::Theme
 pub fn pixtuoid_scene::theme::theme_by_name(&str) -> core::option::Option<&'static pixtuoid_scene::theme::Theme>
 pub mod pixtuoid_scene::token_meter

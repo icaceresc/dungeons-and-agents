@@ -1,5 +1,6 @@
 mod catppuccin;
 mod cyberpunk;
+mod dark_fantasy;
 mod dracula;
 mod gruvbox;
 mod normal;
@@ -9,6 +10,7 @@ use crate::sprite::Rgb;
 
 pub(crate) use catppuccin::CATPPUCCIN;
 pub use cyberpunk::CYBERPUNK;
+pub use dark_fantasy::DARK_FANTASY;
 pub(crate) use dracula::DRACULA;
 pub(crate) use gruvbox::GRUVBOX;
 pub use normal::NORMAL;
@@ -404,6 +406,7 @@ pub static ALL_THEMES: &[&Theme] = &[
     &TOKYO_NIGHT,
     &CATPPUCCIN,
     &GRUVBOX,
+    &DARK_FANTASY,
 ];
 
 /// Resolve a theme by its `name` (the `--theme` value), or `None` if unknown.
@@ -485,6 +488,7 @@ mod tests {
         assert_eq!(TOKYO_NIGHT.kind, ThemeKind::Dark);
         assert_eq!(GRUVBOX.kind, ThemeKind::Dark);
         assert_eq!(CATPPUCCIN.kind, ThemeKind::Dark);
+        assert_eq!(DARK_FANTASY.kind, ThemeKind::Dark);
     }
 
     #[test]
