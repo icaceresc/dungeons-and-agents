@@ -2791,9 +2791,10 @@ fn sim_step_decides_each_desks_props_from_its_occupant() {
                 *props,
                 crate::sim::DeskProps {
                     scanline: props.scanline,
+                    lair: i,
                     ..Default::default()
                 },
-                "desk {i} has no occupant"
+                "desk {i} has no occupant, and names its own lair"
             );
         }
     }

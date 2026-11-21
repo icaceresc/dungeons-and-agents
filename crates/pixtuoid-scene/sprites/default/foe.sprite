@@ -1,0 +1,12 @@
+# No foe at the office's viewer-facing desk: a dungeon redraws it
+# (dungeon.toml) as what stands at its lair, under its sitter's props.
+@frame 0
+. . . . . . . . . . . . . .
+. . . . . . . . . . . . . .
+. . . . . . . . . . . . . .
+. . . . . . . . . . . . . .
+. . . . . . . . . . . . . .
+. . . . . . . . . . . . . .
+. . . . . . . . . . . . . .
+. . . . . . . . . . . . . .
+. . . . . . . . . . . . . .

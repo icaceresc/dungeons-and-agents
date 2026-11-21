@@ -229,6 +229,12 @@ pub(crate) struct DeskProps {
     /// Which glass column its lit screen's scanline is on, from the glass's
     /// west edge ([`scanline_col`]).
     pub(crate) scanline: u16,
+    /// Whether its occupant works, on a tool or waiting on its user: its
+    /// pack's foe stands at the lair ([`Desk::foe`](crate::pack::Desk::foe)).
+    pub(crate) foe: bool,
+    /// The desk's index on its floor, which picks the frame its foe holds
+    /// ([`foe_frame`](crate::pack::foe_frame)).
+    pub(crate) lair: usize,
 }
 
 /// How long a screen's scanline holds each glass column: one Full beat, so it
@@ -813,6 +819,13 @@ fn desk_props(
                     .and_then(|a| crate::token_meter::sheet_fall_dist(a, motion, now)),
                 effects: cup_effects(desk_cup_at(pack, desk.at, desk.facing), cup, beat),
                 scanline: scanline_col(desk.at.x, beat),
+                foe: occupant.is_some_and(|a| {
+                    matches!(
+                        a.state,
+                        ActivityState::Running { .. } | ActivityState::RequiresAction { .. }
+                    )
+                }),
+                lair: i,
             }
         })
         .collect()
@@ -1398,5 +1411,49 @@ mod tests {
             (scanline_col(0, at) + 3) % glass_w,
             "each desk a column on from its west neighbour's"
         );
+    }
+
+    /// A lair's foe stands while its sitter works, on a tool or waiting on
+    /// its user, and not while it idles or the desk is empty.
+    #[test]
+    fn a_foe_stands_only_while_its_sitter_works() {
+        use pixtuoid_core::state::{FloorDesk, ToolKind, ToolUse};
+        let pack = crate::pack::test_office();
+        let layout = SceneLayout::compute(crate::layout::Viewport::full(160, 96), None, 0)
+            .expect("lays out");
+        let timing = crate::anim::Motion::Full.timing(std::time::UNIX_EPOCH);
+        let foe = |state: Option<ActivityState>| {
+            let agents: Vec<AgentSlot> = state
+                .into_iter()
+                .map(|state| {
+                    let id = AgentId::from_transcript_path("/foe/0.jsonl");
+                    AgentSlot {
+                        desk: Some(FloorDesk::new(0, 0)),
+                        ..crate::character::test_support::make_slot(id, state)
+                    }
+                })
+                .collect();
+            desk_props(
+                &agents,
+                &layout,
+                &pack,
+                &HashMap::new(),
+                crate::anim::Motion::Full,
+                timing,
+            )[0]
+            .foe
+        };
+        let running = ActivityState::Running {
+            item: Some(ToolUse {
+                tool_use_id: None,
+                detail: None,
+                kind: ToolKind::Bash,
+            }),
+        };
+        let waiting = ActivityState::RequiresAction { reason: None };
+        assert!(foe(Some(running)));
+        assert!(foe(Some(waiting)));
+        assert!(!foe(Some(ActivityState::Idle)));
+        assert!(!foe(None));
     }
 }

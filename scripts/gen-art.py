@@ -8008,14 +8008,11 @@ def spider_eyes(g, cx, top):
             put(g, ex, top + dy, GLASS_TXT)
 
 
-def lair_north():
-    """The north seat's lair, beyond its back-turned occupant: a giant spider
-    facing them and the viewer, its eyes over their head and its legs arched
-    out either side, between a boulder heaped with loot west and one with a
-    torch and the potion east."""
-    lift = DESK_NORTH_LIFT
-    w, h = DESK_ART_W * S, desk_rows(lift)[3] * S
-    g = canvas(w, h)
+def spider_facing(g):
+    """A giant spider facing its foe and the viewer: its legs arched out
+    either side, its head with folded fangs, and over the back-turned
+    fighter's head its eyes."""
+    w = len(g[0])
     for side in (-1, 1):
         for hip, knee, foot in (
             ((21, 5), (9, 1), (2, 26)),
@@ -8025,8 +8022,6 @@ def lair_north():
         ):
             m = (lambda p: p) if side < 0 else (lambda p: (w - 1 - p[0], p[1]))
             spider_leg(g, m(hip), m(knee), m(foot))
-    boulder(g, 6.0, 35.0, 6.5, 9.5, 21)
-    boulder(g, 48.0, 38.0, 7.5, 6.5, 22)
     ellipse(g, 28.0, 7.0, 10.0, 7.0, CHITIN)  # the head
     lit_ball(g, CHITIN_KEYS, 28.0, 7.0, 10.0, 7.0)
     for side in (-1, 1):  # the fangs, folded under the head
@@ -8034,10 +8029,73 @@ def lair_north():
         rect(g, x, 12, x + 1, 16, CHITIN_SH)
         put(g, x, 16, BONE)
     spider_eyes(g, 28.0, 1)
+
+
+def lair_north():
+    """The north seat's lair, beyond its back-turned occupant, empty: a
+    boulder for its loot west, one with a torch and the potion east, cobwebs
+    strung from them and bones on the floor. Its foe stands here only while
+    the seat's sitter works."""
+    lift = DESK_NORTH_LIFT
+    w, h = DESK_ART_W * S, desk_rows(lift)[3] * S
+    g = canvas(w, h)
+    for strands in (
+        ((1, 22), (9, 8), (14, 26)),
+        ((w - 2, 26), (w - 10, 12), (w - 14, 30)),
+    ):
+        stem(g, strands, 0.3, OFFWHITE_SH)
+    boulder(g, 6.0, 35.0, 6.5, 9.5, 21)
+    boulder(g, 48.0, 38.0, 7.5, 6.5, 22)
     torch(g, lamp_base_x("desk_north") - 2, 26, 34)
     bones(g, 22, 42)
     union_outline(g)
     return g
+
+
+def skull_facing(g, cx, top):
+    """A skull facing the viewer, `top` its crown: its sockets glowing in the
+    desk's screen keys, a nose hole, a row of teeth."""
+    ellipse(g, cx, top + 6.0, 6.0, 6.0, BONE)
+    lit_ball(g, (BONE, BONE, WHITE, BONE_SH), cx, top + 6.0, 6.0, 6.0)
+    for x0 in (int(cx) - 4, int(cx) + 1):
+        rect(g, x0, top + 5, x0 + 3, top + 8, GLASS)
+        put(g, x0 + 1, top + 6, GLASS_TXT)
+    put(g, int(cx), top + 9, BONE_DK)
+    rect(g, int(cx) - 3, top + 11, int(cx) + 3, top + 13, BONE)
+    for x in range(int(cx) - 3, int(cx) + 3, 2):
+        put(g, x, top + 12, BONE_DK)
+
+
+def skeleton_archer(g):
+    """A skeleton archer facing its foe and the viewer: its skull over the
+    back-turned fighter's head, a bow drawn on its west side, its bones down
+    to the floor beyond the fighter."""
+    stem(g, [(28, 13), (28, 30)], 0.9, BONE_SH)  # the spine
+    for y in range(17, 28, 3):  # the ribs
+        stem(g, [(21, y + 2), (28, y), (35, y + 2)], 0.5, BONE)
+    stem(g, [(20, 16), (36, 16)], 0.7, BONE)  # the collarbones
+    rect(g, 23, 30, 34, 33, BONE)  # the pelvis
+    for x0, x1 in ((24, 22), (32, 34)):  # the legs
+        stem(g, [(x0, 33), (x1, 43)], 0.6, BONE_SH)
+    stem(g, [(20, 16), (12, 21)], 0.6, BONE)  # the bow arm
+    stem(g, [(36, 16), (24, 21)], 0.6, BONE)  # the drawing arm
+    stem(g, [(10, 4), (6, 12), (6, 30), (10, 38)], 0.7, WOOD)  # the bow
+    stem(g, [(10, 4), (22, 21), (10, 38)], 0.3, OFFWHITE_SH)  # its drawn string
+    stem(g, [(8, 21), (22, 21)], 0.4, WOOD_LT)  # the nocked arrow
+    put(g, 7, 21, IRON_LT)
+    skull_facing(g, 28.0, 0)
+
+
+def foe_north():
+    """The north lair's foes, a frame each, one held per desk: the giant
+    spider, and a skeleton archer."""
+    frames = []
+    for draw in (spider_facing, skeleton_archer):
+        g = canvas(DESK_ART_W * S, desk_rows(DESK_NORTH_LIFT)[3] * S)
+        draw(g)
+        union_outline(g)
+        frames.append(g)
+    return frames
 
 
 # The orc's back: its sigil's centre, glowing between its shoulder blades.
@@ -8090,25 +8148,127 @@ def orc_back(g):
     rect(g, sx, sy - 6, sx + 1, sy + 7, GLASS_TXT)
 
 
+def lair_pebble(g):
+    """A pebble at the south lair's foot, between where its orc's feet stand,
+    the one stone nearer the viewer than the occupant's props: the lair's
+    front is drawn over its foes too, so it keeps clear of them."""
+    rect(g, 26, 33, 30, 36, ROCK)
+    rect(g, 26, 33, 30, 34, ROCK_LT)
+
+
 def lair_south():
-    """The south seat's lair, as the seat faces it: an orc from behind,
-    squaring up to its occupant between two boulders, a torch burning on the
-    west one; the occupant's potion and loot stand where the desk's
-    arrangement marks them."""
+    """The south seat's lair, as the seat faces it, empty: two boulders, a
+    torch burning on the west one, bones strewn between; the occupant's
+    potion and loot stand where the desk's arrangement marks them. Its foes
+    stand here only while the seat's sitter works."""
     w, h = DESK_ART_W * S, desk_rows(0)[3] * S
     g = canvas(w, h)
     boulder(g, 6.0, 25.0, 6.5, 11.5, 11)
     boulder(g, 50.0, 27.0, 6.5, 9.5, 12)
-    orc_back(g)
+    bones(g, 18, 31)
+    bones(g, 40, 27, flip=True)
+    lair_pebble(g)
     torch(g, lamp_base_x("desk"), 9, 16)
     union_outline(g)
     return g
 
 
 def lair_south_front():
-    """The south lair's front: the orc, which stands before whatever of its
-    occupant's props it overlaps."""
-    return front_layer(lair_south(), orc_back)
+    """The south lair's front, drawn over its occupant's props: its pebble."""
+    return front_layer(lair_south(), lair_pebble)
+
+
+# A goblin's hide, yellower than an orc's: one base in [palette], its shades
+# in [ramps].
+GOBLIN, GOBLIN_LT, GOBLIN_SH = "ɤ", "ɥ", "ɯ"
+GOBLIN_KEYS = (GOBLIN, GOBLIN_LT, GOBLIN_LT, GOBLIN_SH)
+
+
+def goblin_back(g, cx, foot):
+    """A goblin seen from behind: a bald head between long ears swept out
+    sideways, glancing back over its shoulder with an eye in the desk's screen
+    keys, a ragged hood over its shoulders, thin legs, a spear held upright."""
+    top = foot - 22
+    rect(g, int(cx) + 4, top - 3, int(cx) + 5, foot, WOOD_SH)  # the spear
+    rect(g, int(cx) + 3, top - 6, int(cx) + 6, top - 3, IRON)
+    put(g, int(cx) + 4, top - 7, IRON_LT)
+    for x in (int(cx) - 2, int(cx) + 1):  # the legs
+        rect(g, x, foot - 5, x + 2, foot, GOBLIN_SH)
+    ellipse(g, cx, foot - 10.0, 5.0, 6.0, LEATHER)  # the hood
+    rect(g, int(cx) - 4, foot - 6, int(cx) + 5, foot - 5, LEATHER_SH)
+    ellipse(g, cx, top + 5.0, 4.0, 4.0, GOBLIN)  # the head
+    for side in (-1, 1):  # the ears
+        for i in range(6):
+            x = int(cx) + side * (4 + i) - (side < 0)
+            put(g, x, top + 4 - i // 3, GOBLIN)
+    lit_ball(g, GOBLIN_KEYS, cx, top + 5.0, 5.0, 4.5)
+    put(g, int(cx) + 3, top + 5, GLASS)  # the eye, glancing back
+    put(g, int(cx) + 3, top + 4, GLASS_TXT)
+    put(g, int(cx) + 4, foot - 3, GOBLIN)  # the spear hand
+    put(g, int(cx) + 4, foot - 2, GOBLIN)
+
+
+def skeleton_back(g):
+    """A skeleton warrior seen from behind, facing its foe: the back of its
+    skull, a spine down to its pelvis, ribs round a soul-light glowing in the
+    desk's screen keys, a rag at its hips, a rusty notched blade raised in its
+    east hand."""
+    ellipse(g, 28.0, 17.0, 4.0, 4.0, GLASS)  # the soul-light, through the ribs
+    rect(g, 27, 16, 29, 18, GLASS_TXT)
+    for y in range(12, 23, 3):  # the ribs
+        stem(g, [(21, y + 2), (24, y), (32, y), (35, y + 2)], 0.5, BONE)
+    for sx in (23, 33):  # the shoulder blades
+        ellipse(g, sx, 13.0, 2.5, 2.0, BONE_SH)
+    rect(g, 27, 10, 29, 26, BONE_SH)  # the spine
+    for y in range(11, 26, 2):
+        put(g, 27, y, BONE_DK)
+    rect(g, 22, 25, 34, 28, WOOD_DK)  # the rag, over the pelvis
+    for x0, x1 in ((24, 23), (32, 33)):  # the legs
+        stem(g, [(x0, 28), (x1, 34)], 0.6, BONE)
+        rect(g, x1 - 2, 34, x1 + 2, 36, BONE_SH)
+    stem(g, [(21, 12), (18, 26)], 0.6, BONE)  # the hanging arm
+    stem(g, [(35, 12), (40, 18), (42, 12)], 0.6, BONE)  # the sword arm
+    stem(g, [(43, 11), (45, 1)], 0.8, IRON_SH)  # the rusty blade
+    for x, y in ((44, 6), (45, 3), (43, 9)):
+        put(g, x, y, BROWN)
+    put(g, 45, 5, T)  # a notch
+    rect(g, 40, 11, 46, 12, IRON)
+    ellipse(g, 28.0, 5.0, 5.0, 5.0, BONE)  # the back of the skull
+    lit_ball(g, (BONE, BONE, WHITE, BONE_SH), 28.0, 5.0, 5.0, 5.0)
+
+
+def south_foe_canvas():
+    """A blank frame on the viewer-facing desk's canvas."""
+    return canvas(DESK_ART_W * S, desk_rows(0)[3] * S)
+
+
+def outlined(draw):
+    """`draw` on a blank south foe canvas, outlined."""
+    g = south_foe_canvas()
+    draw(g)
+    union_outline(g)
+    return g
+
+
+def foe_south():
+    """The south lair's foes under its occupant's props, a frame each, one
+    held per desk, paired with `foe_front`'s frame: a goblin at the orc's
+    west side; nothing under the goblin pair; nothing under the skeleton."""
+    return [
+        outlined(lambda g: goblin_back(g, 6.0, len(g) - 1)),
+        south_foe_canvas(),
+        south_foe_canvas(),
+    ]
+
+
+def foe_south_front():
+    """The south lair's foes over its occupant's props, a frame each: the orc
+    squaring up to the fighter, a pair of goblins, a skeleton warrior."""
+    return [
+        outlined(orc_back),
+        outlined(lambda g: (goblin_back(g, 20.0, 35), goblin_back(g, 36.0, 35))),
+        outlined(skeleton_back),
+    ]
 
 
 # ---- the dungeon's props, chair and stairs --------------------------------------
@@ -8669,6 +8829,506 @@ def stair_icon(up):
     return [list(r) for r in rows]
 
 
+# ---- the dungeon's stand-ins for the rest of the office ---------------------------
+# Every office piece a dungeon floor's layouts can place, so none reads as an
+# office: each on the canvas `prop_canvas`/`camp_canvas` gives that piece, and
+# its frame count where the office's art plays a loop.
+DNG_JARS = (LEAF, BLUE, RED, GOLD)
+
+
+def dng_slab(g, x0, y0, x1, y1, top=3):
+    """A dressed stone block: its top lit, shaded east and along its foot, a
+    joint or two."""
+    rect(g, x0, y0, x1, y1, ROCK)
+    rect(g, x0, y0, x1, y0 + top, ROCK_LT)
+    rect(g, x0, y0, x1, y0 + 1, ROCK_HI)
+    rect(g, x1 - 2, y0 + top, x1, y1, ROCK_SH)
+    rect(g, x0, y1 - 1, x1, y1, ROCK_SH)
+    for jx in range(x0 + 9, x1 - 4, 13):
+        rect(g, jx, y0 + top, jx + 1, y1 - 1, ROCK_DK)
+
+
+def dng_candle(g, x, foot):
+    """A stub of candle standing on `foot` at column `x`, its flame's heart in
+    the bulb key."""
+    rect(g, x, foot - 3, x + 2, foot, BONE)
+    put(g, x + 1, foot - 3, BONE_SH)
+    put(g, x, foot - 4, BULB)
+    put(g, x, foot - 5, TORCH_FLAME)
+
+
+def dng_jar(g, x, foot, h, liquid):
+    """A glass jar of `liquid` on `foot`: a cork, the glass's glint."""
+    rect(g, x, foot - h, x + 4, foot, liquid)
+    rect(g, x + 1, foot - h - 1, x + 3, foot - h, WOOD_LT)
+    put(g, x, foot - h, WHITE)
+
+
+def dng_chain(g, x, y0, y1):
+    """An iron chain hanging at column `x`, link over link."""
+    for y in range(y0, y1):
+        put(g, x, y, IRON if y % 2 else IRON_SH)
+
+
+def dng_haunch(g, cx, top):
+    """A haunch of meat hung by its bone from `top`."""
+    put(g, cx, top, BONE)
+    put(g, cx, top + 1, BONE)
+    ellipse(g, cx + 0.5, top + 6.0, 2.6, 4.2, RED)
+    rect(g, cx + 1, top + 4, cx + 3, top + 10, DARK_RED)
+
+
+def dng_cauldron(g, cx, foot, half):
+    """An iron cauldron on `foot`: its belly, its rim, a bubbling green brew."""
+    ellipse(g, cx, foot - half * 0.6, half, half * 0.65, IRON_SH)
+    rect(
+        g,
+        int(cx - half),
+        int(foot - half * 1.1),
+        int(cx + half),
+        int(foot - half * 0.9),
+        IRON,
+    )
+    rect(
+        g,
+        int(cx - half) + 2,
+        int(foot - half * 1.1),
+        int(cx + half) - 2,
+        int(foot - half * 1.1) + 1,
+        LEAF_HI,
+    )
+    put(g, int(cx) - 2, int(foot - half * 1.1) - 1, LEAF_HI)
+
+
+def dng_rune_disc():
+    """A carved stone disc in the wall clock's place, runes round its rim. The
+    engine draws a clock's hands as far as the face key reaches out from the
+    centre along the middle row; a lone face-key pixel there gives them no
+    length, so none are drawn."""
+    g = prop_canvas("wall_clock")
+    w, h = len(g[0]), len(g)
+    c = w / 2
+    ellipse(g, c, c, 13.0, 13.0, ROCK)
+    lit_ball(g, (ROCK, ROCK_LT, ROCK_HI, ROCK_SH), c, c, 13.0, 13.0)
+    for i in range(12):
+        a = math.tau * i / 12
+        put(g, int(c + math.cos(a) * 10), int(c + math.sin(a) * 10), ROCK_DK)
+        if i % 3 == 0:
+            put(g, int(c + math.cos(a) * 7), int(c + math.sin(a) * 7), ROCK_DK)
+    ellipse(g, c, c, 3.0, 3.0, ROCK_SH)
+    put(g, w // 2, h // 2, CLOCK_FACE)
+    union_outline(g)
+    return g
+
+
+def dng_rune_tablet():
+    """A stone tablet hung on the wall in the meeting screen's place: three
+    lines of carved runes, a few of them glowing."""
+    g = prop_canvas("meeting_screen")
+    w, h = len(g[0]), len(g)
+    dng_slab(g, 3, 4, w - 3, h - 2, top=2)
+    rect(g, 7, 8, w - 7, h - 6, ROCK_SH)
+    rng = Draws(51)
+    for row in range(3):
+        y = 12 + row * 9
+        x = 10
+        while x < w - 12:
+            glyph = rng.randrange(0, 4)
+            k = CYAN if rng.random() < 0.15 else ROCK_DK
+            rect(g, x, y, x + 1, y + 5, k)
+            if glyph == 1:
+                rect(g, x, y, x + 4, y + 1, k)
+            elif glyph == 2:
+                rect(g, x, y + 4, x + 4, y + 5, k)
+            elif glyph == 3:
+                put(g, x + 2, y + 2, k)
+                put(g, x + 3, y + 1, k)
+            x += 6
+    union_outline(g)
+    return g
+
+
+def dng_idol():
+    """A squat stone idol on a plinth in the screen stand's place, its eyes
+    two red gems."""
+    g = prop_canvas("tv_stand")
+    w, h = len(g[0]), len(g)
+    dng_slab(g, 4, h - 9, w - 4, h - 1)
+    ellipse(g, w / 2, 23.0, 11.0, 9.0, ROCK)
+    ellipse(g, w / 2, 10.0, 7.5, 7.5, ROCK)
+    lit_ball(g, (ROCK, ROCK_LT, ROCK_HI, ROCK_SH), w / 2, 18.0, 12.0, 15.0)
+    for ex in (w // 2 - 4, w // 2 + 2):
+        rect(g, ex, 9, ex + 2, 11, RED)
+    rect(g, w // 2 - 3, 14, w // 2 + 3, 15, ROCK_DK)
+    rect(g, w // 2 - 8, 22, w // 2 + 8, 23, ROCK_DK)
+    union_outline(g)
+    return g
+
+
+def dng_lectern():
+    """A stone lectern in the standing desk's place: a pillar under an open
+    tome, a candle burning at its corner."""
+    g = prop_canvas("standing_desk")
+    w, h = len(g[0]), len(g)
+    dng_slab(g, 6, h - 5, w - 6, h - 1, top=1)
+    dng_slab(g, 12, 13, 20, h - 5, top=1)
+    rect(g, 4, 8, w - 4, 13, WOOD)
+    rect(g, 5, 5, w // 2 - 1, 11, TAN)
+    rect(g, w // 2 + 1, 5, w - 5, 11, TAN)
+    for y in (7, 9):
+        rect(g, 7, y, w // 2 - 3, y + 1, BROWN)
+        rect(g, w // 2 + 3, y, w - 7, y + 1, BROWN)
+    dng_candle(g, w - 6, 8)
+    union_outline(g)
+    return g
+
+
+def dng_cage():
+    """An iron cage in the booth's place: bars under a domed top hung from a
+    ring, bones on its floor."""
+    w, h = CAMP_CANVAS["phone_booth"][0] * S, CAMP_CANVAS["phone_booth"][1] * S
+    g = canvas(w, h)
+    dng_slab(g, 1, h - 6, w - 1, h - 1, top=1)
+    ellipse(g, w / 2, 10.0, 12.0, 6.0, IRON_SH)
+    rect(g, 2, 10, w - 2, 12, IRON)
+    rect(g, w // 2 - 1, 1, w // 2 + 1, 4, IRON_LT)
+    for x in range(3, w - 2, 4):
+        rect(g, x, 12, x + 1, h - 6, IRON_SH if x > w // 2 else IRON)
+    rect(g, 2, h - 9, w - 2, h - 7, IRON)
+    bones(g, 7, h - 11)
+    union_outline(g)
+    return g
+
+
+def dng_bench(front):
+    """A stone bench in the sofa's place: seen from the front, a backrest of
+    stacked stones over the seat slab; from behind, the seat on top and the
+    backrest's lit ridge over the stones of its back."""
+    w, h = 20 * S, 7 * S
+    g = canvas(w, h)
+    if front:
+        for i, x in enumerate(range(1, w - 1, 13)):  # the backrest's stones
+            dng_slab(g, x, 1 + (i % 2), min(x + 13, w - 1), 13, top=2)
+        dng_slab(g, 1, 12, w - 1, h - 1, top=5)
+    else:
+        dng_slab(g, 1, 1, w - 1, 12, top=8)
+        rect(g, 1, 12, w - 1, 14, ROCK_HI)
+        for i, x in enumerate(range(1, w - 1, 13)):
+            dng_slab(g, x, 14, min(x + 13, w - 1), h - 1, top=1)
+    union_outline(g)
+    return g
+
+
+def dng_bench_front():
+    """The stone bench seen from the front."""
+    return dng_bench(True)
+
+
+def dng_bench_back():
+    """The stone bench seen from behind."""
+    return dng_bench(False)
+
+
+def dng_rough_table():
+    """A rough table in the meeting table's place: planks on trestles, a
+    skull with a candle on it, a dagger."""
+    g = prop_canvas("meeting_table")
+    w, h = len(g[0]), len(g)
+    rect(g, 2, 3, w - 2, 12, WOOD)
+    rect(g, 2, 3, w - 2, 4, WOOD_LT)
+    for x in range(11, w - 2, 10):
+        rect(g, x, 4, x + 1, 12, WOOD_SH)
+    rect(g, 2, 12, w - 2, 14, WOOD_SH)
+    for x in (5, w - 8):
+        rect(g, x, 14, x + 3, h, WOOD_DK)
+    skull(g, 7, 2)
+    dng_candle(g, 10, 3)
+    stem(g, [(26, 8), (36, 6)], 0.5, IRON_LT)
+    rect(g, 24, 8, 27, 9, LEATHER)
+    union_outline(g)
+    return g
+
+
+def dng_stone_seat():
+    """A stone seat in the meeting chair's place, its back to the west."""
+    g = prop_canvas("meeting_chair")
+    w, h = len(g[0]), len(g)
+    dng_slab(g, 3, 4, 10, h - 1, top=2)
+    dng_slab(g, 9, 13, w - 3, h - 1, top=4)
+    union_outline(g)
+    return g
+
+
+def dng_chain_post():
+    """A post hung with chains and shackles in the coat rack's place, a skull
+    set on its top."""
+    g = prop_canvas("coat_rack")
+    w, h = len(g[0]), len(g)
+    rect(g, 8, 6, 12, h - 2, WOOD)
+    rect(g, 11, 6, 12, h - 2, WOOD_SH)
+    rect(g, 4, h - 2, 16, h, WOOD_DK)
+    rect(g, 2, 9, w - 2, 11, WOOD_DK)
+    for x in (3, w - 4):
+        dng_chain(g, x, 11, 27)
+        rect(g, x - 1, 27, x + 2, 30, IRON_LT)
+        put(g, x, 28, T)
+    skull(g, 6, 0)
+    union_outline(g)
+    return g
+
+
+def dng_candle_block():
+    """A stone block in the side table's place, three candles burning on it."""
+    w, h = CAMP_CANVAS["side_table"][0] * S, CAMP_CANVAS["side_table"][1] * S
+    g = canvas(w, h)
+    dng_slab(g, 3, 7, w - 3, h - 1)
+    for x in (7, 13, 19):
+        dng_candle(g, x, 8)
+    union_outline(g)
+    return g
+
+
+def dng_candelabrum():
+    """A tall iron candelabrum in the floor lamp's place: a pole on three feet
+    under a dish of flame, its heart in the bulb key so its light pools."""
+    w, h = CAMP_CANVAS["floor_lamp"][0] * S, CAMP_CANVAS["floor_lamp"][1] * S
+    g = canvas(w, h)
+    rect(g, 7, 12, 9, h - 3, IRON_SH)
+    rect(g, 7, 12, 8, h - 3, IRON)
+    for fx in (2, 7, 13):
+        stem(g, [(8, h - 4), (fx + 0.5, h - 0.5)], 0.6, IRON_SH)
+    rect(g, 3, 10, 13, 12, IRON)
+    torch_core = master("""
+        ...ɜ...
+        ..ɛɜ...
+        .ɛɛɛɜ..
+        .ɛ99ɛ..
+        ɛ9999ɛ.
+        ɛɛ99ɛɛ.
+    """)
+    paste(g, torch_core, 4, 4)
+    union_outline(g)
+    return g
+
+
+# The vat's bubbles: each lane's column and the frame it starts rising on.
+DNG_VAT_LANES = ((16, 0), (27, 6), (38, 12))
+DNG_VAT_FRAMES = 18
+
+
+def dng_vat():
+    """A great glass vat of green brew in the fish tank's place, on a stone
+    base, bubbles rising through it in turn."""
+    blank = prop_canvas("fish_tank")
+    w, h = len(blank[0]), len(blank)
+    frames = []
+    surface, bottom = 9, 32
+    for f in range(DNG_VAT_FRAMES):
+        g = canvas(w, h)
+        dng_slab(g, 2, bottom, w - 2, h - 1)
+        rect(g, 6, 4, w - 6, bottom, IRON_SH)
+        rect(g, 8, surface, w - 8, bottom, LEAF)
+        rect(g, 8, surface, w - 8, surface + 1, LEAF_HI)
+        rect(g, w - 14, surface + 1, w - 8, bottom, LEAF_SH)
+        rect(g, 9, 6, 11, bottom - 2, WHITE)
+        rect(g, 4, 3, w - 4, 5, IRON)
+        for x, start in DNG_VAT_LANES:
+            rise = (f - start) % DNG_VAT_FRAMES
+            y = bottom - 2 - rise * 2
+            if surface < y:
+                put(g, x, y, LEAF_HI)
+                put(g, x + 1, y, LEAF_HI)
+        union_outline(g)
+        frames.append(g)
+    return frames
+
+
+# The font's drip, per frame: the drop's row under the spout, None at rest.
+DNG_DRIPS = (None, 4, 8, 11, None)
+
+
+def dng_font():
+    """A stone font in the water cooler's place: a basin of water on a pillar,
+    a drop falling into it from the cave's roof while in use."""
+    blank = prop_canvas("water_cooler")
+    w, h = len(blank[0]), len(blank)
+    frames = []
+    for drip in DNG_DRIPS:
+        g = canvas(w, h)
+        dng_slab(g, 5, 16, 11, h - 1, top=1)
+        dng_slab(g, 3, h - 4, 13, h - 1, top=1)
+        rect(g, 1, 11, w - 1, 17, ROCK)
+        rect(g, 1, 16, w - 1, 17, ROCK_SH)
+        rect(g, 2, 11, w - 2, 13, BLUE)
+        rect(g, 3, 11, w - 5, 12, CYAN)
+        if drip is not None:
+            put(g, 8, drip, CYAN)
+            if drip >= 11:
+                put(g, 6, 11, WHITE)
+                put(g, 10, 11, WHITE)
+        union_outline(g)
+        frames.append(g)
+    return frames
+
+
+def dng_jar_shelf():
+    """A wooden shelf of jars in the snack shelf's place: brews in four
+    colours, a skull, a candle."""
+    g = prop_canvas("snack_shelf")
+    w, h = len(g[0]), len(g)
+    for x in (1, w - 3):
+        rect(g, x, 1, x + 2, h, WOOD_SH)
+    for i, y in enumerate((13, 26, h - 2)):
+        rect(g, 1, y, w - 1, y + 2, WOOD)
+        if i == 0:
+            skull(g, 4, y - 7)
+            dng_jar(g, 14, y, 6, DNG_JARS[0])
+            dng_candle(g, 21, y)
+        elif i == 1:
+            for j, x in enumerate((4, 10, 16, 21)):
+                dng_jar(g, x, y, 5 + j % 2 * 2, DNG_JARS[j])
+        else:
+            dng_jar(g, 5, y, 7, DNG_JARS[2])
+            rect(g, 12, y - 6, 22, y, TAN)
+            rect(g, 12, y - 6, 22, y - 5, BROWN)
+    union_outline(g)
+    return g
+
+
+def dng_larder(piece):
+    """A larder in the pantry's place: a stone hearth with a cauldron on its
+    fire west, a counter of sacks and jars, haunches hung from a rack over
+    it."""
+    g = prop_canvas(piece)
+    w, h = len(g[0]), len(g)
+    hearth = 28
+    dng_slab(g, 2, 6, hearth, h - 1, top=2)
+    rect(g, 6, h - 16, hearth - 4, h - 3, SHADOW)
+    for x in range(8, hearth - 6, 3):
+        put(g, x, h - 4, VERMILION)
+        put(g, x + 1, h - 5, BULB)
+    dng_cauldron(g, (hearth + 2) / 2, h - 5, 7.0)
+    top = h - 14
+    dng_slab(g, hearth, top, w - 2, h - 1)
+    rect(g, hearth + 2, 2, w - 3, 4, WOOD_DK)
+    for x in range(hearth + 6, w - 6, 12):
+        dng_haunch(g, x, 4)
+    rng = Draws(len(piece))
+    x = hearth + 4
+    while x < w - 10:
+        if rng.random() < 0.5:
+            dng_jar(g, x, top, 5, DNG_JARS[rng.randrange(0, len(DNG_JARS))])
+            x += 7
+        else:
+            ellipse(g, x + 4.0, top - 3.5, 4.0, 3.5, TAN)
+            put(g, x + 4, top - 7, BROWN)
+            x += 10
+    union_outline(g)
+    return g
+
+
+def dng_larder_large():
+    """The larder, the wide pantry's."""
+    return dng_larder("pantry")
+
+
+def dng_larder_small():
+    """The larder, the narrow pantry's."""
+    return dng_larder("pantry_small")
+
+
+def dng_butcher_block():
+    """A butcher's block in the kitchen island's place: a long scarred table,
+    a haunch, a cleaver and bones on it."""
+    g = prop_canvas("kitchen_island")
+    w, h = len(g[0]), len(g)
+    rect(g, 2, 6, w - 2, 18, WOOD)
+    rect(g, 2, 6, w - 2, 7, WOOD_LT)
+    for x in range(14, w - 4, 15):
+        rect(g, x, 7, x + 1, 18, WOOD_SH)
+    rect(g, 2, 18, w - 2, 20, WOOD_SH)
+    for x in (5, w - 9):
+        rect(g, x, 20, x + 4, h, WOOD_DK)
+    ellipse(g, 18.0, 9.0, 6.0, 3.5, RED)
+    rect(g, 22, 8, 27, 10, BONE)
+    rect(g, 40, 6, 48, 11, IRON)
+    rect(g, 40, 6, 48, 7, IRON_LT)
+    rect(g, 48, 8, 54, 10, WOOD_DK)
+    bones(g, 60, 10)
+    union_outline(g)
+    return g
+
+
+def dng_urn():
+    """A clay urn in the bin's place, bones sticking out of it."""
+    g = prop_canvas("pantry_bin")
+    w, h = len(g[0]), len(g)
+    ellipse(g, w / 2, h - 7.0, 6.5, 6.5, POT)
+    rect(g, 4, 5, w - 4, 8, POT)
+    rect(g, 3, 5, w - 3, 6, POT_HI)
+    for y in range(len(g)):
+        for x in range(w):
+            if g[y][x] == POT and x > w / 2 + 2:
+                g[y][x] = POT_SH
+    rect(g, 5, 1, 7, 6, BONE)
+    rect(g, 9, 0, 11, 6, BONE_SH)
+    put(g, 4, 1, BONE)
+    put(g, 11, 0, BONE)
+    union_outline(g)
+    return g
+
+
+# ---- the dungeon's holidays: a festive stand-in for each office one ------------
+def dng_twinkle(frames, spots):
+    """`frames` with crystals at `spots` glinting in turn, frame by frame."""
+    for f, g in enumerate(frames):
+        for i, (x, y) in enumerate(spots):
+            put(g, x, y, WHITE if (i + f) % 2 else CYAN)
+    return frames
+
+
+def dng_crystal_spire():
+    """The tall holiday stand-in: the stalagmite set with crystals that glint
+    in turn."""
+    return dng_twinkle(
+        [stalagmite() for _ in range(2)],
+        ((10, 8), (8, 16), (13, 22), (18, 26), (6, 30)),
+    )
+
+
+def dng_crystal_mushrooms():
+    """The short holiday stand-in: the cave mushrooms with glinting motes."""
+    return dng_twinkle(
+        [mushrooms() for _ in range(2)], ((3, 6), (21, 4), (12, 1), (22, 14))
+    )
+
+
+def dng_red_caps():
+    """The flowering holiday stand-in: red-capped mushrooms on a stone."""
+    g = canvas(6 * S, 6 * S)
+    boulder(g, 12.0, 20.0, 9.0, 3.5, 37)
+    for cx, top, r in ((8, 6, 4.5), (15, 2, 5.5)):
+        rect(g, cx - 1, top + 3, cx + 1, 19, BONE)
+        ellipse(g, cx, top + 2.5, r, r * 0.6, RED)
+        put(g, cx - 2, top + 1, WHITE)
+        put(g, cx + 1, top + 2, WHITE)
+    union_outline(g)
+    return g
+
+
+def dng_sacks():
+    """The presents' stand-in: two sacks of treasure tied with gold cord."""
+    g = canvas(5 * S, 4 * S)
+    for cx, r in ((7.0, 5.0), (14.0, 4.0)):
+        ellipse(g, cx, 16 - r, r, r, TAN)
+        rect(
+            g, int(cx) - 1, int(16 - 2 * r) - 1, int(cx) + 1, int(16 - 2 * r) + 1, GOLD
+        )
+    put(g, 10, 15, GOLD)
+    union_outline(g)
+    return g
+
+
 # The dungeon's stand-ins, each drawn on the canvas of the piece it replaces.
 DUNGEON_PIECES = {
     "desk": lair_south,
@@ -8690,6 +9350,29 @@ DUNGEON_PIECES = {
     "whiteboard": map_board,
     "bulletin_board": wanted_board,
     "notice_board": notice_planks,
+    "wall_clock": dng_rune_disc,
+    "meeting_screen": dng_rune_tablet,
+    "tv_stand": dng_idol,
+    "standing_desk": dng_lectern,
+    "phone_booth": dng_cage,
+    "meeting_sofa": dng_bench_front,
+    "meeting_sofa_north": dng_bench_back,
+    "meeting_table": dng_rough_table,
+    "meeting_chair": dng_stone_seat,
+    "coat_rack": dng_chain_post,
+    "side_table": dng_candle_block,
+    "floor_lamp": dng_candelabrum,
+    "fish_tank": dng_vat,
+    "water_cooler": dng_font,
+    "snack_shelf": dng_jar_shelf,
+    "pantry": dng_larder_large,
+    "pantry_small": dng_larder_small,
+    "kitchen_island": dng_butcher_block,
+    "pantry_bin": dng_urn,
+    "christmas_tree": dng_crystal_spire,
+    "christmas_tree_short": dng_crystal_mushrooms,
+    "poinsettia": dng_red_caps,
+    "presents": dng_sacks,
 }
 
 
@@ -8992,6 +9675,14 @@ def main():
     require(
         grounded([lair_south()]) == [lair_south()], "the south lair moves when grounded"
     )
+    # A foe is drawn on its desk's canvas at the desk's top-left, so it is not
+    # grounded on its own rows.
+    for foe, draw in (
+        ("foe", foe_south),
+        ("foe_front", foe_south_front),
+        ("foe_north", foe_north),
+    ):
+        sprites[f"{DUNGEON}{foe}@{S}x.sprite"] = render_sprite(doc(draw), draw())
     for up, name in ((True, "floor_up"), (False, "floor_down")):
         sprites[f"{DUNGEON}icon_{name}.sprite"] = render_sprite(
             doc(stair_icon), [stair_icon(up)]

@@ -22,7 +22,6 @@ pub use error::PackError;
 use error::Repr;
 use load::load_pack_from_json;
 pub use piece::{Piece, Walk};
-use strum::VariantArray as _;
 
 use crate::display::Icon;
 use crate::floor::FloorRole;
@@ -409,11 +408,29 @@ impl Desk {
     /// The overlay drawn over the props on its art, if it has one: what of
     /// the desk stands nearer the viewer than its sitter's props.
     pub(crate) fn front(self) -> Option<Piece> {
-        Piece::VARIANTS
-            .iter()
-            .copied()
-            .find(|p| p.overlay_of() == Some(self.piece()))
+        match self {
+            Desk::South => Some(Piece::DeskFront),
+            Desk::North => None,
+        }
     }
+
+    /// What stands at its lair while its sitter works, on its art: the foe
+    /// drawn under the sitter's props, and the one drawn over them, if any.
+    /// A pack that draws no foe draws these empty.
+    pub(crate) fn foe(self) -> (Piece, Option<Piece>) {
+        match self {
+            Desk::South => (Piece::Foe, Some(Piece::FoeFront)),
+            Desk::North => (Piece::FoeNorth, None),
+        }
+    }
+}
+
+/// The frame of `foe` the lair of desk `lair` (its index on its floor) holds,
+/// never played: a foe's frames are the pack's monsters, so neighbouring
+/// lairs stand different ones and a desk keeps its own for as long as it has
+/// one.
+pub(crate) fn foe_frame(pack: &OfficeArt, foe: Piece, lair: usize) -> usize {
+    lair % pack.piece(foe).frames().len()
 }
 
 /// A prop a desk stands at its mark.
@@ -865,6 +882,7 @@ mod tests {
     use crate::display::pen::test_density;
     use crate::render_scale::RenderScale;
     use crate::sprite::format::Density;
+    use strum::VariantArray as _;
 
     #[test]
     fn every_material_has_its_own_place() {

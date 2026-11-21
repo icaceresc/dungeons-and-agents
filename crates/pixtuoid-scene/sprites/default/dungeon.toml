@@ -14,6 +14,7 @@ windows = false
 "ɐ" = "#5d7236"   # an orc's hide
 "ɔ" = "#4a3f58"   # a giant spider's chitin
 "ɘ" = "#d4c9a8"   # bone: a tusk, a fang, a skull
+"ɤ" = "#8a9636"   # a goblin's hide, yellower than an orc's
 "ɛ" = "#e0702c"   # a torch's flame round its bulb-key core
 
 [ramps]
@@ -30,10 +31,11 @@ windows = false
 "ə" = { of = "ɘ", level = -2 }   # bone, shaded
 "ɚ" = { of = "ɘ", level = -5 }   # bone, darkest
 "ɜ" = { of = "ɛ", level = -3 }   # flame, its dark red tips
+"ɥ" = { of = "ɤ", level = 2 }    # goblin hide, lit
+"ɯ" = { of = "ɤ", level = -2 }   # goblin hide, shaded
 
-# The lairs: a monster on each desk's own canvas, keeping its `cup` and
-# `tower` marks and a torch whose flame burns in the bulb key; its eyes or
-# sigil in the screen keys, so the fighter's tool lights them.
+# The lairs, each on its desk's own canvas: empty, keeping the desk's `cup`
+# and `tower` marks and a torch whose flame burns in the bulb key.
 [animations."desk@4x"]
 frames = ["dungeon_desk@4x.sprite"]
 
@@ -42,6 +44,35 @@ frames = ["dungeon_desk_north@4x.sprite"]
 
 [animations."desk_front@4x"]
 frames = ["dungeon_desk_front@4x.sprite"]
+
+# Its foes, drawn on its lair's canvas only while the seat's sitter works:
+# `foe` under the sitter's props, `foe_front` over them, `foe_north` at the
+# back-turned seat's lair. Each frame is a monster, one held per desk
+# (`pack::foe_frame`), `foe` and `foe_front` frame for frame: an orc with a
+# goblin at its side, a pair of goblins, a skeleton warrior; a giant spider, a
+# skeleton archer. Their eyes, sigil or soul-light in the screen keys, so the
+# fighter's tool lights them. A variant draws as many frames as its base, so
+# the 1x bases repeat the office's blank one.
+[animations.foe]
+frames = ["foe.sprite", "foe.sprite", "foe.sprite"]
+
+[animations."foe@4x"]
+frames = ["dungeon_foe@4x.sprite"]
+frame_ms = 600
+
+[animations.foe_front]
+frames = ["foe_front.sprite", "foe_front.sprite", "foe_front.sprite"]
+
+[animations."foe_front@4x"]
+frames = ["dungeon_foe_front@4x.sprite"]
+frame_ms = 600
+
+[animations.foe_north]
+frames = ["foe_north.sprite", "foe_north.sprite"]
+
+[animations."foe_north@4x"]
+frames = ["dungeon_foe_north@4x.sprite"]
+frame_ms = 600
 
 [animations."desk_chair@4x"]
 frames = ["dungeon_desk_chair@4x.sprite"]
@@ -103,6 +134,80 @@ frames = ["dungeon_bulletin_board@4x.sprite"]
 
 [animations."notice_board@4x"]
 frames = ["dungeon_notice_board@4x.sprite"]
+
+# The rest of the office, each on its own canvas and with its own frame count:
+# a rune disc for the clock (a lone face pixel, so no hands), a rune tablet, an
+# idol, a lectern, a cage, stone benches, a rough table and seats, a chain post,
+# candles, a candelabrum, an alchemist's vat, a dripping font, a shelf of jars,
+# a larder, a butcher's block, a bone urn; the holidays' stand-ins too.
+[animations."wall_clock@4x"]
+frames = ["dungeon_wall_clock@4x.sprite"]
+
+[animations."meeting_screen@4x"]
+frames = ["dungeon_meeting_screen@4x.sprite"]
+
+[animations."tv_stand@4x"]
+frames = ["dungeon_tv_stand@4x.sprite"]
+
+[animations."standing_desk@4x"]
+frames = ["dungeon_standing_desk@4x.sprite"]
+
+[animations."phone_booth@4x"]
+frames = ["dungeon_phone_booth@4x.sprite"]
+
+[animations."meeting_sofa@4x"]
+frames = ["dungeon_meeting_sofa@4x.sprite"]
+
+[animations."meeting_sofa_north@4x"]
+frames = ["dungeon_meeting_sofa_north@4x.sprite"]
+
+[animations."meeting_table@4x"]
+frames = ["dungeon_meeting_table@4x.sprite"]
+
+[animations."meeting_chair@4x"]
+frames = ["dungeon_meeting_chair@4x.sprite"]
+
+[animations."coat_rack@4x"]
+frames = ["dungeon_coat_rack@4x.sprite"]
+
+[animations."side_table@4x"]
+frames = ["dungeon_side_table@4x.sprite"]
+
+[animations."floor_lamp@4x"]
+frames = ["dungeon_floor_lamp@4x.sprite"]
+
+[animations."fish_tank@4x"]
+frames = ["dungeon_fish_tank@4x.sprite"]
+
+[animations."water_cooler@4x"]
+frames = ["dungeon_water_cooler@4x.sprite"]
+
+[animations."snack_shelf@4x"]
+frames = ["dungeon_snack_shelf@4x.sprite"]
+
+[animations."pantry@4x"]
+frames = ["dungeon_pantry@4x.sprite"]
+
+[animations."pantry_small@4x"]
+frames = ["dungeon_pantry_small@4x.sprite"]
+
+[animations."kitchen_island@4x"]
+frames = ["dungeon_kitchen_island@4x.sprite"]
+
+[animations."pantry_bin@4x"]
+frames = ["dungeon_pantry_bin@4x.sprite"]
+
+[animations."christmas_tree@4x"]
+frames = ["dungeon_christmas_tree@4x.sprite"]
+
+[animations."christmas_tree_short@4x"]
+frames = ["dungeon_christmas_tree_short@4x.sprite"]
+
+[animations."poinsettia@4x"]
+frames = ["dungeon_poinsettia@4x.sprite"]
+
+[animations."presents@4x"]
+frames = ["dungeon_presents@4x.sprite"]
 
 # The floor indicator's arrows as flights of stairs. `alert` writes the up
 # arrow's glyph, and a glyph draws one art (`display::icon`'s tests).

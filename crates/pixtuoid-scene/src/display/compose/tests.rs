@@ -1059,7 +1059,7 @@ pub(crate) fn kind_name(kind: &PieceKind) -> &'static str {
     match kind {
         PieceKind::WallSeg { .. } => "wall",
         PieceKind::Desk { .. } => "desk",
-        PieceKind::DeskFront { .. } => "desk front",
+        PieceKind::DeskOverlay { .. } => "desk overlay",
         PieceKind::Chair { .. } => "chair",
         PieceKind::Prop { .. } => "prop",
         PieceKind::PropBand { .. } => "prop band",
@@ -1218,7 +1218,7 @@ fn a_walker_just_south_of_a_desk_front_draws_over_it() {
     };
     // its front, if any, sorts as the desk does
     for (s, kind) in front {
-        assert!(matches!(kind, PieceKind::DeskFront { .. }), "{kind:?}");
+        assert!(matches!(kind, PieceKind::DeskOverlay { .. }), "{kind:?}");
         assert_eq!(*s, span, "the front sorts with its desk");
     }
     assert_eq!(span.depth, row, "the desk sorts on the roster's row");
@@ -1943,4 +1943,123 @@ fn a_wall_without_windows_composes_neither_windows_nor_posts() {
     );
     let solid = crate::pack::test_office_with("[walls]\nwindows = false\n", &[]);
     assert_eq!(shown(&solid), (0, 0));
+}
+
+/// A desk's foe is drawn on its canvas only while its sitter works: under its
+/// props, at a viewer-facing desk over them too, the desk's own front over
+/// both.
+#[test]
+fn a_foe_stands_at_a_desk_only_while_its_sitter_works() {
+    use crate::layout::Facing;
+    use pixtuoid_core::state::FloorLocalDeskIndex;
+    let pack = test_office();
+    let layout =
+        SceneLayout::compute(crate::layout::Viewport::full(160, 96), None, 0).expect("lays out");
+    let theme = &crate::theme::NORMAL;
+    let timing = Motion::Full.timing(std::time::UNIX_EPOCH);
+    let moment = Moment::resolve(crate::sky::Sky::clock(timing.now), theme, 0.0, timing);
+    for facing in [Facing::South, Facing::North] {
+        let i = (layout.home_desks.iter())
+            .position(|d| d.facing == facing)
+            .expect("a desk facing that way");
+        let drawn = |foe: bool| {
+            let mut frame = empty_frame(&layout);
+            frame.desks[i] = crate::sim::DeskProps {
+                cup: Some(crate::sim::Cup::Cold),
+                foe,
+                ..Default::default()
+            };
+            let inputs = ComposeInputs {
+                frame: &frame,
+                office: Office {
+                    layout: &layout,
+                    pack: &pack,
+                    theme,
+                    scale: RenderScale::ONE,
+                },
+                moment: &moment,
+                text: crate::look::WorldText::Baked,
+            };
+            let mut order = Vec::new();
+            push_desk(FloorLocalDeskIndex(i), inputs, 0, &mut order);
+            order
+                .into_iter()
+                .map(|(_, kind)| match kind {
+                    PieceKind::Desk { .. } => "desk",
+                    PieceKind::DeskOverlay { overlay, .. } => overlay.name(),
+                    PieceKind::DeskProp(_) => "prop",
+                    _ => "other",
+                })
+                .collect::<Vec<_>>()
+        };
+        let desk = Desk::facing(facing);
+        let (foe, foe_front) = desk.foe();
+        let front = desk.front().map(PackPiece::name);
+        let working: Vec<_> = ["desk", foe.name(), "prop"]
+            .into_iter()
+            .chain(foe_front.map(PackPiece::name))
+            .chain(front)
+            .collect();
+        let idle: Vec<_> = ["desk", "prop"].into_iter().chain(front).collect();
+        assert_eq!(drawn(true), working, "{facing:?}");
+        assert_eq!(drawn(false), idle, "{facing:?}");
+    }
+}
+
+/// Each lair holds its own frame of its foe, never played: neighbouring desks
+/// stand different monsters, the desk's index picking one round the foe's
+/// frames.
+#[test]
+fn neighbouring_lairs_hold_different_foes() {
+    use crate::layout::Facing;
+    use pixtuoid_core::state::FloorLocalDeskIndex;
+    // A second frame on the 1x desk's canvas, blank as the bundled one.
+    let row = vec!["."; 14].join(" ");
+    let blank = format!("@frame 0\n{}\n", vec![row; 9].join("\n"));
+    let pack = crate::pack::test_office_with(
+        "[animations.foe]\nframes = [\"foe.sprite\", \"foe_other.sprite\"]\nframe_ms = 600\n",
+        &[("foe_other.sprite", &blank)],
+    );
+    let layout =
+        SceneLayout::compute(crate::layout::Viewport::full(160, 96), None, 0).expect("lays out");
+    let theme = &crate::theme::NORMAL;
+    let timing = Motion::Full.timing(std::time::UNIX_EPOCH);
+    let moment = Moment::resolve(crate::sky::Sky::clock(timing.now), theme, 0.0, timing);
+    let i = (layout.home_desks.iter())
+        .position(|d| d.facing == Facing::South)
+        .expect("a viewer-facing desk");
+    let held = |lair: usize| {
+        let mut frame = empty_frame(&layout);
+        frame.desks[i] = crate::sim::DeskProps {
+            foe: true,
+            lair,
+            ..Default::default()
+        };
+        let inputs = ComposeInputs {
+            frame: &frame,
+            office: Office {
+                layout: &layout,
+                pack: &pack,
+                theme,
+                scale: RenderScale::ONE,
+            },
+            moment: &moment,
+            text: crate::look::WorldText::Baked,
+        };
+        let mut order = Vec::new();
+        push_desk(FloorLocalDeskIndex(i), inputs, 0, &mut order);
+        order
+            .into_iter()
+            .find_map(|(_, kind)| match kind {
+                PieceKind::DeskOverlay {
+                    overlay: PackPiece::Foe,
+                    frame,
+                    ..
+                } => Some(frame),
+                _ => None,
+            })
+            .expect("a working desk stands its foe")
+    };
+    assert_ne!(held(0), held(1), "neighbouring lairs stand different foes");
+    assert_eq!(held(2), held(0), "the pick goes round the foe's frames");
 }

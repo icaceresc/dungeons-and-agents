@@ -300,9 +300,14 @@ pub(crate) fn fingerprint(kind: &PieceKind) -> u64 {
     std::mem::discriminant(kind).hash(&mut h);
     match *kind {
         PieceKind::WallSeg { piece, rows, trim } => (piece, rows, trim).hash(&mut h),
-        PieceKind::Desk { at, desk, screen } | PieceKind::DeskFront { at, desk, screen } => {
-            (at, desk, screen).hash(&mut h);
-        }
+        PieceKind::Desk { at, desk, screen } => (at, desk, screen).hash(&mut h),
+        PieceKind::DeskOverlay {
+            at,
+            desk,
+            overlay,
+            frame,
+            screen,
+        } => (at, desk, overlay, frame, screen).hash(&mut h),
         PieceKind::Chair { at } => at.hash(&mut h),
         PieceKind::DeskProp(prop) => prop.hash(&mut h),
         PieceKind::Creature {
@@ -385,7 +390,7 @@ impl PieceKind {
             PieceKind::WallSeg { .. }
             | PieceKind::Chair { .. }
             | PieceKind::DeskProp(_)
-            | PieceKind::DeskFront { .. }
+            | PieceKind::DeskOverlay { .. }
             | PieceKind::Creature { .. }
             | PieceKind::PropBand { .. }
             | PieceKind::Table { .. }
@@ -440,13 +445,17 @@ pub(crate) enum PieceKind {
         desk: crate::pack::Desk,
         screen: Screen,
     },
-    /// What of the desk at `at` stands nearer the viewer than its props
-    /// ([`Desk::front`](crate::pack::Desk::front)), drawn over them as the
-    /// desk is drawn.
-    DeskFront {
+    /// Art drawn on the canvas of the desk at `at` as the desk is drawn: its
+    /// foe ([`Desk::foe`](crate::pack::Desk::foe)), or what of it stands
+    /// nearer the viewer than its props ([`Desk::front`](crate::pack::Desk::front)).
+    DeskOverlay {
         at: crate::layout::Point,
-        /// The desk, which the front covers.
+        /// The desk, on whose canvas it stands.
         desk: crate::pack::Desk,
+        /// Its art: an [`overlay_of`](crate::pack::Piece::overlay_of) the desk's.
+        overlay: crate::pack::Piece,
+        /// The frame of `overlay` it holds ([`foe_frame`](crate::pack::foe_frame)).
+        frame: usize,
         screen: Screen,
     },
     Chair {

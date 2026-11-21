@@ -560,7 +560,7 @@ pub(crate) fn ground_shadow(
     match *kind {
         PieceKind::WallSeg { .. }
         | PieceKind::Window { .. }
-        | PieceKind::DeskFront { .. }
+        | PieceKind::DeskOverlay { .. }
         | PieceKind::Hung { .. }
         | PieceKind::Door { .. }
         | PieceKind::Neon { .. }
@@ -1135,17 +1135,26 @@ fn push_desk(
             screen,
         },
     ));
-    push_desk_props(&props, (desk, span), office, order);
-    if desk.front().is_some() {
-        order.push((
+    let overlay = |(overlay, frame)| {
+        (
             span,
-            PieceKind::DeskFront {
+            PieceKind::DeskOverlay {
                 at: d,
                 desk,
+                overlay,
+                frame,
                 screen,
             },
-        ));
-    }
+        )
+    };
+    let foe = |foe| (foe, crate::pack::foe_frame(pack, foe, props.lair));
+    // The foe stands under its sitter's props and, where it reaches nearer
+    // the viewer, over them; the desk's own front over both.
+    let (under, over) = desk.foe();
+    order.extend(props.foe.then(|| overlay(foe(under))));
+    push_desk_props(&props, (desk, span), office, order);
+    order.extend(over.filter(|_| props.foe).map(|p| overlay(foe(p))));
+    order.extend(desk.front().map(|front| overlay((front, 0))));
 }
 
 /// What stands on the `desk` that paints `span`, each at the art's own
