@@ -1,5 +1,5 @@
 //! The campaign's name for what an agent's tool does: a skill, always shown
-//! with the tool itself ("Hechizo (Bash)"), so a reader learns the skills from
+//! with the tool itself ("Spell (Bash)"), so a reader learns the skills from
 //! the tools they know. The one table every reader of a running tool names it
 //! by: the footer's tally, the tooltip and the dashboard.
 
@@ -9,38 +9,47 @@ use pixtuoid_core::state::ToolKind;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Skill {
     /// A shell command.
-    Hechizo,
-    /// A file written or edited.
-    Golpe,
-    /// A file, a listing or an image read.
-    Estudio,
-    /// A search through the code.
-    Rastreo,
-    /// A page fetched or the web searched.
-    Exploracion,
+    Spell,
+    /// An existing file changed.
+    Transmute,
+    /// A new file written.
+    Conjure,
+    /// A file or an image read.
+    Identify,
+    /// Code searched for text.
+    Scry,
+    /// Files found by name, or a directory's listing.
+    Locate,
+    /// A page fetched, the web searched or a browser driven.
+    Divination,
     /// A subagent sent off.
-    Invocacion,
+    Summon,
     /// A plan or a to-do list kept.
-    Tactica,
+    BattlePlan,
     /// An MCP server's tool.
     Ritual,
+    /// An Orca CLI call: a message to the other sessions.
+    Sending,
     /// Any other tool.
-    Habilidad,
+    Cantrip,
 }
 
 impl Skill {
     /// Its name as the screen writes it.
     pub fn name(self) -> &'static str {
         match self {
-            Skill::Hechizo => "Hechizo",
-            Skill::Golpe => "Golpe",
-            Skill::Estudio => "Estudio",
-            Skill::Rastreo => "Rastreo",
-            Skill::Exploracion => "Exploración",
-            Skill::Invocacion => "Invocación",
-            Skill::Tactica => "Táctica",
+            Skill::Spell => "Spell",
+            Skill::Transmute => "Transmute",
+            Skill::Conjure => "Conjure",
+            Skill::Identify => "Identify",
+            Skill::Scry => "Scry",
+            Skill::Locate => "Locate",
+            Skill::Divination => "Divination",
+            Skill::Summon => "Summon",
+            Skill::BattlePlan => "Battle Plan",
             Skill::Ritual => "Ritual",
-            Skill::Habilidad => "Habilidad",
+            Skill::Sending => "Sending",
+            Skill::Cantrip => "Cantrip",
         }
     }
 
@@ -50,42 +59,46 @@ impl Skill {
     /// and the other sources' generic ones.
     pub fn of(tool: &str, kind: ToolKind) -> Self {
         if kind == ToolKind::Task {
-            return Skill::Invocacion;
+            return Skill::Summon;
         }
         let tool = tool.to_ascii_lowercase();
         if tool.starts_with("mcp_") {
             return Skill::Ritual;
         }
         if tool.starts_with("browser_") {
-            return Skill::Exploracion;
+            return Skill::Divination;
         }
         match tool.as_str() {
-            // `orca`: what the Orca adapter names an Orca CLI call.
             "bash" | "bashoutput" | "killshell" | "killbash" | "powershell" | "shell"
             | "local_shell" | "exec" | "exec_command" | "write_stdin" | "run_command"
-            | "send_command_input" | "command_status" | "orca" => Skill::Hechizo,
+            | "send_command_input" | "command_status" => Skill::Spell,
+            // What the Orca adapter names an Orca CLI call.
+            "orca" => Skill::Sending,
+            // Changing a file that exists. Codex's `apply_patch` can also add
+            // one, but a patch is mostly an edit.
             "edit"
-            | "write"
             | "multiedit"
             | "notebookedit"
             | "apply_patch"
             | "patch"
-            | "create"
             | "str_replace"
             | "str_replace_editor"
             | "insert"
-            | "write_to_file"
             | "replace_file_content"
-            | "multi_replace_file_content" => Skill::Golpe,
-            "read" | "notebookread" | "view" | "view_image" | "ls" | "list" | "read_file"
-            | "view_file" | "view_file_outline" | "view_code_item" | "list_dir" => Skill::Estudio,
-            "grep" | "glob" | "search" | "find" | "codesearch" | "grep_search" | "find_by_name"
-            | "codebase_search" => Skill::Rastreo,
+            | "multi_replace_file_content" => Skill::Transmute,
+            // Writing a file whole, most often a new one.
+            "write" | "create" | "write_to_file" => Skill::Conjure,
+            "read" | "notebookread" | "view" | "view_image" | "read_file" | "view_file"
+            | "view_file_outline" | "view_code_item" => Skill::Identify,
+            "grep" | "search" | "codesearch" | "grep_search" | "codebase_search" => Skill::Scry,
+            // A directory's listing finds files as a glob does; reading them
+            // is Identify.
+            "glob" | "find" | "find_by_name" | "ls" | "list" | "list_dir" => Skill::Locate,
             "webfetch" | "websearch" | "web_fetch" | "web_search" | "read_url_content"
-            | "search_web" => Skill::Exploracion,
-            "task" | "agent" | "spawn_agent" | "subagent" => Skill::Invocacion,
-            "todowrite" | "todoread" | "update_plan" | "exitplanmode" | "plan" => Skill::Tactica,
-            _ => Skill::Habilidad,
+            | "search_web" => Skill::Divination,
+            "task" | "agent" | "spawn_agent" | "subagent" => Skill::Summon,
+            "todowrite" | "todoread" | "update_plan" | "exitplanmode" | "plan" => Skill::BattlePlan,
+            _ => Skill::Cantrip,
         }
     }
 }
@@ -100,7 +113,7 @@ pub fn tool_of(detail: &str) -> &str {
     &detail[..end]
 }
 
-/// `tool` named as its skill, the tool beside it: `Hechizo (Bash)`; a
+/// `tool` named as its skill, the tool beside it: `Spell (Bash)`; a
 /// delegation, which names no tool, its skill alone.
 pub fn label(tool: &str, kind: ToolKind) -> String {
     let skill = Skill::of(tool, kind);
@@ -112,7 +125,7 @@ pub fn label(tool: &str, kind: ToolKind) -> String {
 }
 
 /// A running item's display `detail` with its tool named as its skill:
-/// `Bash: cargo test` reads `Hechizo (Bash): cargo test`.
+/// `Bash: cargo test` reads `Spell (Bash): cargo test`.
 pub fn skilled(detail: &str, kind: ToolKind) -> String {
     let tool = tool_of(detail);
     if kind == ToolKind::Task {
@@ -131,7 +144,7 @@ mod tests {
     fn every_sources_tools_have_their_skill() {
         let rows: &[(Skill, &[&str])] = &[
             (
-                Skill::Hechizo,
+                Skill::Spell,
                 &[
                     "Bash",
                     "BashOutput",
@@ -143,50 +156,63 @@ mod tests {
                     "bash",
                     "run_command",
                     "PowerShell",
-                    "Orca",
                 ],
             ),
             (
-                Skill::Golpe,
+                Skill::Transmute,
                 &[
                     "Edit",
-                    "Write",
                     "MultiEdit",
                     "NotebookEdit",
                     "apply_patch",
                     "edit",
-                    "write",
                     "patch",
-                    "write_to_file",
+                    "str_replace",
+                    "insert",
                     "replace_file_content",
                     "multi_replace_file_content",
                 ],
             ),
             (
-                Skill::Estudio,
+                Skill::Conjure,
+                &["Write", "write", "create", "write_to_file"],
+            ),
+            (
+                Skill::Identify,
                 &[
                     "Read",
+                    "NotebookRead",
                     "view_image",
                     "read",
-                    "list",
                     "view_file",
                     "read_file",
+                ],
+            ),
+            (
+                Skill::Scry,
+                &[
+                    "Grep",
+                    "grep",
+                    "search",
+                    "codesearch",
+                    "grep_search",
+                    "codebase_search",
+                ],
+            ),
+            (
+                Skill::Locate,
+                &[
+                    "Glob",
+                    "glob",
+                    "find",
+                    "find_by_name",
+                    "ls",
+                    "list",
                     "list_dir",
                 ],
             ),
             (
-                Skill::Rastreo,
-                &[
-                    "Grep",
-                    "Glob",
-                    "grep",
-                    "glob",
-                    "grep_search",
-                    "find_by_name",
-                ],
-            ),
-            (
-                Skill::Exploracion,
+                Skill::Divination,
                 &[
                     "WebFetch",
                     "WebSearch",
@@ -198,14 +224,15 @@ mod tests {
                 ],
             ),
             (
-                Skill::Tactica,
+                Skill::BattlePlan,
                 &["TodoWrite", "update_plan", "todowrite", "ExitPlanMode"],
             ),
             (
                 Skill::Ritual,
                 &["mcp__orca__send_message", "mcp_github_search"],
             ),
-            (Skill::Habilidad, &["frobnicate", "", "Delegating"]),
+            (Skill::Sending, &["Orca"]),
+            (Skill::Cantrip, &["frobnicate", "", "Delegating"]),
         ];
         for &(skill, tools) in rows {
             for tool in tools {
@@ -214,7 +241,7 @@ mod tests {
         }
         assert_eq!(
             Skill::of("Delegating", ToolKind::Task),
-            Skill::Invocacion,
+            Skill::Summon,
             "a delegation is a summons whatever it displays"
         );
     }
@@ -223,18 +250,22 @@ mod tests {
     /// its target, and a delegation names its skill alone.
     #[test]
     fn a_tool_reads_as_its_skill_with_the_tool_beside_it() {
-        assert_eq!(label("Bash", ToolKind::Bash), "Hechizo (Bash)");
-        assert_eq!(label("Edit", ToolKind::Edit), "Golpe (Edit)");
-        assert_eq!(label("Orca", ToolKind::Other), "Hechizo (Orca)");
+        assert_eq!(label("Bash", ToolKind::Bash), "Spell (Bash)");
+        assert_eq!(label("Edit", ToolKind::Edit), "Transmute (Edit)");
+        assert_eq!(label("Orca", ToolKind::Other), "Sending (Orca)");
+        assert_eq!(
+            label("TodoWrite", ToolKind::Other),
+            "Battle Plan (TodoWrite)"
+        );
         assert_eq!(
             skilled("Bash: cargo test", ToolKind::Bash),
-            "Hechizo (Bash): cargo test"
+            "Spell (Bash): cargo test"
         );
         assert_eq!(
             skilled("apply_patch", ToolKind::Other),
-            "Golpe (apply_patch)"
+            "Transmute (apply_patch)"
         );
-        assert_eq!(skilled("Delegating", ToolKind::Task), "Invocación");
+        assert_eq!(skilled("Delegating", ToolKind::Task), "Summon");
         assert_eq!(tool_of("exec: exec_command"), "exec");
         assert_eq!(
             tool_of("mcp__orca__send_message"),

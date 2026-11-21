@@ -518,8 +518,8 @@ fn footer_full_width_mixed_states() {
         "\u{25cf}3 R",
         "\u{25d0}2 A",
         "\u{25cb}3 I",
-        "Golpe (Edit)\u{d7}2",
-        "Hechizo (Bash)\u{d7}1",
+        "Transmute (Edit)\u{d7}2",
+        "Spell (Bash)\u{d7}1",
     ] {
         assert!(line.contains(frag), "missing {frag:?} in: {line}");
     }
@@ -745,7 +745,7 @@ fn footer_tool_hue_reads_kind_field() {
     let spans = build_status_spans(&inputs(&s, 0, None), 160, theme);
     let tool = spans
         .iter()
-        .find(|sp| sp.content.contains("Invocación"))
+        .find(|sp| sp.content.contains("Summon"))
         .expect("tool segment present");
     let expected = to_color(
         theme

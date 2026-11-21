@@ -206,8 +206,8 @@ pub(crate) fn footer_tool_tally(scene: &SceneState) -> Vec<ToolTally> {
 }
 
 /// `tools` as the footer writes them, each a label, the kind it tints in and
-/// its count: each tool its skill with the tool beside it (`Hechizo (Bash)`),
-/// or, `compact`, one per skill, their counts summed (`Hechizo`), in the
+/// its count: each tool its skill with the tool beside it (`Spell (Bash)`),
+/// or, `compact`, one per skill, their counts summed (`Spell`), in the
 /// tally's order.
 fn tool_labels(tools: &[ToolTally], compact: bool) -> Vec<(String, ToolKind, usize)> {
     let mut out: Vec<(String, ToolKind, usize)> = Vec::new();
@@ -664,9 +664,9 @@ mod tests {
         let at = |budget| build_footer(&inputs(&scene, &tools, false, None, None), budget).text();
         let wide = at(200);
         for label in [
-            "Hechizo (Bash)\u{d7}2",
-            "Golpe (Edit)\u{d7}1",
-            "Hechizo (exec_command)\u{d7}1",
+            "Spell (Bash)\u{d7}2",
+            "Transmute (Edit)\u{d7}1",
+            "Spell (exec_command)\u{d7}1",
         ] {
             assert!(wide.contains(label), "{label} in {wide:?}");
         }
@@ -676,7 +676,7 @@ mod tests {
             .find(|line| !line.contains("(Bash)"))
             .expect("a width too narrow for the full names");
         assert!(
-            compact.contains("Hechizo\u{d7}3") && compact.contains("Golpe\u{d7}1"),
+            compact.contains("Spell\u{d7}3") && compact.contains("Transmute\u{d7}1"),
             "the compact names: {compact:?}"
         );
     }

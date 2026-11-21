@@ -23,8 +23,10 @@ mientras trabaja.
 - **Cuatro clases**, según el rol de la sesión en Orca: caballero
   (orquestador), mago (companion), montaraz (subagente o sesión suelta) y
   berserker (worker). La túnica, el manto o la capa llevan el color del equipo.
-- **Habilidades.** Cada herramienta se muestra como habilidad junto a su nombre:
-  `Hechizo (Bash)`, y las llamadas a la CLI de Orca como `Hechizo (Orca)`.
+- **Habilidades.** Cada herramienta se muestra con el nombre en inglés de su
+  habilidad junto al de la herramienta: `Spell (Bash)`, `Transmute (Edit)`,
+  `Scry (Grep)`, y las llamadas a la CLI de Orca como `Sending (Orca)`. La
+  tabla completa está en el [README en inglés](README.md).
 - **Mascotas:** un osolechuza, un lobo gris y un cuervo.
 
 ## Instalación

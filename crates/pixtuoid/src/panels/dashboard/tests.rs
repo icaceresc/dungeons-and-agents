@@ -391,7 +391,7 @@ fn build_rows_carries_requires_action_and_running_state() {
     );
     assert_eq!(
         rows[1].state,
-        RowState::Running(Some(Arc::from("Golpe (Edit) x"))),
+        RowState::Running(Some(Arc::from("Transmute (Edit) x"))),
         "a running row names its tool as its skill"
     );
 }

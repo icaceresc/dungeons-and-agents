@@ -38,19 +38,25 @@ while it is idle and goes down into the dungeon to fight while it works.
   The tabard, robe or cape takes the agent's team colour, as Pixtuoid's shirts
   do, so a party reads at a glance.
 - **Skills.** A running tool is named as a skill, with the tool beside it, in
-  the footer, the tooltip and the dashboard: `Hechizo (Bash)`.
+  the footer, the tooltip and the dashboard: `Spell (Bash)`. Where the footer
+  runs short it writes one name per skill (`Spell`), then drops the tools.
 
   | Skill | Tools |
   |---|---|
-  | Hechizo (spell) | shell commands, and Orca CLI calls: `Hechizo (Orca)` |
-  | Golpe (strike) | file edits and writes |
-  | Estudio (study) | file reads and listings |
-  | Rastreo (tracking) | code search |
-  | Exploración (scouting) | web fetch and search |
-  | Invocación (summoning) | subagents |
-  | Táctica (tactics) | plans and to-do lists |
+  | Spell | shell commands: `Bash`, `PowerShell`, `shell`, `exec_command`... |
+  | Transmute | edits to an existing file: `Edit`, `MultiEdit`, `apply_patch`, `str_replace`... |
+  | Conjure | a file written whole: `Write`, `create`, `write_to_file` |
+  | Identify | reading a file or an image: `Read`, `view`, `read_file`... |
+  | Scry | searching code for text: `Grep`, `search`, `grep_search`... |
+  | Locate | finding files and listing folders: `Glob`, `find`, `ls`, `list_dir`... |
+  | Divination | the web and the browser: `WebFetch`, `WebSearch`, `browser_*`... |
+  | Summon | a subagent sent off: `Task`, `Agent`... |
+  | Battle Plan | plans and to-do lists: `TodoWrite`, `update_plan`... |
   | Ritual | MCP tools |
-  | Habilidad (skill) | any other tool |
+  | Sending | Orca CLI calls: `Sending (Orca)` |
+  | Cantrip | any other tool |
+
+  The full table is in [`crates/pixtuoid-scene/src/skill.rs`](crates/pixtuoid-scene/src/skill.rs).
 
 - **Pets.** An owlbear, a grey wolf and a raven roam the floors.
 - **The look.** A `dark-fantasy` theme is the default, the window title reads
