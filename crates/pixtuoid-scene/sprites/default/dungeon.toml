@@ -46,17 +46,29 @@ frames = ["dungeon_desk_north@4x.sprite"]
 frames = ["dungeon_desk_front@4x.sprite"]
 
 # Its foes, drawn on its lair's canvas only while the seat's sitter works:
-# `foe` under the sitter's props (a goblin), `foe_front` over them (an orc),
-# `foe_north` at the back-turned seat's lair (a giant spider). Their eyes or
-# sigils in the screen keys, so the fighter's tool lights them. pack.toml has
-# no `@4x` of these to merge into, so each names its base's `frame_ms`.
+# `foe` under the sitter's props, `foe_front` over them, `foe_north` at the
+# back-turned seat's lair. Each frame is a monster, one held per desk
+# (`pack::foe_frame`), `foe` and `foe_front` frame for frame: an orc with a
+# goblin at its side, a pair of goblins, a skeleton warrior; a giant spider, a
+# skeleton archer. Their eyes, sigil or soul-light in the screen keys, so the
+# fighter's tool lights them. A variant draws as many frames as its base, so
+# the 1x bases repeat the office's blank one.
+[animations.foe]
+frames = ["foe.sprite", "foe.sprite", "foe.sprite"]
+
 [animations."foe@4x"]
 frames = ["dungeon_foe@4x.sprite"]
 frame_ms = 600
 
+[animations.foe_front]
+frames = ["foe_front.sprite", "foe_front.sprite", "foe_front.sprite"]
+
 [animations."foe_front@4x"]
 frames = ["dungeon_foe_front@4x.sprite"]
 frame_ms = 600
+
+[animations.foe_north]
+frames = ["foe_north.sprite", "foe_north.sprite"]
 
 [animations."foe_north@4x"]
 frames = ["dungeon_foe_north@4x.sprite"]

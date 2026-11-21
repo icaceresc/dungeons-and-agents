@@ -515,7 +515,7 @@ impl CutawayCache {
 #[derive(Debug, Default)]
 pub(crate) struct ArtCache {
     cells: std::collections::HashMap<(PackPiece, usize, u16, &'static [char]), Vec<bool>>,
-    screens: std::collections::HashMap<(PackPiece, u16, Screen), crate::sprite::Frame>,
+    screens: std::collections::HashMap<(PackPiece, usize, u16, Screen), crate::sprite::Frame>,
 }
 
 impl ArtCache {
@@ -533,7 +533,7 @@ impl ArtCache {
 
     fn desk(
         &mut self,
-        art: PackPiece,
+        (art, frame): (PackPiece, usize),
         desk: &crate::pack::DenseFrame<'_>,
         screen: Screen,
     ) -> Option<&crate::sprite::Frame> {
@@ -541,7 +541,7 @@ impl ArtCache {
             Screen::Off => None,
             Screen::Standby(_) | Screen::Lit { .. } => Some(
                 self.screens
-                    .entry((art, desk.density.get(), screen))
+                    .entry((art, frame, desk.density.get(), screen))
                     .or_insert_with(|| {
                         screen
                             .on(desk.recolorable)
@@ -625,11 +625,12 @@ fn paint_piece(
             at,
             desk,
             overlay,
+            frame,
             screen,
         } => {
             paint_desk_overlay(
                 at,
-                (desk, overlay),
+                (desk, overlay, frame),
                 screen,
                 (pack, scale),
                 &mut cache.art,
@@ -1006,7 +1007,7 @@ fn paint_desk(
     let desk = crate::pack::densest_frame(pack, art_name, 0, scale);
     let (x, top_y) = (scale.to_buffer(span.x0), scale.to_buffer(span.y0));
     blit_frame_scaled(
-        art.desk(art_name, &desk, screen).unwrap_or(desk.frame),
+        art.desk((art_name, 0), &desk, screen).unwrap_or(desk.frame),
         x,
         top_y,
         desk.blit_at,
@@ -1021,21 +1022,22 @@ fn paint_desk(
     );
 }
 
-/// `overlay` of the `which` desk drawn at `at`: drawn on the desk's canvas as
-/// [`paint_desk`] draws the desk, its screen keys lit as the desk's.
+/// Frame `frame` of `overlay` of the `which` desk drawn at `at`: drawn on the
+/// desk's canvas as [`paint_desk`] draws the desk, its screen keys lit as the
+/// desk's.
 fn paint_desk_overlay(
     at: crate::layout::Point,
-    (which, overlay): (Desk, crate::pack::Piece),
+    (which, overlay, frame): (Desk, crate::pack::Piece, usize),
     screen: Screen,
     (pack, scale): (&OfficeArt, RenderScale),
     art: &mut ArtCache,
     buf: &mut RgbBuffer,
 ) {
     let span = desk_span(pack, which, at, scale);
-    let f = crate::pack::densest_frame(pack, overlay, 0, scale);
+    let f = crate::pack::densest_frame(pack, overlay, frame, scale);
     let (x, top_y) = (scale.to_buffer(span.x0), scale.to_buffer(span.y0));
     blit_frame_scaled(
-        art.desk(overlay, &f, screen).unwrap_or(f.frame),
+        art.desk((overlay, frame), &f, screen).unwrap_or(f.frame),
         x,
         top_y,
         f.blit_at,

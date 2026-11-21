@@ -8052,12 +8052,50 @@ def lair_north():
     return g
 
 
+def skull_facing(g, cx, top):
+    """A skull facing the viewer, `top` its crown: its sockets glowing in the
+    desk's screen keys, a nose hole, a row of teeth."""
+    ellipse(g, cx, top + 6.0, 6.0, 6.0, BONE)
+    lit_ball(g, (BONE, BONE, WHITE, BONE_SH), cx, top + 6.0, 6.0, 6.0)
+    for x0 in (int(cx) - 4, int(cx) + 1):
+        rect(g, x0, top + 5, x0 + 3, top + 8, GLASS)
+        put(g, x0 + 1, top + 6, GLASS_TXT)
+    put(g, int(cx), top + 9, BONE_DK)
+    rect(g, int(cx) - 3, top + 11, int(cx) + 3, top + 13, BONE)
+    for x in range(int(cx) - 3, int(cx) + 3, 2):
+        put(g, x, top + 12, BONE_DK)
+
+
+def skeleton_archer(g):
+    """A skeleton archer facing its foe and the viewer: its skull over the
+    back-turned fighter's head, a bow drawn on its west side, its bones down
+    to the floor beyond the fighter."""
+    stem(g, [(28, 13), (28, 30)], 0.9, BONE_SH)  # the spine
+    for y in range(17, 28, 3):  # the ribs
+        stem(g, [(21, y + 2), (28, y), (35, y + 2)], 0.5, BONE)
+    stem(g, [(20, 16), (36, 16)], 0.7, BONE)  # the collarbones
+    rect(g, 23, 30, 34, 33, BONE)  # the pelvis
+    for x0, x1 in ((24, 22), (32, 34)):  # the legs
+        stem(g, [(x0, 33), (x1, 43)], 0.6, BONE_SH)
+    stem(g, [(20, 16), (12, 21)], 0.6, BONE)  # the bow arm
+    stem(g, [(36, 16), (24, 21)], 0.6, BONE)  # the drawing arm
+    stem(g, [(10, 4), (6, 12), (6, 30), (10, 38)], 0.7, WOOD)  # the bow
+    stem(g, [(10, 4), (22, 21), (10, 38)], 0.3, OFFWHITE_SH)  # its drawn string
+    stem(g, [(8, 21), (22, 21)], 0.4, WOOD_LT)  # the nocked arrow
+    put(g, 7, 21, IRON_LT)
+    skull_facing(g, 28.0, 0)
+
+
 def foe_north():
-    """The north lair's foe, while its sitter fights: the giant spider."""
-    g = canvas(DESK_ART_W * S, desk_rows(DESK_NORTH_LIFT)[3] * S)
-    spider_facing(g)
-    union_outline(g)
-    return g
+    """The north lair's foes, a frame each, one held per desk: the giant
+    spider, and a skeleton archer."""
+    frames = []
+    for draw in (spider_facing, skeleton_archer):
+        g = canvas(DESK_ART_W * S, desk_rows(DESK_NORTH_LIFT)[3] * S)
+        draw(g)
+        union_outline(g)
+        frames.append(g)
+    return frames
 
 
 # The orc's back: its sigil's centre, glowing between its shoulder blades.
@@ -8147,9 +8185,9 @@ GOBLIN_KEYS = (GOBLIN, GOBLIN_LT, GOBLIN_LT, GOBLIN_SH)
 
 
 def goblin_back(g, cx, foot):
-    """A goblin seen from behind, at the orc's side: a bald head between long
-    ears swept out sideways, a ragged hood over its shoulders, thin legs, a
-    spear held upright."""
+    """A goblin seen from behind: a bald head between long ears swept out
+    sideways, glancing back over its shoulder with an eye in the desk's screen
+    keys, a ragged hood over its shoulders, thin legs, a spear held upright."""
     top = foot - 22
     rect(g, int(cx) + 4, top - 3, int(cx) + 5, foot, WOOD_SH)  # the spear
     rect(g, int(cx) + 3, top - 6, int(cx) + 6, top - 3, IRON)
@@ -8164,26 +8202,73 @@ def goblin_back(g, cx, foot):
             x = int(cx) + side * (4 + i) - (side < 0)
             put(g, x, top + 4 - i // 3, GOBLIN)
     lit_ball(g, GOBLIN_KEYS, cx, top + 5.0, 5.0, 4.5)
+    put(g, int(cx) + 3, top + 5, GLASS)  # the eye, glancing back
+    put(g, int(cx) + 3, top + 4, GLASS_TXT)
     put(g, int(cx) + 4, foot - 3, GOBLIN)  # the spear hand
     put(g, int(cx) + 4, foot - 2, GOBLIN)
 
 
-def foe_south():
-    """The south lair's first foe, under its occupant's props: a goblin at the
-    orc's west side, spear up."""
-    g = canvas(DESK_ART_W * S, desk_rows(0)[3] * S)
-    goblin_back(g, 6.0, len(g) - 1)
+def skeleton_back(g):
+    """A skeleton warrior seen from behind, facing its foe: the back of its
+    skull, a spine down to its pelvis, ribs round a soul-light glowing in the
+    desk's screen keys, a rag at its hips, a rusty notched blade raised in its
+    east hand."""
+    ellipse(g, 28.0, 17.0, 4.0, 4.0, GLASS)  # the soul-light, through the ribs
+    rect(g, 27, 16, 29, 18, GLASS_TXT)
+    for y in range(12, 23, 3):  # the ribs
+        stem(g, [(21, y + 2), (24, y), (32, y), (35, y + 2)], 0.5, BONE)
+    for sx in (23, 33):  # the shoulder blades
+        ellipse(g, sx, 13.0, 2.5, 2.0, BONE_SH)
+    rect(g, 27, 10, 29, 26, BONE_SH)  # the spine
+    for y in range(11, 26, 2):
+        put(g, 27, y, BONE_DK)
+    rect(g, 22, 25, 34, 28, WOOD_DK)  # the rag, over the pelvis
+    for x0, x1 in ((24, 23), (32, 33)):  # the legs
+        stem(g, [(x0, 28), (x1, 34)], 0.6, BONE)
+        rect(g, x1 - 2, 34, x1 + 2, 36, BONE_SH)
+    stem(g, [(21, 12), (18, 26)], 0.6, BONE)  # the hanging arm
+    stem(g, [(35, 12), (40, 18), (42, 12)], 0.6, BONE)  # the sword arm
+    stem(g, [(43, 11), (45, 1)], 0.8, IRON_SH)  # the rusty blade
+    for x, y in ((44, 6), (45, 3), (43, 9)):
+        put(g, x, y, BROWN)
+    put(g, 45, 5, T)  # a notch
+    rect(g, 40, 11, 46, 12, IRON)
+    ellipse(g, 28.0, 5.0, 5.0, 5.0, BONE)  # the back of the skull
+    lit_ball(g, (BONE, BONE, WHITE, BONE_SH), 28.0, 5.0, 5.0, 5.0)
+
+
+def south_foe_canvas():
+    """A blank frame on the viewer-facing desk's canvas."""
+    return canvas(DESK_ART_W * S, desk_rows(0)[3] * S)
+
+
+def outlined(draw):
+    """`draw` on a blank south foe canvas, outlined."""
+    g = south_foe_canvas()
+    draw(g)
     union_outline(g)
     return g
+
+
+def foe_south():
+    """The south lair's foes under its occupant's props, a frame each, one
+    held per desk, paired with `foe_front`'s frame: a goblin at the orc's
+    west side; nothing under the goblin pair; nothing under the skeleton."""
+    return [
+        outlined(lambda g: goblin_back(g, 6.0, len(g) - 1)),
+        south_foe_canvas(),
+        south_foe_canvas(),
+    ]
 
 
 def foe_south_front():
-    """The south lair's foe over its occupant's props: the orc, squaring up to
-    the fighter."""
-    g = canvas(DESK_ART_W * S, desk_rows(0)[3] * S)
-    orc_back(g)
-    union_outline(g)
-    return g
+    """The south lair's foes over its occupant's props, a frame each: the orc
+    squaring up to the fighter, a pair of goblins, a skeleton warrior."""
+    return [
+        outlined(orc_back),
+        outlined(lambda g: (goblin_back(g, 20.0, 35), goblin_back(g, 36.0, 35))),
+        outlined(skeleton_back),
+    ]
 
 
 # ---- the dungeon's props, chair and stairs --------------------------------------
@@ -9597,7 +9682,7 @@ def main():
         ("foe_front", foe_south_front),
         ("foe_north", foe_north),
     ):
-        sprites[f"{DUNGEON}{foe}@{S}x.sprite"] = render_sprite(doc(draw), [draw()])
+        sprites[f"{DUNGEON}{foe}@{S}x.sprite"] = render_sprite(doc(draw), draw())
     for up, name in ((True, "floor_up"), (False, "floor_down")):
         sprites[f"{DUNGEON}icon_{name}.sprite"] = render_sprite(
             doc(stair_icon), [stair_icon(up)]

@@ -278,18 +278,20 @@ pub(super) fn paint_drawable(kind: &DrawableKind<'_>, c: &mut DrawableCtx<'_>) {
             // The foe stands under its sitter's props and, where it reaches
             // nearer the viewer, over them; the desk's own front over both.
             let (foe, foe_front) = Desk::facing(*facing).foe();
-            let overlay = |buf: &mut RgbBuffer, piece: Piece| {
-                blit_frame(pack.piece(piece).first(), desk.x, sprite_top, buf);
+            let overlay = |buf: &mut RgbBuffer, piece: Piece, frame: usize| {
+                let art = &pack.piece(piece).frames()[frame];
+                blit_frame(art, desk.x, sprite_top, buf);
             };
+            let held = |piece| crate::pack::foe_frame(pack, piece, props.lair);
             if props.foe {
-                overlay(buf, foe);
+                overlay(buf, foe, held(foe));
             }
             paint_desk_props(buf, (*desk, *facing), props, pack, theme);
             if let Some(foe_front) = foe_front.filter(|_| props.foe) {
-                overlay(buf, foe_front);
+                overlay(buf, foe_front, held(foe_front));
             }
             if let Some(front) = Desk::facing(*facing).front() {
-                overlay(buf, front);
+                overlay(buf, front, 0);
             }
             // The desk's light falls on the whole group, its front and props
             // included, as the cutaway lights every piece after painting it.
@@ -666,6 +668,7 @@ mod tests {
                     effects: Vec::new(),
                     scanline: 0,
                     foe: false,
+                    lair: 0,
                 },
             },
         }
@@ -701,6 +704,7 @@ mod tests {
                 effects: crate::sim::cup_effects(at, cup, Motion::Full.beat(now)),
                 scanline: 0,
                 foe: false,
+                lair: 0,
             };
             paint_desk_props(&mut buf, (desk, Facing::South), &props, &pack, th);
             buf.as_slice().iter().filter(|&&c| c != bg).count()

@@ -425,6 +425,14 @@ impl Desk {
     }
 }
 
+/// The frame of `foe` the lair of desk `lair` (its index on its floor) holds,
+/// never played: a foe's frames are the pack's monsters, so neighbouring
+/// lairs stand different ones and a desk keeps its own for as long as it has
+/// one.
+pub(crate) fn foe_frame(pack: &OfficeArt, foe: Piece, lair: usize) -> usize {
+    lair % pack.piece(foe).frames().len()
+}
+
 /// A prop a desk stands at its mark.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, enum_map::Enum, strum::VariantArray)]
 pub(crate) enum DeskProp {

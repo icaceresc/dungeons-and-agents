@@ -305,8 +305,9 @@ pub(crate) fn fingerprint(kind: &PieceKind) -> u64 {
             at,
             desk,
             overlay,
+            frame,
             screen,
-        } => (at, desk, overlay, screen).hash(&mut h),
+        } => (at, desk, overlay, frame, screen).hash(&mut h),
         PieceKind::Chair { at } => at.hash(&mut h),
         PieceKind::DeskProp(prop) => prop.hash(&mut h),
         PieceKind::Creature {
@@ -453,6 +454,8 @@ pub(crate) enum PieceKind {
         desk: crate::pack::Desk,
         /// Its art: an [`overlay_of`](crate::pack::Piece::overlay_of) the desk's.
         overlay: crate::pack::Piece,
+        /// The frame of `overlay` it holds ([`foe_frame`](crate::pack::foe_frame)).
+        frame: usize,
         screen: Screen,
     },
     Chair {

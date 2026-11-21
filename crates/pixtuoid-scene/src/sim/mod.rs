@@ -232,6 +232,9 @@ pub(crate) struct DeskProps {
     /// Whether its occupant works, on a tool or waiting on its user: its
     /// pack's foe stands at the lair ([`Desk::foe`](crate::pack::Desk::foe)).
     pub(crate) foe: bool,
+    /// The desk's index on its floor, which picks the frame its foe holds
+    /// ([`foe_frame`](crate::pack::foe_frame)).
+    pub(crate) lair: usize,
 }
 
 /// How long a screen's scanline holds each glass column: one Full beat, so it
@@ -822,6 +825,7 @@ fn desk_props(
                         ActivityState::Running { .. } | ActivityState::RequiresAction { .. }
                     )
                 }),
+                lair: i,
             }
         })
         .collect()

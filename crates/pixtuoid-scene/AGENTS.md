@@ -133,8 +133,11 @@ wall solid: no windows, no posts between them. A key `pack.toml` lacks (a new
 A desk's foe stands on the desk's own canvas only while its sitter works
 (running a tool or waiting on its user): `foe` (the viewer-facing desk's) and
 `foe_north` (the back-turned desk's) drawn under the sitter's props, `foe_front`
-over them, then `desk_front`. One frame each, the size of its desk's, at any
-density its desk is drawn at; validation reports one on another canvas. Its
+over them, then `desk_front`. Each frame is one monster, the size of its
+desk's, at any density its desk is drawn at; validation reports one on another
+canvas. A desk holds one frame, never played, picked by its index on its floor
+round the foe's frames, so neighbouring lairs stand different monsters, and
+`foe` and `foe_front` with as many frames pair frame for frame. Its
 screen keys (`j`, `J`) light with the sitter's tool as the desk's do. The
 office draws them empty; a role's manifest redraws them.
 
