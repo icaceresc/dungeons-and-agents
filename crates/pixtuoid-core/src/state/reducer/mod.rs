@@ -315,6 +315,8 @@ impl Reducer {
         self.sweep_exited(scene, now);
         self.fire_pending_b1_cascades(scene, None, now);
         self.sweep_stale(scene, now);
+        // Time alone moves an agent idle long enough to rest.
+        scene.reseat(now);
         // Here, not at each reader: a device in another zone has no clock that
         // can say when this reducer's day ends.
         if let Some(day_of) = self.day_of
@@ -529,6 +531,8 @@ impl Reducer {
                 }
             }
         }
+        // Any arm may change an agent's activity, and so its ground.
+        scene.reseat(now);
     }
 
     /// The pre-pass every event runs before dispatch. ORDER IS LOAD-BEARING:
@@ -1304,7 +1308,7 @@ impl Reducer {
             }
         }
         if seat {
-            scene.seat_unseated(|_| true, |_| Some(now));
+            scene.seat(|_| true, |_| Some(now), now);
         }
     }
 
@@ -1384,7 +1388,7 @@ impl Reducer {
             },
         );
         // The local office walks in every slot it seats, a replay's included.
-        scene.seat_unseated(|_| true, |_| Some(now));
+        scene.seat(|_| true, |_| Some(now), now);
         scene
             .agents
             .get_mut(&agent_id)
@@ -1707,7 +1711,7 @@ impl Reducer {
             self.corr.note_removed(id, now);
         }
         // A desk it freed goes to the oldest unseated agent.
-        scene.seat_unseated(|_| true, |_| Some(now));
+        scene.seat(|_| true, |_| Some(now), now);
     }
 }
 

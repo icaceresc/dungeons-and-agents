@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::id::AgentId;
 
+mod campaign;
 mod correlation;
 mod fsm;
 /// The event coordinator: [`reducer::Reducer`] folds `AgentEvent`s into `SceneState`.
@@ -16,6 +17,9 @@ mod requests;
 mod scope;
 mod turn_key;
 mod turns;
+#[cfg(test)]
+pub(crate) use campaign::REST_AFTER;
+pub use campaign::{CAMP_FLOOR, SeatPolicy};
 pub use scope::ScopeTree;
 pub use turn_key::TurnKey;
 
@@ -337,7 +341,8 @@ pub struct AgentSlot {
     /// the exit animation to play.
     pub exiting_at: Option<SystemTime>,
     /// Its desk; `None` while it is unseated, counted but drawn nowhere. A new
-    /// layout ([`SceneState::set_capacities`]) or a remote lender's return moves it.
+    /// layout ([`SceneState::set_capacities`]), a remote lender's return or a
+    /// change of ground under [`SeatPolicy::Campaign`] moves it.
     pub desk: Option<FloorDesk>,
     /// Monotonic count of tool calls this agent has made this session.
     pub tool_call_count: u32,
@@ -639,6 +644,9 @@ pub struct SceneState {
     /// [`counting`](reducer::Reducer::counting); `None` while its day has none.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub today: Option<Today>,
+    /// How it hands out desks: its host's choice, so a snapshot carries none.
+    #[serde(skip)]
+    seat_policy: SeatPolicy,
 }
 
 impl SceneState {
@@ -772,6 +780,16 @@ impl SceneState {
             floor_capacities,
             daemons: DaemonRoster::default(),
             today: None,
+            seat_policy: SeatPolicy::default(),
+        }
+    }
+
+    /// This scene handing out its desks by `policy` from now on.
+    #[must_use]
+    pub fn with_seat_policy(self, seat_policy: SeatPolicy) -> Self {
+        Self {
+            seat_policy,
+            ..self
         }
     }
 
@@ -795,7 +813,7 @@ impl SceneState {
     /// unseated until one frees, and walks in from when it takes one.
     pub fn set_capacities(&mut self, capacities: [usize; MAX_FLOORS], now: SystemTime) {
         self.take_capacities(capacities);
-        self.seat_unseated(|_| true, |_| Some(now));
+        self.seat(|_| true, |_| Some(now), now);
     }
 
     /// Take `capacities`, unseating whoever holds a desk they no longer have.
@@ -807,10 +825,35 @@ impl SceneState {
         }
     }
 
+    /// Seat whoever its [`SeatPolicy`] places at `now`, each walking in from
+    /// its `arrival`, or from `now` when the policy moves it. A desk is free
+    /// while no slot that `holds` sits at it.
+    pub(crate) fn seat(
+        &mut self,
+        holds: impl Fn(&AgentSlot) -> bool,
+        arrival: impl Fn(&AgentSlot) -> Option<SystemTime>,
+        now: SystemTime,
+    ) {
+        match self.seat_policy {
+            SeatPolicy::FloorFirst => self.seat_unseated(holds, arrival),
+            SeatPolicy::Campaign => campaign::seat(self, holds, arrival, now),
+        }
+    }
+
+    /// Move whoever the [`Campaign`](SeatPolicy::Campaign) places elsewhere at
+    /// `now`: an agent's activity, or the time it has spent idle, picks its
+    /// ground. Under [`FloorFirst`](SeatPolicy::FloorFirst) a seated agent
+    /// never moves, so this does nothing.
+    pub(crate) fn reseat(&mut self, now: SystemTime) {
+        if self.seat_policy == SeatPolicy::Campaign {
+            campaign::seat(self, |_| true, |_| Some(now), now);
+        }
+    }
+
     /// Give each unseated agent that is staying the first free desk, oldest
     /// first, and the `arrival` it walks in from. A desk is free while no slot
     /// that `holds` sits at it.
-    pub(crate) fn seat_unseated(
+    fn seat_unseated(
         &mut self,
         holds: impl Fn(&AgentSlot) -> bool,
         arrival: impl Fn(&AgentSlot) -> Option<SystemTime>,
@@ -861,7 +904,7 @@ mod tests {
         assert_eq!(back.tokens_used, 7);
     }
 
-    fn make_slot(id: AgentId, desk: usize) -> AgentSlot {
+    pub(super) fn make_slot(id: AgentId, desk: usize) -> AgentSlot {
         let now = SystemTime::now();
         AgentSlot {
             agent_id: id,
