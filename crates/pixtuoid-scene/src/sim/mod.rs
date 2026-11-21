@@ -992,7 +992,7 @@ pub(crate) fn resolve_characters(
                 ));
             }
             Pose::SeatedTyping => {
-                let attack = crate::character::Class::of(pack, agent.agent_id).attack();
+                let attack = crate::character::Class::of(pack, agent).attack();
                 let (mut placement, cues) = seated(attack, CharacterGlow::Work, None);
                 // the art the seat resolved to, a back view's own loop included
                 placement.frame_idx =

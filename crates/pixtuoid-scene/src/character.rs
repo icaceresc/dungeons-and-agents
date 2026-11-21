@@ -186,7 +186,7 @@ fn character_key_at(
         },
         outfit: outfit_seed_for(agent),
         palette: agent_overrides(agent, glow_tint),
-        dress: dress_for(pack, agent.agent_id, dense.frame, dense.head, density),
+        dress: dress_for(pack, agent, dense.frame, dense.head, density),
     }
 }
 

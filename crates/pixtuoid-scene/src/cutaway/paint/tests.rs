@@ -3061,8 +3061,13 @@ fn every_piece_paints_only_inside_its_span() {
         let scale = RenderScale::from(pack.max_density_variant());
         let dense = crate::pack::densest_frame(pack, PackPiece::Walking, 0, scale);
         let id = pixtuoid_core::AgentId::from_transcript_path(&format!("/style/{i}.jsonl"));
-        let style = crate::character::dress_for(pack, id, dense.frame, dense.head, dense.density)
-            .and_then(|d| d.style);
+        let agent = crate::character::test_support::make_slot(
+            id,
+            pixtuoid_core::state::ActivityState::Idle,
+        );
+        let style =
+            crate::character::dress_for(pack, &agent, dense.frame, dense.head, dense.density)
+                .and_then(|d| d.style);
         let Some(style) = style.filter(|s| !worn.contains(s)) else {
             continue;
         };
@@ -3199,7 +3204,11 @@ fn a_dressed_figure_at_a_top_insets_edge_keeps_its_hair_off_it() {
     let id = (0..1000)
         .map(|i| pixtuoid_core::AgentId::from_transcript_path(&format!("/style/{i}.jsonl")))
         .find(|&id| {
-            crate::character::dress_for(&base, id, walk.frame, walk.head, walk.density)
+            let agent = crate::character::test_support::make_slot(
+                id,
+                pixtuoid_core::state::ActivityState::Idle,
+            );
+            crate::character::dress_for(&base, &agent, walk.frame, walk.head, walk.density)
                 .is_some_and(|d| d.rise() > 0)
         })
         .expect("a style whose hair rises over the frame");

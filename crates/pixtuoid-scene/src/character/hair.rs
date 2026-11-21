@@ -8,24 +8,117 @@ use crate::pack::OfficeArt;
 use crate::pack::Piece;
 use crate::sprite::format::Density;
 use crate::sprite::{Frame, HeadMark, Pixel, Rgb, Sprite};
-use pixtuoid_core::AgentId;
 use pixtuoid_core::id::{fnv1a, splitmix64};
+use pixtuoid_core::{AgentId, AgentSlot};
+use strum::VariantArray as _;
 
 /// Separates the pick's seed from the other per-agent draws that finalize the
 /// same id through `splitmix64` (`physics`, `pose::pure`), so the style is no
 /// function of theirs.
 const HAIRSTYLE_SALT: u64 = 0x6861_6972_7374_796c;
 
-/// The name of the style `agent` wears: the one that scores highest under
-/// rendezvous hashing, so adding a style to a pack moves only the agents that
-/// now prefer it. It is picked by name, whatever the density, so an agent keeps
-/// their style when the renderer lands on another.
-fn pick(pack: &OfficeArt, agent: AgentId) -> Option<&str> {
+/// The name of the style `agent` wears: its role's ([`Role::style`]) where its
+/// working directory names a role and the pack draws that style, else the
+/// style its id scores highest ([`rendezvous`]). It is picked by name, whatever
+/// the density, so an agent keeps its style when the renderer lands on another.
+fn pick<'p>(pack: &'p OfficeArt, agent: &AgentSlot) -> Option<&'p str> {
+    let styles = || pack.inner().hairstyles().map(Hairstyle::name);
+    let role = Role::of(agent).map(Role::style);
+    role.and_then(|style| styles().find(|&name| name == style))
+        .or_else(|| rendezvous(pack, agent.agent_id))
+}
+
+/// The style `agent`'s id scores highest under rendezvous hashing, so adding a
+/// style to a pack moves only the agents that now prefer it.
+fn rendezvous(pack: &OfficeArt, agent: AgentId) -> Option<&str> {
     let seed = splitmix64(splitmix64(agent.raw() ^ HAIRSTYLE_SALT));
     pack.inner()
         .hairstyles()
         .map(Hairstyle::name)
         .max_by_key(|name| splitmix64(seed ^ fnv1a(name.bytes().map(u64::from))))
+}
+
+/// What joins an Orca coworker's project and role in its title: the Orca
+/// adapter's `Agent.compose` (icaceresc/pixtuoid-orca-windows, `oficina.py`).
+const ROLE_SEPARATOR: &str = " \u{b7} ";
+
+/// A coworker's role in an Orca office. The Orca adapter reports each coworker
+/// through hooks and writes its role into the title it makes the basename of
+/// the coworker's working directory, the one field every source carries:
+/// `<project> · <role>` for a coworker of its own, `<role> · <project>` for one
+/// under another, the role's word last in its part (`claude worker`, `Explore
+/// subagent`) or first (`worker of antigravity`). A title with no separator
+/// names none, as a directory outside Orca does.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, strum::VariantArray)]
+enum Role {
+    /// An Orca bot's own session: the owner's Strategic Companion.
+    Companion,
+    /// A session that dispatches workers.
+    Orchestrator,
+    /// A session another dispatched, at any depth.
+    Worker,
+    /// A subagent a session started.
+    Subagent,
+    /// A top-level session with none of the roles above.
+    Agent,
+}
+
+impl Role {
+    /// The role `agent`'s working directory names, if any. A child's title
+    /// leads with its role and a top-level one ends with it, so that end is
+    /// read first: a project named like a role never stands in for one.
+    fn of(agent: &AgentSlot) -> Option<Self> {
+        let title = pixtuoid_core::remote::cwd_basename(&agent.cwd)?;
+        let parts: Vec<&str> = title.split(ROLE_SEPARATOR).collect();
+        let [first, .., last] = parts[..] else {
+            return None;
+        };
+        let ends = if agent.parent_id.is_some() {
+            [first, last]
+        } else {
+            [last, first]
+        };
+        ends.into_iter().find_map(Self::of_part)
+    }
+
+    /// The role `part` of a title names by its last word or, failing that, its
+    /// first.
+    fn of_part(part: &str) -> Option<Self> {
+        let mut words = part.split_whitespace();
+        let first = words.next()?;
+        let last = words.next_back().unwrap_or(first);
+        Self::of_word(last).or_else(|| Self::of_word(first))
+    }
+
+    fn of_word(word: &str) -> Option<Self> {
+        Self::VARIANTS
+            .iter()
+            .copied()
+            .find(|role| role.word() == word)
+    }
+
+    /// Its word in a title.
+    fn word(self) -> &'static str {
+        match self {
+            Self::Companion => "companion",
+            Self::Orchestrator => "orchestrator",
+            Self::Worker => "worker",
+            Self::Subagent => "subagent",
+            Self::Agent => "agent",
+        }
+    }
+
+    /// The style of its class ([`Class::of_style`]): the companion is a mage,
+    /// an orchestrator a knight, a worker a berserker, and a subagent or a lone
+    /// session a ranger.
+    fn style(self) -> &'static str {
+        match self {
+            Self::Companion => "mage",
+            Self::Orchestrator => "knight",
+            Self::Worker => "berserker",
+            Self::Subagent | Self::Agent => "ranger",
+        }
+    }
 }
 
 /// An adventurer's class. The style an agent wears names it, so the class an
@@ -51,7 +144,7 @@ impl Class {
     }
 
     /// The class `agent` is in `pack`: the one its style names.
-    pub(crate) fn of(pack: &OfficeArt, agent: AgentId) -> Self {
+    pub(crate) fn of(pack: &OfficeArt, agent: &AgentSlot) -> Self {
         Self::of_style(pick(pack, agent))
     }
 
@@ -86,7 +179,7 @@ pub(crate) struct Dress {
 /// `None` at 1x or on an unmarked frame, which is drawn as it is.
 pub(crate) fn dress_for(
     pack: &OfficeArt,
-    agent: AgentId,
+    agent: &AgentSlot,
     body: &Frame,
     head: Option<HeadMark>,
     density: Density,
@@ -274,7 +367,6 @@ mod tests {
     use crate::display::pen::test_density;
     use crate::pack::validate::PieceKind;
     use crate::pack::{Piece, load_filled_pack};
-    use strum::VariantArray as _;
 
     const H: Rgb = Rgb {
         r: 200,
@@ -316,11 +408,26 @@ mod tests {
     /// The one-skin-pixel body the tests dress.
     const BODY: &str = ". . .\n. . .\n. S .\n. . .\n";
 
+    /// An idle agent of id `agent`, working in a directory outside Orca.
+    fn slot(agent: AgentId) -> AgentSlot {
+        crate::character::test_support::make_slot(agent, pixtuoid_core::state::ActivityState::Idle)
+    }
+
+    /// An agent working in `cwd`, a child when `child`.
+    fn in_cwd(cwd: &str, child: bool) -> AgentSlot {
+        AgentSlot {
+            cwd: std::sync::Arc::from(std::path::Path::new(cwd)),
+            parent_id: child.then(|| AgentId::from_parts("claude-code", "lead")),
+            ..slot(AgentId::from_parts("claude-code", cwd))
+        }
+    }
+
     /// `pack`'s body dressed as it would be for `agent` at 2x.
     fn dressed(pack: &OfficeArt, agent: AgentId) -> (Dress, Frame) {
         let sprite = pack.piece(Piece::Seated);
         let body = sprite.first();
-        let dress = dress_for(pack, agent, body, sprite.head(0), TWO).expect("a marked 2x frame");
+        let dress =
+            dress_for(pack, &slot(agent), body, sprite.head(0), TWO).expect("a marked 2x frame");
         let style = dress
             .style
             .as_deref()
@@ -342,9 +449,9 @@ mod tests {
         let mut moved = 0;
         for i in 0..200u64 {
             let id = AgentId::from_parts("claude-code", &i.to_string());
-            let before = pick(&few, id).expect("a style");
-            assert_eq!(pick(&few, id), Some(before), "stable");
-            let after = pick(&more, id).expect("a style");
+            let before = rendezvous(&few, id).expect("a style");
+            assert_eq!(rendezvous(&few, id), Some(before), "stable");
+            let after = rendezvous(&more, id).expect("a style");
             if after != before {
                 assert_eq!(after, "curls", "an agent only ever moves to the new style");
                 moved += 1;
@@ -379,10 +486,10 @@ mod tests {
         let pack = pack_of(BODY, (1, 0), &["mage", "knight", "ranger", "berserker"]);
         let mut seen = Vec::new();
         for i in 0..64u64 {
-            let id = AgentId::from_parts("claude-code", &i.to_string());
-            let class = Class::of(&pack, id);
-            assert_eq!(class, Class::of_style(pick(&pack, id)));
-            assert_eq!(Class::of(&pack, id), class, "stable");
+            let agent = slot(AgentId::from_parts("claude-code", &i.to_string()));
+            let class = Class::of(&pack, &agent);
+            assert_eq!(class, Class::of_style(pick(&pack, &agent)));
+            assert_eq!(Class::of(&pack, &agent), class, "stable");
             if !seen.contains(&class) {
                 seen.push(class);
             }
@@ -392,6 +499,60 @@ mod tests {
             Class::VARIANTS.len(),
             "every class takes the field"
         );
+    }
+
+    /// An Orca coworker's title names its role at the end its place leads
+    /// with: a child's first, a top-level one's last, the other end then.
+    #[test]
+    fn a_title_names_its_role_at_the_end_its_place_reads_first() {
+        for (cwd, child, role) in [
+            ("/w/my-repo · orchestrator", false, Some(Role::Orchestrator)),
+            ("/w/punky · companion", false, Some(Role::Companion)),
+            ("/w/my-repo · agent", false, Some(Role::Agent)),
+            ("/w/worker · my-repo", true, Some(Role::Worker)),
+            ("/w/claude worker · my-repo", true, Some(Role::Worker)),
+            ("/w/Explore subagent · my-repo", true, Some(Role::Subagent)),
+            ("/w/subagent · my-repo", true, Some(Role::Subagent)),
+            // A worker whose dispatcher Pixtuoid cannot draw it under is a root.
+            (
+                "/w/worker of antigravity · my-repo",
+                false,
+                Some(Role::Worker),
+            ),
+            // Projects named like a role.
+            ("/w/worker · orchestrator", false, Some(Role::Orchestrator)),
+            ("/w/worker · orchestrator", true, Some(Role::Worker)),
+            ("/w/worker", false, None),
+            ("/w/my-repo", false, None),
+            ("/w/my-repo · reviewer", false, None),
+        ] {
+            assert_eq!(
+                Role::of(&in_cwd(cwd, child)),
+                role,
+                "{cwd} (child: {child})"
+            );
+        }
+    }
+
+    /// A role wears its class's style; no role, or a pack without that style,
+    /// keeps the style the agent's id picks.
+    #[test]
+    fn a_role_wears_its_class_and_no_role_keeps_the_hashed_style() {
+        let classes = pack_of(BODY, (1, 0), &["mage", "knight", "ranger", "berserker"]);
+        for (cwd, child, class) in [
+            ("/w/punky · companion", false, Class::Mage),
+            ("/w/my-repo · orchestrator", false, Class::Knight),
+            ("/w/worker · my-repo", true, Class::Berserker),
+            ("/w/Explore subagent · my-repo", true, Class::Ranger),
+            ("/w/my-repo · agent", false, Class::Ranger),
+        ] {
+            assert_eq!(Class::of(&classes, &in_cwd(cwd, child)), class, "{cwd}");
+        }
+        let plain = in_cwd("/w/my-repo", false);
+        assert_eq!(pick(&classes, &plain), rendezvous(&classes, plain.agent_id));
+        let modern = pack_of(BODY, (1, 0), &["mop", "bun"]);
+        let worker = in_cwd("/w/worker · my-repo", true);
+        assert_eq!(pick(&modern, &worker), rendezvous(&modern, worker.agent_id));
     }
 
     /// Each class attacks in a pose of its own, a character's, which loops on
@@ -412,7 +573,7 @@ mod tests {
         let pack = pack_of(BODY, (1, 0), &["mop"]);
         let sprite = pack.piece(Piece::Seated);
         let body = sprite.first();
-        let agent = AgentId::from_parts("x", "y");
+        let agent = &slot(AgentId::from_parts("x", "y"));
         assert!(dress_for(&pack, agent, body, sprite.head(0), Density::ONE).is_none());
         assert!(dress_for(&pack, agent, body, None, TWO).is_none());
         let four = test_density(4);
