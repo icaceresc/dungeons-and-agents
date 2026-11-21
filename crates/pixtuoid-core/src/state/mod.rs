@@ -647,9 +647,20 @@ pub struct SceneState {
     /// How it hands out desks: its host's choice, so a snapshot carries none.
     #[serde(skip)]
     seat_policy: SeatPolicy,
+    /// The seated agents the campaign is moving to another floor, each still
+    /// at its old desk while it walks out ([`Self::relocating`]).
+    #[serde(skip)]
+    moves: BTreeMap<AgentId, campaign::Move>,
 }
 
 impl SceneState {
+    /// When `agent` began to walk out of its desk for a desk on another floor,
+    /// which it takes once the walk is done; `None` while it is not moving.
+    /// It holds the old desk until then, so a floor draws it walking out.
+    pub fn relocating(&self, agent: AgentId) -> Option<SystemTime> {
+        self.moves.get(&agent).map(campaign::Move::since)
+    }
+
     /// Every daemon mascot as `(source, instance, presence)`, in deterministic
     /// (source, instance) order.
     pub fn daemons(&self) -> impl Iterator<Item = (&str, &DaemonInstanceId, &DaemonPresence)> + '_ {
@@ -781,6 +792,7 @@ impl SceneState {
             daemons: DaemonRoster::default(),
             today: None,
             seat_policy: SeatPolicy::default(),
+            moves: BTreeMap::new(),
         }
     }
 

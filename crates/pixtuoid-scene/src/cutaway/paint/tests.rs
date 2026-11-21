@@ -1114,9 +1114,10 @@ fn a_riders_head_is_its_figures_top_row() {
             let c = frame.characters.first()?;
             let agent = &frame.agents[c.agent_idx];
             let pose = crate::character::SpritePose::of(c, agent, theme);
-            let crest = crate::character::character_key(pose, agent, &pack, densest)
-                .dress
-                .map(|d| d.crest);
+            let crest =
+                crate::character::character_key(pose, (agent, frame.outfit(agent)), &pack, densest)
+                    .dress
+                    .map(|d| d.crest);
             crest
                 .is_some_and(|crest| crest != 0)
                 .then_some((layout, pack, frame))
@@ -1242,7 +1243,7 @@ fn a_caps_brim_sits_on_the_brow_in_every_pose() {
                 let agent = &frame.agents[c.agent_idx];
                 let key = crate::character::character_key(
                     crate::character::SpritePose::of(c, agent, theme),
-                    agent,
+                    (agent, frame.outfit(agent)),
                     &pack,
                     scale,
                 );
@@ -3063,8 +3064,13 @@ fn every_piece_paints_only_inside_its_span() {
         let scale = RenderScale::from(pack.max_density_variant());
         let dense = crate::pack::densest_frame(pack, PackPiece::Walking, 0, scale);
         let id = pixtuoid_core::AgentId::from_transcript_path(&format!("/style/{i}.jsonl"));
-        let style = crate::character::dress_for(pack, id, dense.frame, dense.head, dense.density)
-            .and_then(|d| d.style);
+        let agent = crate::character::test_support::make_slot(
+            id,
+            pixtuoid_core::state::ActivityState::Idle,
+        );
+        let style =
+            crate::character::dress_for(pack, &agent, dense.frame, dense.head, dense.density)
+                .and_then(|d| d.style);
         let Some(style) = style.filter(|s| !worn.contains(s)) else {
             continue;
         };
@@ -3201,7 +3207,11 @@ fn a_dressed_figure_at_a_top_insets_edge_keeps_its_hair_off_it() {
     let id = (0..1000)
         .map(|i| pixtuoid_core::AgentId::from_transcript_path(&format!("/style/{i}.jsonl")))
         .find(|&id| {
-            crate::character::dress_for(&base, id, walk.frame, walk.head, walk.density)
+            let agent = crate::character::test_support::make_slot(
+                id,
+                pixtuoid_core::state::ActivityState::Idle,
+            );
+            crate::character::dress_for(&base, &agent, walk.frame, walk.head, walk.density)
                 .is_some_and(|d| d.rise() > 0)
         })
         .expect("a style whose hair rises over the frame");
@@ -4349,7 +4359,12 @@ type FigureEdit = dyn Fn(&mut crate::sim::CharacterPlacement, &mut pixtuoid_core
 fn varied(frame: &SimFrame, edit: &FigureEdit) -> SimFrame {
     let mut varied = frame.clone();
     if let Some(c) = varied.characters.first_mut() {
-        edit(c, &mut varied.agents[c.agent_idx]);
+        let agent = &mut varied.agents[c.agent_idx];
+        edit(c, agent);
+        // As the projection would dress the edited agent: alone, so in its own.
+        varied
+            .outfits
+            .insert(agent.agent_id, crate::sim::outfit_seed_for(agent));
     }
     varied
 }

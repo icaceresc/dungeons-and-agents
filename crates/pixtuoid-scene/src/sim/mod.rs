@@ -8,7 +8,6 @@
 //! pixel pass.
 
 use crate::pack::{Piece, Walk};
-use pixtuoid_core::remote::cwd_basename;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::time::{Duration, SystemTime};
@@ -302,12 +301,21 @@ pub struct SimFrame {
     pub(crate) occasion: crate::holiday::Occasion,
     /// [`SelfChange`] after this tick.
     pub(crate) next_change: Option<SystemTime>,
+    /// Each agent's party outfit seed, from the whole office its floor was
+    /// projected from; read through [`Self::outfit`].
+    pub(crate) outfits: HashMap<AgentId, u64>,
 }
 
 impl SimFrame {
     /// Desk `i`'s props this tick.
     pub(crate) fn desk(&self, i: FloorLocalDeskIndex) -> DeskProps {
         self.desks[i.0].clone()
+    }
+
+    /// The outfit seed `agent` is dressed in: its party's, or its own where
+    /// the frame was stepped without the office it stands in.
+    pub(crate) fn outfit(&self, agent: &AgentSlot) -> u64 {
+        (self.outfits.get(&agent.agent_id).copied()).unwrap_or_else(|| outfit_seed_for(agent))
     }
 }
 
@@ -437,6 +445,7 @@ pub(crate) fn sim_step(stores: &mut SimStores<'_>, inputs: SimInputs<'_>) -> Sim
     }
     SimFrame {
         floor_place: floor_scene.floor_place(),
+        outfits: floor_scene.outfits().clone(),
         agents,
         poses,
         seated_agents,
@@ -1005,7 +1014,7 @@ pub(crate) fn resolve_characters(
                 ));
             }
             Pose::SeatedTyping => {
-                let attack = crate::character::Class::of(pack, agent.agent_id).attack();
+                let attack = crate::character::Class::of(pack, agent).attack();
                 let (mut placement, cues) = seated(attack, CharacterGlow::Work, None);
                 // the art the seat resolved to, a back view's own loop included
                 placement.frame_idx =
@@ -1216,16 +1225,19 @@ fn basename_outfit_seed(basename: &str) -> u64 {
     pixtuoid_core::id::splitmix64(folded)
 }
 
-/// The outfit-determining seed for `agent`. Extracted so
-/// `FrameCache::note_outfit_seed` watches the mid-lifetime cwd backfill through
-/// the EXACT unknown-cwd fallback [`agent_overrides`](crate::character::agent_overrides)
-/// uses; a second copy would drift.
+/// The outfit-determining seed for `agent` on its own, the one a party's lead
+/// gives its whole party ([`party_outfit_seed`](crate::character::party_outfit_seed)).
+/// One function, so the seed a character's key hands both
+/// [`agent_overrides`](crate::character::agent_overrides) and
+/// `FrameCache::note_outfit_seed` always takes the same unknown-cwd fallback.
 ///
 /// The wire's basename because it is all of a cwd that reaches a device, which
-/// must dress an agent as its server does. Lowercased here, not by
-/// `normalize_path_key`, whose fold is the host's: Windows only.
+/// must dress an agent as its server does, less an Orca title's role
+/// ([`project_of`](crate::character::project_of)) so a project's roles match.
+/// Lowercased here, not by `normalize_path_key`, whose fold is the host's:
+/// Windows only.
 pub(crate) fn outfit_seed_for(agent: &AgentSlot) -> u64 {
-    match cwd_basename(&agent.cwd) {
+    match crate::character::project_of(agent) {
         Some(name) if !agent.unknown_cwd => basename_outfit_seed(&name.to_lowercase()),
         _ => agent.agent_id.raw(),
     }

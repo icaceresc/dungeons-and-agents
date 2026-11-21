@@ -1,8 +1,10 @@
 //! Each agent's colors: the outfit, hair and skin a character frame is
 //! recolored with.
 
+use std::collections::BTreeMap;
+
 use crate::sprite::{Pixel, Rgb};
-use pixtuoid_core::AgentSlot;
+use pixtuoid_core::{AgentId, AgentSlot};
 
 use crate::composite::blend_rgb;
 use crate::sim::outfit_seed_for;
@@ -347,16 +349,45 @@ pub(crate) const SKIN_KEY: char = 'S';
 /// See [`SHIRT_KEY`].
 pub(crate) const PANTS_KEY: char = 'P';
 
+/// The agent that leads `agent`'s party, whose project dresses it: the top of
+/// its chain of parents in `agents`, the whole office, so a party member on
+/// another floor still finds it. A companion leads none: each session it
+/// dispatches leads a party of its own.
+pub(crate) fn party_lead<'a>(
+    agents: &'a BTreeMap<AgentId, AgentSlot>,
+    agent: &'a AgentSlot,
+) -> &'a AgentSlot {
+    let mut lead = agent;
+    // No chain is longer than the office, so a loop in one ends here too.
+    for _ in 0..agents.len() {
+        match lead.parent_id.and_then(|parent| agents.get(&parent)) {
+            Some(parent) if !super::hair::is_companion(parent) => lead = parent,
+            _ => break,
+        }
+    }
+    lead
+}
+
+/// The outfit seed `agent`'s party wears ([`party_lead`]'s), in an office of
+/// `agents`.
+pub(crate) fn party_outfit_seed(agents: &BTreeMap<AgentId, AgentSlot>, agent: &AgentSlot) -> u64 {
+    outfit_seed_for(party_lead(agents, agent))
+}
+
 /// One agent's colors, as the palette overrides a character frame is
-/// recolored with. `Some(glow_tint)` blends the skin toward the monitor glow so
-/// a seated agent reads as lit by their screen.
+/// recolored with: its outfit from `outfit_seed` ([`party_outfit_seed`] where
+/// the office is known). `Some(glow_tint)` blends the skin toward the monitor
+/// glow so a seated agent reads as lit by their screen.
 #[deny(
     clippy::cast_possible_truncation,
     reason = "a hash picks through `crate::spread`, alike on every target"
 )]
-pub(crate) fn agent_overrides(agent: &AgentSlot, glow_tint: Option<Rgb>) -> [(char, Pixel); 4] {
+pub(crate) fn agent_overrides(
+    agent: &AgentSlot,
+    outfit_seed: u64,
+    glow_tint: Option<Rgb>,
+) -> [(char, Pixel); 4] {
     let id_seed = agent.agent_id.raw();
-    let outfit_seed = outfit_seed_for(agent);
     let outfit = OUTFITS[crate::spread(outfit_seed, OUTFITS.len())];
     let hair = HAIR_PRESETS[crate::spread(id_seed / 7, HAIR_PRESETS.len())];
     let skin = SKIN_PRESETS[crate::spread(id_seed / 13, SKIN_PRESETS.len())];
@@ -435,16 +466,22 @@ mod tests {
     fn agent_overrides_are_deterministic_per_id() {
         let id = pixtuoid_core::AgentId::from_transcript_path("/a.jsonl");
         let slot = make_slot(id, ActivityState::Idle);
-        assert_eq!(agent_overrides(&slot, None), agent_overrides(&slot, None));
+        let outfit = outfit_seed_for(&slot);
+        assert_eq!(
+            agent_overrides(&slot, outfit, None),
+            agent_overrides(&slot, outfit, None)
+        );
     }
 
     #[test]
     fn agent_overrides_glow_tint_shifts_skin_toward_given_color() {
         let id = pixtuoid_core::AgentId::from_transcript_path("/a.jsonl");
         let slot = make_slot(id, ActivityState::Idle);
-        let unlit = agent_overrides(&slot, None);
+        let outfit = outfit_seed_for(&slot);
+        let unlit = agent_overrides(&slot, outfit, None);
         let green_glow = agent_overrides(
             &slot,
+            outfit,
             Some(Rgb {
                 r: 140,
                 g: 240,
@@ -453,6 +490,7 @@ mod tests {
         );
         let blue_glow = agent_overrides(
             &slot,
+            outfit,
             Some(Rgb {
                 r: 100,
                 g: 160,
@@ -555,6 +593,84 @@ mod tests {
             ),
             None
         );
+    }
+
+    /// An Orca coworker titled `title`, under `parent` when it has one.
+    fn coworker(title: &str, parent: Option<&AgentSlot>) -> AgentSlot {
+        AgentSlot {
+            parent_id: parent.map(|p| p.agent_id),
+            ..make_slot_cwd(&format!("/p/{title}.jsonl"), &format!("/w/{title}"), false)
+        }
+    }
+
+    fn office(agents: &[&AgentSlot]) -> BTreeMap<AgentId, AgentSlot> {
+        agents.iter().map(|a| (a.agent_id, (*a).clone())).collect()
+    }
+
+    /// A party wears its lead's project, whatever project each member works
+    /// in: the orchestrator, its workers and their subagents match.
+    #[test]
+    fn a_party_wears_its_leads_project() {
+        let lead = coworker("atlas · orchestrator", None);
+        let worker = coworker("worker · borealis", Some(&lead));
+        let familiar = coworker("Explore subagent · cosmo", Some(&worker));
+        let agents = office(&[&lead, &worker, &familiar]);
+        let seed = outfit_seed_for(&lead);
+        for member in [&lead, &worker, &familiar] {
+            assert_eq!(party_lead(&agents, member).agent_id, lead.agent_id);
+            assert_eq!(party_outfit_seed(&agents, member), seed);
+        }
+        assert_ne!(
+            outfit_seed_for(&worker),
+            seed,
+            "premise: the worker's own project dresses another outfit"
+        );
+    }
+
+    /// A companion leads no party: each session it dispatches leads its own.
+    #[test]
+    fn a_companions_dispatches_each_lead_a_party_of_their_own() {
+        let companion = coworker("punky · companion", None);
+        let atlas = coworker("orchestrator · atlas", Some(&companion));
+        let borealis = coworker("orchestrator · borealis", Some(&companion));
+        let worker = coworker("worker · cosmo", Some(&borealis));
+        let agents = office(&[&companion, &atlas, &borealis, &worker]);
+        assert_eq!(party_lead(&agents, &atlas).agent_id, atlas.agent_id);
+        assert_eq!(party_lead(&agents, &worker).agent_id, borealis.agent_id);
+        assert_eq!(party_lead(&agents, &companion).agent_id, companion.agent_id);
+        assert_ne!(
+            party_outfit_seed(&agents, &atlas),
+            party_outfit_seed(&agents, &worker)
+        );
+    }
+
+    /// Lone sessions in one project match, the role left out of the key, and
+    /// match a party led from that project.
+    #[test]
+    fn lone_sessions_in_one_project_match() {
+        let plain = make_slot_cwd("/p/plain.jsonl", "/w/atlas", false);
+        let agent = coworker("atlas · agent", None);
+        let lead = coworker("atlas · orchestrator", None);
+        let agents = office(&[&plain, &agent, &lead]);
+        let seed = party_outfit_seed(&agents, &plain);
+        assert_eq!(party_outfit_seed(&agents, &agent), seed);
+        assert_eq!(party_outfit_seed(&agents, &lead), seed);
+    }
+
+    /// A parent gone from the office, or a loop of parents, ends the walk.
+    #[test]
+    fn a_missing_parent_or_a_loop_ends_the_party() {
+        let ghost = coworker("ghost · orchestrator", None);
+        let orphan = coworker("worker · atlas", Some(&ghost));
+        assert_eq!(
+            party_lead(&office(&[&orphan]), &orphan).agent_id,
+            orphan.agent_id
+        );
+        let mut a = coworker("worker · atlas", None);
+        let b = coworker("worker · borealis", Some(&a));
+        a.parent_id = Some(b.agent_id);
+        let agents = office(&[&a, &b]);
+        let _ = party_lead(&agents, &a);
     }
 
     #[test]

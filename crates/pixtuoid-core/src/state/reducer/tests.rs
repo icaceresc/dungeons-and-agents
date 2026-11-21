@@ -1362,7 +1362,8 @@ fn a_sweep_seats_only_when_a_slot_leaves() {
 
 /// Under the campaign a session rests in the camp while idle, moves to the
 /// dungeon as its turn opens, stays there through the turn's end, and is back
-/// in the camp on the tick that finds it idle long enough.
+/// in the camp once it has walked out, from the tick that finds it idle long
+/// enough.
 #[test]
 fn a_campaign_session_moves_between_the_camp_and_the_dungeon_on_apply_and_tick() {
     use crate::source::{AgentEvent, Transport};
@@ -1417,6 +1418,13 @@ fn a_campaign_session_moves_between_the_camp_and_the_dungeon_on_apply_and_tick()
         "premise: not rested"
     );
     r.tick(&mut scene, secs(2) + REST_AFTER);
+    assert_eq!(
+        scene.relocating(id),
+        Some(secs(2) + REST_AFTER),
+        "it walks out of the dungeon first"
+    );
+    assert_eq!(desk(&scene), Some(FloorDesk::new(1, 0)));
+    r.tick(&mut scene, secs(2) + REST_AFTER + super::EXIT_GRACE_WINDOW);
     assert_eq!(desk(&scene), Some(FloorDesk::new(0, 0)));
 }
 

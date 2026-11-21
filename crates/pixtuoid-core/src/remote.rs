@@ -1603,11 +1603,18 @@ mod tests {
 
         start_work(&mut scene, "resting");
         received(&mut office, &scene, AT + 1_000);
+        assert_eq!(
+            desk_of(&office, "resting"),
+            Some(FloorDesk::new(0, 0)),
+            "it walks out of the camp first"
+        );
+        let done = AT + 1_000 + crate::state::reducer::EXIT_GRACE_WINDOW.as_millis() as u64;
+        received(&mut office, &scene, done);
         assert_eq!(desk_of(&office, "resting"), Some(FloorDesk::new(1, 1)));
         assert_eq!(
             slot_of(&office, "resting").and_then(|s| s.arrived_at),
-            Some(at(AT + 1_000)),
-            "it walks into the dungeon on the line it starts work on"
+            Some(at(done)),
+            "it walks into the dungeon on the first line past its walk-out"
         );
     }
 

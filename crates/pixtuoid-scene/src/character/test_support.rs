@@ -47,7 +47,8 @@ pub(crate) fn make_slot_cwd(id_path: &str, cwd: &str, unknown_cwd: bool) -> Agen
 
 /// `key`'s color for `slot`, unlit.
 pub(crate) fn color_of(slot: &AgentSlot, key: char) -> crate::sprite::Pixel {
-    override_of(&agent_overrides(slot, None), key)
+    let outfit = crate::sim::outfit_seed_for(slot);
+    override_of(&agent_overrides(slot, outfit, None), key)
 }
 
 /// `key`'s color in an agent's overrides.
