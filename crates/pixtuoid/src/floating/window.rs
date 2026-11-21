@@ -640,6 +640,10 @@ impl super::lifecycle::Teardown for FloatingApp {
     }
 }
 
+/// The product name the taskbar and the window switcher show. The Orca
+/// adapter finds the window by its process, never by this title.
+const WINDOW_TITLE: &str = "Dungeons & Agents";
+
 impl ApplicationHandler<FloatingEvent> for FloatingApp {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         if self.window.is_some() {
@@ -648,7 +652,7 @@ impl ApplicationHandler<FloatingEvent> for FloatingApp {
         let min = super::geometry::min_window(self.packs.max_density_variant());
         let size = LogicalSize::new(self.cfg.width, self.cfg.height);
         let mut attrs = Window::default_attributes()
-            .with_title("pixtuoid")
+            .with_title(WINDOW_TITLE)
             .with_decorations(false)
             .with_resizable(true)
             .with_window_level(WindowLevel::AlwaysOnTop)

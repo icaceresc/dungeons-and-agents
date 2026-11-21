@@ -1,166 +1,124 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/banner/banner-dark.svg" />
-    <img alt="pixtuoid: a neon office sign, a wolf asleep on it and a coworker holding a coffee" src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/banner/banner-light.svg" />
-  </picture>
-</p>
+# Dungeons & Agents
 
-<p align="center">
-  <samp>Your AI coding agents, visualized as pixel-art coworkers in a terminal office.</samp>
-</p>
+*[Español](README.es.md)*
 
-<p align="center">
-  <sub><samp><b>pix</b>el + <b>tu</b>i + (agent-)<b>oid</b></samp></sub>
-</p>
+**Dungeons & Agents** is an original dark-fantasy campaign reskin of
+[Pixtuoid](https://github.com/pixtuoid/pixtuoid), the pixel-art office for AI
+coding agents. Every agent session you run (Claude Code, Codex, OpenCode and the
+other CLIs Pixtuoid supports) becomes an adventurer: it rests at a night camp
+while it is idle and goes down into the dungeon to fight while it works.
 
-<p align="center">
-  <a href="https://github.com/pixtuoid/pixtuoid/releases"><img src="https://img.shields.io/github/v/release/pixtuoid/pixtuoid?label=version&style=flat-square" alt="Version" /></a>
-<!-- agents-badge:start · generated from site/src/sources.json by `just gen-readme` — edit the JSON, not this badge -->
-  <a href="https://pixtuoid.dev/#tools"><img src="https://img.shields.io/badge/agents%20supported-15-8957e5?style=flat-square" alt="Supported agents" /></a>
-<!-- agents-badge:end -->
-  <a href="https://github.com/pixtuoid/pixtuoid/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/pixtuoid/pixtuoid/ci.yml?style=flat-square&label=CI" alt="CI" /></a>
-  <a href="https://github.com/pixtuoid/pixtuoid/actions/workflows/github-code-scanning/codeql"><img src="https://img.shields.io/github/actions/workflow/status/pixtuoid/pixtuoid/github-code-scanning/codeql?style=flat-square&label=CodeQL" alt="CodeQL" /></a>
-  <a href="https://codecov.io/github/pixtuoid/pixtuoid"><img src="https://img.shields.io/codecov/c/github/pixtuoid/pixtuoid?style=flat-square&label=coverage" alt="Codecov" /></a>
-  <a href="https://scorecard.dev/viewer/?uri=github.com/pixtuoid/pixtuoid"><img src="https://api.scorecard.dev/projects/github.com/pixtuoid/pixtuoid/badge?style=flat-square" alt="OpenSSF Scorecard" /></a>
-  <a href="https://github.com/pixtuoid/pixtuoid/blob/HEAD/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square" alt="License" /></a>
-</p>
+![The camp, floor 0: tents, bedrolls and a campfire under the night sky](docs/images/dungeons-and-agents/camp.png)
 
-<!-- media:demo:start · generated from scripts/media.json by `just gen-readme` — edit the JSON, not this block -->
-<p align="center"><a href="https://pixtuoid.dev/"><img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/demo.gif" alt="pixtuoid.dev" width="768" /></a><br /><sub>Agents walk in, get to work and doze off as the day turns into a snowy night.</sub></p>
-<!-- media:demo:end -->
+![The first dungeon floor: adventurers at work, each facing a monster in its lair](docs/images/dungeons-and-agents/dungeon.png)
 
-<p align="center">
-  <a href="https://pixtuoid.dev/"><img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/pix-icons/window.svg" alt="" width="20" height="20" align="top" />&nbsp;<strong>Live demo ↗</strong></a>
-  &nbsp;·&nbsp; <a href="https://pixtuoid.dev/architecture/">Architecture</a>
-  &nbsp;·&nbsp; <a href="https://pixtuoid.dev/config/">Configuration</a>
-  &nbsp;·&nbsp; <a href="https://pixtuoid.dev/contributing/">Contributing</a>
-</p>
+![Close-up of the camp (top) and the dungeon (bottom)](docs/images/dungeons-and-agents/closeup.png)
 
-<p align="center">
-  <a href="https://buymeacoffee.com/IvanWng97">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/pixtuoid/pixtuoid/bmc-button/bmc-button-dark.svg" />
-      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/pixtuoid/pixtuoid/bmc-button/bmc-button-light.svg" />
-      <img alt="Buy me a coffee, with the live supporter count" src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/bmc-button/bmc-button-light.svg" />
-    </picture>
-  </a>
-</p>
+## What changes from Pixtuoid
 
-## Why?
+- **Camp and dungeon floors.** Floor 0 is an open-air night camp with tents,
+  bedrolls, log stumps and a campfire, where idle and finished agents rest.
+  The floors below (D1, D2...) are stone dungeons where working agents take a
+  seat in a lair. The footer and the floor indicator read `Camp`, `D1`, `D2`.
+- **Monsters while agents work.** A lair holds its monster only while its
+  adventurer is working: an orc with a goblin, a pair of goblins, a skeleton
+  warrior, a giant spider or a skeleton archer, different from desk to desk.
+  An idle agent's lair stands empty.
+- **Four classes.** Each class has its own look and its own attack, played
+  where an office worker would type. In an Orca office the class follows the
+  session's role; any other session gets a stable class from its id.
 
-Running several coding agents means alt-tabbing between terminals to find out who's stuck, who's waiting on a permission prompt, and who finished ten minutes ago. **pixtuoid** puts them all in one tiny pixel-art office you can watch from above — every session is a character at a desk: typing while it works, raising a `?` when it needs you, dozing off when it's done.
+  | Class | Look | Orca role |
+  |---|---|---|
+  | Knight | open iron helm, mail, tabard | orchestrator |
+  | Mage | deep hood, mantle, long robe | companion |
+  | Ranger | hood, short cape, quiver | subagent or lone session |
+  | Berserker | wild mane, fur pelt, bandaged arms | worker |
 
-A little bit *Black Mirror*, a little bit *The Sims* — and the most glanceable multi-agent dashboard you'll ever use.
+  The tabard, robe or cape takes the agent's team colour, as Pixtuoid's shirts
+  do, so a party reads at a glance.
+- **Skills.** A running tool is named as a skill, with the tool beside it, in
+  the footer, the tooltip and the dashboard: `Hechizo (Bash)`.
 
-## Quick Start
+  | Skill | Tools |
+  |---|---|
+  | Hechizo (spell) | shell commands, and Orca CLI calls: `Hechizo (Orca)` |
+  | Golpe (strike) | file edits and writes |
+  | Estudio (study) | file reads and listings |
+  | Rastreo (tracking) | code search |
+  | Exploración (scouting) | web fetch and search |
+  | Invocación (summoning) | subagents |
+  | Táctica (tactics) | plans and to-do lists |
+  | Ritual | MCP tools |
+  | Habilidad (skill) | any other tool |
 
-Pick one:
+- **Pets.** An owlbear, a grey wolf and a raven roam the floors.
+- **The look.** A `dark-fantasy` theme is the default, the window title reads
+  *Dungeons & Agents*, and all art is original, drawn by
+  [`scripts/gen-art.py`](scripts/gen-art.py).
 
-<!-- install:start · generated from site/src/install.json by `just gen-readme` — edit the JSON, not this block -->
-**Homebrew** (Linux, macOS, or WSL2):
+Everything else (the supported agent CLIs, the hooks, the configuration and the
+privacy model) is Pixtuoid's; see [Upstream documentation](#upstream-documentation).
 
-```bash
-brew install pixtuoid
+## Install with Orca on Windows
+
+Dungeons & Agents is published as a release of this repository: a Windows zip
+(`dungeons-and-agents-v<version>-x86_64-pc-windows-msvc.zip`) and its SHA-256.
+The [Pixtuoid para Orca](https://github.com/icaceresc/pixtuoid-orca-windows)
+adapter downloads it in its `dungeon` mode, verifies the checksum and connects
+the agents Orca runs; follow that repository's README for the exact steps.
+
+The executables keep Pixtuoid's names, `pixtuoid.exe` and `pixtuoid-hook.exe`,
+because the adapter's installer and the agent hooks expect them. They also use
+Pixtuoid's configuration and log folders.
+
+## Standalone
+
+Unzip the release anywhere, then, from that folder:
+
+```powershell
+.\pixtuoid.exe setup      # detect your agent CLIs and connect them (installs their hooks)
+.\pixtuoid.exe floating   # the always-on-top window
+.\pixtuoid.exe            # or the terminal view
+.\pixtuoid.exe --help     # every command
 ```
 
-**npm** (macOS or Windows):
+`pixtuoid.exe disconnect <source>` removes a CLI's hooks again. Configuration
+is described in [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
 
-```bash
-npm install -g pixtuoid
+## Build from source
+
+You need the Rust toolchain that [`rust-toolchain.toml`](rust-toolchain.toml)
+pins (rustup installs it on first use) and, on Windows, the MSVC build tools.
+
+```sh
+cargo build --release --locked -p pixtuoid --bin pixtuoid -p pixtuoid-hook --bin pixtuoid-hook
 ```
-<!-- install:end -->
 
-Then:
+The executables land in `target/release/`. The release is built and tested on
+Windows; the other platforms Pixtuoid supports should build the same way, but
+they are untested here.
 
-1. Run `pixtuoid`.
-2. Press <kbd>s</kbd> and connect your agent CLI — pixtuoid sets it up for you, and `pixtuoid doctor` checks it if something's off.
-3. Start that agent in another terminal — a coworker walks in from the elevator within a second.
+The art is generated: edit `scripts/gen-art.py`, then run
+`python3 scripts/gen-art.py crates/pixtuoid-scene/sprites/default` and keep
+`python3 scripts/gen-art.py --check crates/pixtuoid-scene/sprites/default`
+passing. `cargo test` runs the suites.
 
-<kbd>Tab</kbd> agent dashboard · <kbd>t</kbd> themes, and the look where the terminal draws the cutaway · <kbd>m</kbd> sound · click a coworker to bring its terminal to the front · <kbd>?</kbd> every other key
+## Upstream documentation
 
-**More ways to install** are on the **[install guide ↗](https://pixtuoid.dev/#install)**.
+These still apply, since the engine is Pixtuoid's:
+[architecture](docs/ARCHITECTURE.md), [configuration](docs/CONFIGURATION.md)
+and [contributing](docs/CONTRIBUTING.md). Their install instructions (Homebrew,
+npm, crates.io) install upstream Pixtuoid, not this mod. Upstream's own README
+is at [pixtuoid/pixtuoid](https://github.com/pixtuoid/pixtuoid#readme).
 
-## Features
+## Credits and license
 
-<!-- features:start · generated from site/src/features.json by `just gen-readme` — edit the JSON, not this table -->
-| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Feature | Description |
-|---|---|---|
-| <img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/pix-icons/cutaway.svg" alt="" width="20" height="20"> | **Cutaway office** | Terminals that can show images (kitty, iTerm2, or SIXEL) can draw the cutaway, a detailed pixel view of the office; others get the classic look, drawn with text blocks |
-| <img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/pix-icons/multiagent.svg" alt="" width="20" height="20"> | **Multi-agent office** | Every agent session gets its own desk — when a floor fills up, a new floor opens automatically |
-| <img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/pix-icons/spaces.svg" alt="" width="20" height="20"> | **Office spaces** | Cubicles, a meeting lounge, and a pantry — the office is laid out in distinct furnished zones, not just a grid of identical desks |
-| <img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/pix-icons/walk.svg" alt="" width="16" height="24"> | **Animated characters** | Coworkers type, raise a `?` when they need you, nap under little z's, and walk between desks |
-| <img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/pix-icons/palette.svg" alt="" width="20" height="20"> | **Team palette** | Agents in the same working directory wear the same colors, so you can see who works together at a glance |
-| <img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/pix-icons/glow.svg" alt="" width="20" height="20"> | **Per-tool monitor glow** | Each desk's monitor glows with the tool in use — Edit blue, Bash orange, Read cyan — so you can read the whole room at a glance |
-| <img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/pix-icons/tokens.svg" alt="" width="20" height="20"> | **Token meter** | Paper piles up on a desk as its session uses tokens; hover for the running total |
-| <img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/pix-icons/tree.svg" alt="" width="20" height="20"> | **Agent tree dashboard** | Press Tab to see every agent: which CLI it runs and what it's doing |
-| <img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/pix-icons/pets.svg" alt="" width="20" height="20"> | **Office pets** | An owlbear, a raven or a wolf (one per floor) roams desks, pantry, sofas; the wolf sleeps near idle agents. Click to pet — pixel-art hearts float up |
-| <img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/pix-icons/vibes.svg" alt="" width="20" height="20"> | **Office vibes** | Day turns to night outside the windows, the weather changes, and each theme gives the office a new look |
-| <img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/pix-icons/note.svg" alt="" width="20" height="20"> | **Lofi soundtrack** | A lofi soundtrack, made entirely in code, follows the office's time, weather and activity; `m` mutes, `+`/`-` sets the volume |
-| <img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/pix-icons/window.svg" alt="" width="20" height="20"> | **Floating desktop window** | `pixtuoid floating` opens the office in a frameless, always-on-top window — on your desktop, not just in your terminal |
-<!-- features:end -->
+Dungeons & Agents is built on [Pixtuoid](https://github.com/pixtuoid/pixtuoid)
+by Ivan Wang, released under the MIT License. This fork keeps that license and
+its copyright notice: see [LICENSE](LICENSE). The bundled pixel fonts carry
+their own licenses under `crates/pixtuoid-scene/fonts/`.
 
-<!-- media:looks-composite:start · generated from scripts/media.json by `just gen-readme` — edit the JSON, not this block -->
-<p align="center"><img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/looks-composite.png" alt="" width="768" /><br /><sub>The same moment as the detailed cutaway (left) and the simpler classic look (right).</sub></p>
-<!-- media:looks-composite:end -->
-
-<p align="center">
-  <a href="https://pixtuoid.dev/#showcase"><strong>▶ See every feature live — floors, themes, weather, pets, the office tour →</strong></a>
-</p>
-
-## Supported Tools
-
-<!-- tools:start · generated from site/src/sources.json by `just gen-readme` — edit the JSON, not this table -->
-<table>
-<tr><td width="50%"><a href="https://code.claude.com">Claude Code</a></td><td width="50%"><a href="https://github.com/openai/codex">Codex CLI</a></td></tr>
-<tr><td width="50%"><a href="https://github.com/google-antigravity/antigravity-cli">Antigravity CLI</a></td><td width="50%"><a href="https://github.com/esengine/DeepSeek-Reasonix">Reasonix</a></td></tr>
-<tr><td width="50%"><a href="https://github.com/codewhale-hq/Codewhale">CodeWhale</a></td><td width="50%"><a href="https://github.com/github/copilot-cli">Copilot CLI</a></td></tr>
-<tr><td width="50%"><a href="https://github.com/anomalyco/opencode">opencode</a></td><td width="50%"><a href="https://cursor.com/cli">Cursor CLI</a></td></tr>
-<tr><td width="50%"><a href="https://hermes-agent.nousresearch.com">Hermes Agent</a></td><td width="50%"><a href="https://omp.sh">Oh My Pi</a></td></tr>
-<tr><td width="50%"><a href="https://github.com/openclaw/openclaw">OpenClaw</a></td><td width="50%"><a href="https://github.com/xai-org/grok-build">Grok Build</a></td></tr>
-<tr><td width="50%"><a href="https://github.com/MoonshotAI/kimi-code">Kimi Code CLI</a></td><td width="50%"><a href="https://github.com/1jehuang/jcode">Jcode</a></td></tr>
-<tr><td width="50%"><a href="https://github.com/deepseek-ai/deepseek-harness">DeepSeek Harness</a></td></tr>
-</table>
-
-**→ [Every tool × OS on the site](https://pixtuoid.dev/#tools)**
-
-_Windows support is experimental — limited testing, unsigned binaries._
-<!-- tools:end -->
-
-## Configuration
-
-Press <kbd>t</kbd> to preview every theme live, and the look where the terminal draws the cutaway; your pick is saved.
-
-<!-- media:themes-composite:start · generated from scripts/media.json by `just gen-readme` — edit the JSON, not this block -->
-<p align="center"><img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/themes-composite.png" alt="" width="768" /><br /><sub>Every built-in theme, one slice each.</sub></p>
-<!-- media:themes-composite:end -->
-
-Every other setting — desks per floor, pet names, cutaway or classic — lives in `~/.config/pixtuoid/config.toml` by default: see **[docs/CONFIGURATION.md](https://github.com/pixtuoid/pixtuoid/blob/HEAD/docs/CONFIGURATION.md)**.
-
-## How It Works
-
-pixtuoid learns what each agent is doing from a tiny hook it installs, which never holds up your agent, and from the agent's own session logs. It turns that into office life and draws it in your terminal.
-
-**[Full architecture with diagrams →](https://pixtuoid.dev/architecture/)**
-
-## Privacy & Security
-
-pixtuoid is **telemetry-free and local by default**: it makes no outbound connections, and
-accepts none unless you run `pixtuoid serve`, which announces this machine on your local network
-and sends the devices you pair there a fixed allowlist of fields. What leaves, what never does and
-what a paired device may change: **[SECURITY.md](https://github.com/pixtuoid/pixtuoid/blob/HEAD/SECURITY.md)**.
-
-## Contributing
-
-PRs welcome — especially new themes, art polish, and support for more agent CLIs. **[CONTRIBUTING.md](https://github.com/pixtuoid/pixtuoid/blob/HEAD/docs/CONTRIBUTING.md)** shows how to build, test and [add an agent CLI](https://github.com/pixtuoid/pixtuoid/blob/HEAD/docs/CONTRIBUTING.md#adding-a-new-agent-cli).
-
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/pixtuoid/pixtuoid/star-history/star-history-dark.svg" />
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/pixtuoid/pixtuoid/star-history/star-history-light.svg" />
-    <img alt="star history chart for pixtuoid/pixtuoid" src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/star-history/star-history-light.svg" width="640" />
-  </picture>
-</p>
-
-<p align="center">
-  <sub>Inspired by <a href="https://github.com/pablodelucca/pixel-agents"><code>pixel-agents</code></a> (VS Code), <a href="https://github.com/rullerzhou-afk/clawd-on-desk"><code>clawd-on-desk</code></a> (desktop pet) and Claude Code's <a href="https://dev.to/picklepixel/how-i-reverse-engineered-claude-codes-hidden-pet-system-8l7">Buddy</a> · <a href="https://github.com/pixtuoid/pixtuoid/blob/HEAD/LICENSE">MIT</a> licensed</sub>
-</p>
+Dungeons & Agents is an independent fan project. It is not affiliated with,
+endorsed or sponsored by Wizards of the Coast, Larian Studios or the Pixtuoid
+project.
