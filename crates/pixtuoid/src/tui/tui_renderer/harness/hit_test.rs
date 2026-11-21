@@ -723,7 +723,7 @@ pub(super) fn the_tooltip_names_what_a_click_acts_on<B>(
                 } else if pet.anim == PetKind::Cat.sit_anim() {
                     "Pet me!"
                 } else {
-                    "Office Cat"
+                    PetKind::Cat.default_name()
                 }
                 .to_string(),
             ),
