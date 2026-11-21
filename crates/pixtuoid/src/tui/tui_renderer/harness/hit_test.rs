@@ -305,8 +305,12 @@ fn the_drawn_geometry_answers_every_cell_as_the_half_block_does() {
                 *seen |= hit;
             }
         }
+        // The ground floor's pantry is too narrow for its coffee machine on
+        // the smallest terminal.
+        let coffee = drawn.layout().coffee_machine().is_some();
         assert_eq!(
-            seen, [true; 5],
+            seen,
+            [true, coffee, true, true, true],
             "{cols}x{rows}: every kind is hit somewhere"
         );
     }

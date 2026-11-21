@@ -382,6 +382,14 @@ const MEETING_DWELL_SPREAD_MS: u64 = 3_000;
 /// Encoded clip starts this long before the earliest staged rise.
 const MEETING_WARMUP_LEAD_MS: u64 = 1_500;
 
+/// The seed `--anim` and `--meeting` lay their floor out from: an office's
+/// first floor laid out as the standard floor, whose meeting room and pantry
+/// host every target they stage. Its ground floor is the wall-free lounge.
+pub(crate) fn stage_seed() -> u64 {
+    const STAGE_FLOOR: usize = 2;
+    pixtuoid_scene::floor::floor_seed(STAGE_FLOOR)
+}
+
 /// Build a scene where `n` agents (desks 0..n) are staged to converge on ONE
 /// meeting room: each `state_started_at` is back-dated by
 /// `cycle_n * est_wander_cycle_ms + ε` so `advance_wander`'s bootstrap fast-forward
@@ -406,7 +414,7 @@ pub(crate) fn meeting_scene(
     // The renderer's own buffer and `None` desk fill: any other layout shifts the
     // waypoint indices and the staging silently misses.
     let (buf_w, buf_h) = pixtuoid::dev::scene_buf_size(cols, rows);
-    let floor_seed = pixtuoid_scene::floor::floor_seed(0);
+    let floor_seed = stage_seed();
     let l = SceneLayout::compute(
         pixtuoid_scene::layout::Viewport::full(buf_w, buf_h),
         None,
@@ -716,7 +724,7 @@ pub(crate) fn anim_scene(
     // The renderer's own buffer: a 2px mismatch shifts the waypoint set and the
     // agent targets the wrong furniture.
     let (buf_w, buf_h) = pixtuoid::dev::scene_buf_size(cols, rows);
-    let floor_seed = pixtuoid_scene::floor::floor_seed(0);
+    let floor_seed = stage_seed();
     let l = SceneLayout::compute(
         pixtuoid_scene::layout::Viewport::full(buf_w, buf_h),
         None,
@@ -920,7 +928,7 @@ mod tests {
         let layout = SceneLayout::compute(
             pixtuoid_scene::layout::Viewport::full(buf_w, buf_h),
             Some(max_desks),
-            0,
+            stage_seed(),
         )
         .unwrap();
         let staged: Vec<_> = scene

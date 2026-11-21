@@ -137,7 +137,7 @@ fn h_wall_jamb_flags_join_on_the_doorway_cut_ends() {
     let l = SceneLayout::compute(
         crate::layout::Viewport::full(215, 98),
         Some(TEST_DEFAULT_DESKS),
-        0,
+        crate::layout::STANDARD_SEED,
     )
     .expect("fits");
     let dw = l
@@ -188,7 +188,7 @@ fn v_wall_jamb_flags_and_south_anchor_on_the_doorway_cut_ends() {
     let l = SceneLayout::compute(
         crate::layout::Viewport::full(215, 98),
         Some(TEST_DEFAULT_DESKS),
-        0,
+        crate::layout::STANDARD_SEED,
     )
     .expect("fits");
     let dw = l
@@ -3917,7 +3917,7 @@ fn pantry_doorway_gets_a_centered_entry_mat() {
     let l = SceneLayout::compute(
         crate::layout::Viewport::full(192, 160),
         Some(TEST_DEFAULT_DESKS),
-        0,
+        crate::layout::STANDARD_SEED,
     )
     .expect("fits");
     let p = l.pantry.expect("pantry");
@@ -4759,7 +4759,7 @@ fn one_meeting_sofa_still_seats_three_agents_at_once() {
     let layout = SceneLayout::compute(
         crate::layout::Viewport::full(192, 160),
         Some(TEST_DEFAULT_DESKS),
-        0,
+        crate::layout::STANDARD_SEED,
     )
     .expect("fits");
     let sofa: Vec<usize> = {
@@ -4855,7 +4855,7 @@ fn a_meeting_chair_sitter_is_drawn_on_the_seat_not_5px_high() {
     let layout = SceneLayout::compute(
         crate::layout::Viewport::full(192, 160),
         Some(TEST_DEFAULT_DESKS),
-        0,
+        crate::layout::STANDARD_SEED,
     )
     .expect("fits");
     let now0 = SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000);
@@ -6010,8 +6010,12 @@ fn the_outside_reaches_only_the_glass() {
     use crate::outside::tests::{UNPAINTED, painted_alone};
     let (scene, _, _, now0, pack) = sim_rig();
     // Wide enough for meeting rooms, whose notice boards hang on the panes.
-    let layout = SceneLayout::compute(crate::layout::Viewport::full(240, 144), None, 0)
-        .expect("240x144 lays out");
+    let layout = SceneLayout::compute(
+        crate::layout::Viewport::full(240, 144),
+        None,
+        crate::layout::STANDARD_SEED,
+    )
+    .expect("240x144 lays out");
     let theme = crate::theme::theme_by_name("normal").expect("normal theme");
     let mut owned = OwnedSimStores::new();
     let frame = sim_step(

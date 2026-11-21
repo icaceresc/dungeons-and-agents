@@ -303,20 +303,35 @@ mod tests {
         let counter = |x, y| Some(bx(x, y, COMPACT_COUNTER.w, COMPACT_COUNTER.h));
         let cooler = |x, y| bx(x, y, WATER_COOLER.w, WATER_COOLER.h);
         let bin = |x, y| bx(x, y, 4, 5);
+        use crate::layout::{SENIOR_SEED, STANDARD_SEED};
         // (office w, h, seed; its counter; the piece's own box; the x it ends at)
         let rows = [
             // A room narrower than the counter has none.
-            (55, 72, 0, None, cooler(8, 52), Some(8)),
+            (55, 72, STANDARD_SEED, None, cooler(8, 52), Some(8)),
             // Clear of it, its base on the row above the counter's top.
-            (60, 89, 2, counter(0, 72), cooler(14, 63), Some(14)),
+            (
+                60,
+                89,
+                SENIOR_SEED,
+                counter(0, 72),
+                cooler(14, 63),
+                Some(14),
+            ),
             // West of its centre, the floor west of it exactly the bin's width.
-            (72, 61, 2, counter(4, 48), bin(3, 47), Some(0)),
+            (72, 61, SENIOR_SEED, counter(4, 48), bin(3, 47), Some(0)),
             // One column short.
-            (69, 61, 2, counter(3, 48), bin(3, 47), None),
+            (69, 61, SENIOR_SEED, counter(3, 48), bin(3, 47), None),
             // East of it, the floor east of it exactly the cooler's width.
-            (95, 72, 2, counter(9, 57), cooler(26, 52), Some(29)),
+            (
+                95,
+                72,
+                SENIOR_SEED,
+                counter(9, 57),
+                cooler(26, 52),
+                Some(29),
+            ),
             // One column short.
-            (89, 72, 2, counter(8, 57), cooler(24, 52), None),
+            (89, 72, SENIOR_SEED, counter(8, 57), cooler(24, 52), None),
         ];
         for (w, h, seed, counter, r, x) in rows {
             let p = SceneLayout::compute(crate::layout::Viewport::full(w, h), None, seed)

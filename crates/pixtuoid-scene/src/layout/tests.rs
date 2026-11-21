@@ -130,7 +130,8 @@ fn kitchen_island_places_on_roomy_pantries_and_refuses_small() {
 fn meeting_room_donates_surplus_height_to_the_pantry() {
     // The drift guard pinning `pantry_content_h`'s inverse-clamp math to the island
     // block's real clamps: if either side changes alone, the island vanishes here.
-    let l = SceneLayout::compute(Viewport::full(215, 98), None, 0).expect("fits");
+    let l = SceneLayout::compute(Viewport::full(215, 98), None, crate::layout::STANDARD_SEED)
+        .expect("fits");
     assert!(
         l.pantry.and_then(|p| p.kitchen_island).is_some(),
         "island must place on the short floor after the height transfer"
@@ -149,7 +150,8 @@ fn meeting_room_donates_surplus_height_to_the_pantry() {
         mr.height,
         pr.height
     );
-    let tall = SceneLayout::compute(Viewport::full(240, 160), None, 0).expect("fits");
+    let tall = SceneLayout::compute(Viewport::full(240, 160), None, crate::layout::STANDARD_SEED)
+        .expect("fits");
     let (tmr, tpr) = (
         tall.meeting_room_bounds(0).expect("meeting room"),
         tall.pantry.map(|p| p.bounds).expect("pantry"),
@@ -163,7 +165,8 @@ fn meeting_room_donates_surplus_height_to_the_pantry() {
     // Deliberately asymmetric: if the island's clamps RELAX while pantry_content_h
     // stays, the split merely over-donates a benign row or two — only the
     // starve/rescue boundary is load-bearing.
-    let short = SceneLayout::compute(Viewport::full(215, 87), None, 0).expect("fits");
+    let short = SceneLayout::compute(Viewport::full(215, 87), None, crate::layout::STANDARD_SEED)
+        .expect("fits");
     assert_eq!(
         short.pantry.and_then(|p| p.kitchen_island),
         None,
@@ -227,7 +230,8 @@ fn island_bartenders_approach_from_behind_never_through_the_front() {
 
 #[test]
 fn snack_shelf_hugs_the_west_wall_and_refuses_narrow_rooms() {
-    let l = SceneLayout::compute(Viewport::full(240, 160), None, 2).expect("fits");
+    let l = SceneLayout::compute(Viewport::full(240, 160), None, crate::layout::SENIOR_SEED)
+        .expect("fits");
     let pr = l.pantry.map(|p| p.bounds).expect("pantry");
     let shelf = l
         .waypoints
@@ -236,12 +240,13 @@ fn snack_shelf_hugs_the_west_wall_and_refuses_narrow_rooms() {
         .expect("roomy pantry hosts the shelf");
     let vis = furniture_def(Furniture::SnackShelf).visual;
     assert_eq!(shelf.pos.x, pr.x + 1 + vis.w / 2, "west-wall hug");
-    // Seed 11 at the narrowest buffer leaves the pantry under the shelf's `vis.w + 4`
-    // width gate — the gate is a property of size AND seed, not of size alone.
+    // The open plan at the narrowest buffer leaves the pantry under the shelf's
+    // `vis.w + 4` width gate — the gate is a property of size AND seed, not of
+    // size alone.
     let s = SceneLayout::compute(
         Viewport::full(crate::layout::compute::MIN_LAYOUT_W, 100),
         None,
-        11,
+        crate::layout::OPEN_PLAN_SEED,
     )
     .expect("fits");
     assert!(
@@ -792,7 +797,12 @@ fn every_home_desk_has_a_reachable_approach_on_its_own_far_side() {
 fn sofas_seat_three_people() {
     // 120 wide so the meeting room clears MEETING_FURNITURE_MIN_W: a 96-wide room
     // is too narrow to route to the sofa seats and is intentionally left bare.
-    let l = SceneLayout::compute(Viewport::full(120, 80), Some(4), 0).expect("fits");
+    let l = SceneLayout::compute(
+        Viewport::full(120, 80),
+        Some(4),
+        crate::layout::STANDARD_SEED,
+    )
+    .expect("fits");
 
     let couch: Vec<_> = l
         .waypoints
@@ -1052,8 +1062,12 @@ fn fish_tank_sits_east_of_the_lounge_lamp_clear_of_the_elevator() {
 
 #[test]
 fn meeting_table_ends_are_chair_seats_not_stands() {
-    let l =
-        SceneLayout::compute(Viewport::full(192, 160), Some(TEST_DEFAULT_DESKS), 0).expect("fits");
+    let l = SceneLayout::compute(
+        Viewport::full(192, 160),
+        Some(TEST_DEFAULT_DESKS),
+        crate::layout::STANDARD_SEED,
+    )
+    .expect("fits");
     let trio = l.meeting_rooms[0].trio.as_ref().expect("trio");
     let chairs: Vec<_> = l
         .waypoints
@@ -1085,8 +1099,12 @@ fn meeting_table_ends_are_chair_seats_not_stands() {
 fn coat_rack_yields_to_the_east_chair_in_narrow_fitted_rooms() {
     // On fitted rooms ≲40 wide the rack's coats would overprint the east chair body
     // and its sitter; bare rooms and roomy floors keep it.
-    let narrow =
-        SceneLayout::compute(Viewport::full(120, 160), Some(TEST_DEFAULT_DESKS), 0).expect("fits");
+    let narrow = SceneLayout::compute(
+        Viewport::full(120, 160),
+        Some(TEST_DEFAULT_DESKS),
+        crate::layout::STANDARD_SEED,
+    )
+    .expect("fits");
     let r = &narrow.meeting_rooms[0];
     assert!(r.trio.is_some(), "120x160 hosts a fitted room");
     assert_eq!(
@@ -1094,8 +1112,12 @@ fn coat_rack_yields_to_the_east_chair_in_narrow_fitted_rooms() {
         None,
         "narrow fitted room drops the rack instead of interpenetrating the chair"
     );
-    let roomy =
-        SceneLayout::compute(Viewport::full(192, 160), Some(TEST_DEFAULT_DESKS), 0).expect("fits");
+    let roomy = SceneLayout::compute(
+        Viewport::full(192, 160),
+        Some(TEST_DEFAULT_DESKS),
+        crate::layout::STANDARD_SEED,
+    )
+    .expect("fits");
     assert!(
         roomy.meeting_rooms[0].coat_rack_pos().is_some(),
         "roomy fitted room keeps the rack"
@@ -1685,3 +1707,4 @@ fn a_surface_fits_an_office_exactly_where_its_layout_does() {
         "{fits} fit, {refused} refused, {bare_refused} of them bare"
     );
 }
+

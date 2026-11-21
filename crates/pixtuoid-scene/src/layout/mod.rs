@@ -553,6 +553,17 @@ pub(crate) const BARE_OFFICE: Bounds = Bounds {
 /// deterministic tests/snapshots pass as `Some(TEST_DEFAULT_DESKS)`.
 #[cfg(test)]
 pub(crate) const TEST_DEFAULT_DESKS: usize = CLASSIC_OFFICE_DESKS;
+/// A seed that lays out the standard floor (a meeting room and a pantry
+/// behind walls), for a test of those rooms: `each_variant_seed_lays_out_its_variant`
+/// pins it.
+#[cfg(test)]
+pub(crate) const STANDARD_SEED: u64 = 11;
+/// A seed that lays out the senior floor, the standard's wider rooms.
+#[cfg(test)]
+pub(crate) const SENIOR_SEED: u64 = 1;
+/// A seed that lays out the open plan: its pantry, no meeting room, no wall.
+#[cfg(test)]
+pub(crate) const OPEN_PLAN_SEED: u64 = 2;
 /// The desk-grid vertical gap unit (px) — the lounge-waypoint bound in the layout
 /// tests reads it; the pod grid itself prices its own spacing.
 #[cfg(test)]

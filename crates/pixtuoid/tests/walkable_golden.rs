@@ -24,17 +24,17 @@ fn mask_to_ascii(layout: &SceneLayout) -> String {
 #[test]
 fn walkable_mask_standard_96x70() {
     let l =
-        SceneLayout::compute(pixtuoid_scene::layout::Viewport::full(96, 70), Some(2), 0).unwrap();
+        SceneLayout::compute(pixtuoid_scene::layout::Viewport::full(96, 70), Some(2), 11).unwrap();
     insta::assert_snapshot!("walkable_mask_standard_96x70", mask_to_ascii(&l));
 }
 
 #[test]
-fn walkable_mask_open_plan_seed11_96x70() {
+fn walkable_mask_open_plan_seed2_96x70() {
     let l =
-        SceneLayout::compute(pixtuoid_scene::layout::Viewport::full(96, 70), Some(2), 11).unwrap();
+        SceneLayout::compute(pixtuoid_scene::layout::Viewport::full(96, 70), Some(2), 2).unwrap();
     assert!(
         l.meeting_rooms.is_empty() && l.pantry.is_some(),
-        "seed 11 lays out the open plan"
+        "seed 2 lays out the open plan"
     );
-    insta::assert_snapshot!("walkable_mask_open_plan_seed11_96x70", mask_to_ascii(&l));
+    insta::assert_snapshot!("walkable_mask_open_plan_seed2_96x70", mask_to_ascii(&l));
 }

@@ -3891,7 +3891,7 @@ mod figure_box {
         let t0 = SystemTime::UNIX_EPOCH + Duration::from_secs(1_700_000_000);
         // Long idle, their trips walk one to the canvas's west edge and one to its
         // east; the third is held at its top.
-        let [west, east, held] = ["/edge/9.jsonl", "/edge/22.jsonl", "/edge/held5.jsonl"]
+        let [west, east, held] = ["/edge/72.jsonl", "/edge/112.jsonl", "/edge/held5.jsonl"]
             .map(AgentId::from_transcript_path);
         // Twins but for their cwd, so for their outfit: where their pictures
         // differ, a sprite drew.

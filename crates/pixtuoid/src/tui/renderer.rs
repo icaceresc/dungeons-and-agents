@@ -84,6 +84,17 @@ impl<'a> DrawCtx<'a> {
         }
     }
 
+    /// This still with its floor laid out from `floor_seed`, a variant of
+    /// its own ([`FloorScene::with_floor_seed`]).
+    #[doc(hidden)]
+    #[must_use]
+    pub fn with_floor_seed(self, floor_seed: u64) -> Self {
+        Self {
+            floor_scene: self.floor_scene.with_floor_seed(floor_seed),
+            ..self
+        }
+    }
+
     /// The whole office its floor is projected from.
     pub fn scene(&self) -> &'a SceneState {
         self.scene

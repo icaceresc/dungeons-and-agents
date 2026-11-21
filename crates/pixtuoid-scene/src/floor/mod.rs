@@ -1321,8 +1321,11 @@ impl FloorScene {
         self.floor_seed
     }
 
-    /// This projection laid out from `floor_seed`.
-    pub(crate) fn with_floor_seed(self, floor_seed: u64) -> Self {
+    /// This projection laid out from `floor_seed`, as
+    /// [`FloorSession::with_floor_seed`] lays its floor out.
+    #[doc(hidden)]
+    #[must_use]
+    pub fn with_floor_seed(self, floor_seed: u64) -> Self {
         Self { floor_seed, ..self }
     }
 

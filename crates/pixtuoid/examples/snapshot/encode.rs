@@ -440,13 +440,14 @@ pub(crate) fn draw_frame(
     Ok(None)
 }
 
-/// Drive [`draw_frame`] over one floor and encode it; `skip_ms` (from --anim,
-/// --meeting or --warmup-secs) starts the clip mid-action.
+/// Drive [`draw_frame`] over one floor, laid out from `floor_seed`, and encode
+/// it; `skip_ms` (from --anim, --meeting or --warmup-secs) starts the clip
+/// mid-action.
 pub(crate) fn save_animation(
     job: &AnimJob,
     term: &mut Terminal<TestBackend>,
     floor: &mut PerFloor,
-    conditions: Conditions,
+    (conditions, floor_seed): (Conditions, u64),
     skip_ms: u64,
     debug_walkable: bool,
     pixel: Option<PixelOffice<FloorSession>>,
@@ -464,7 +465,8 @@ pub(crate) fn save_animation(
                 0,
                 now,
                 conditions,
-            );
+            )
+            .with_floor_seed(floor_seed);
             draw_ctx.debug_walkable = debug_walkable;
             draw_frame(term, &mut draw_ctx, pixel.as_mut()).map(drop)
         },

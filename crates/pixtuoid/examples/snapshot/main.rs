@@ -395,14 +395,18 @@ fn main() -> Result<()> {
     let cols = args.cols.unwrap_or(COLS);
     let rows = args.rows.unwrap_or(ROWS);
     let mut skip_ms = 0u64;
+    // The ground floor's, but where a staged scene laid its own out.
+    let mut floor_seed = pixtuoid_scene::floor::floor_seed(0);
     let scene = if let Some(target) = args.anim.as_deref() {
         let (s, skip) = anim_scene(now, target, cols, rows, args.anim_facing.as_deref());
         skip_ms = args.anim_skip_ms.unwrap_or(skip);
+        floor_seed = scenes::stage_seed();
         eprintln!("ANIM pre-roll skip = {skip_ms}ms (default {skip}ms)");
         s
     } else if let Some(n) = args.meeting {
         let (s, warmup) = meeting_scene(now, n as usize, cols, rows, args.max_desks, args.agents)?;
         skip_ms = warmup;
+        floor_seed = scenes::stage_seed();
         eprintln!("MEETING auto warmup = {warmup}ms");
         s
     } else if args.empty {
@@ -510,8 +514,11 @@ fn main() -> Result<()> {
     let mut pixel = args
         .pixel
         .map(|look| {
-            PixelOffice::of_draw_frame(&pack, (cols, rows), look)
-                .map(|office| office.inset(args.insets.unwrap_or_default()))
+            PixelOffice::of_draw_frame(&pack, (cols, rows), look).map(|office| {
+                office
+                    .inset(args.insets.unwrap_or_default())
+                    .with_floor_seed(floor_seed)
+            })
         })
         .transpose()?;
     let conditions = pixtuoid_scene::floor::Conditions::default().with_weather(weather);
@@ -520,7 +527,7 @@ fn main() -> Result<()> {
             &anim_job,
             &mut term,
             &mut floor,
-            conditions,
+            (conditions, floor_seed),
             skip_ms,
             args.debug_walkable,
             pixel,
@@ -721,7 +728,8 @@ fn main() -> Result<()> {
         0,
         now,
         conditions,
-    );
+    )
+    .with_floor_seed(floor_seed);
     draw_ctx.mouse_pos = args.hover;
     draw_ctx.debug_walkable = args.debug_walkable;
     draw_ctx.footer = draw_ctx.footer.with_warning(warning_text.as_deref());

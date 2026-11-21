@@ -511,8 +511,12 @@ fn a_notice_board_hangs_within_one_pane() {
 #[test]
 fn snapping_to_a_pane_keeps_the_notice_board() {
     for (w, h) in [(160, 96), (192, 108), (200, 120), (240, 144), (320, 180)] {
-        let l =
-            SceneLayout::compute(crate::layout::Viewport::full(w, h), None, 0).expect("lays out");
+        let l = SceneLayout::compute(
+            crate::layout::Viewport::full(w, h),
+            None,
+            crate::layout::STANDARD_SEED,
+        )
+        .expect("lays out");
         assert!(
             l.fixtures()
                 .any(|f| matches!(f.kind, FixtureKind::NoticeBoard { .. })),

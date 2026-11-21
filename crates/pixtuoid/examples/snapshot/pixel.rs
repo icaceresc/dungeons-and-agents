@@ -94,6 +94,15 @@ impl PixelOffice<FloorSession> {
         )
     }
 
+    /// This office with its floor laid out from `floor_seed`, as the classic's
+    /// beside it is (`DrawCtx::with_floor_seed`).
+    pub(crate) fn with_floor_seed(self, floor_seed: u64) -> Self {
+        Self {
+            session: self.session.with_floor_seed(floor_seed),
+            ..self
+        }
+    }
+
     /// Its floor's stores, to seed as the classic floor is seeded.
     pub(crate) fn floor_mut(&mut self) -> &mut PerFloor {
         self.session.floor_mut()

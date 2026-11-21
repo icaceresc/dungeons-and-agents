@@ -1,6 +1,25 @@
 use super::*;
 use pixtuoid_scene::layout::{Point, WallSegment};
 
+/// The first floor laid out as the standard office, a meeting room behind
+/// glass beside its pantry: the ground floor is the wall-free lounge.
+const STANDARD_FLOOR: usize = 2;
+
+/// `r` showing floor `floor` of `scene`, its slide there from `now` landed:
+/// when it landed.
+fn land_on(
+    r: &mut TuiRenderer<TestBackend>,
+    scene: &SceneState,
+    floor: usize,
+    now: SystemTime,
+) -> SystemTime {
+    r.render(scene, now).expect("render");
+    r.navigate_floor(floor, now);
+    let landed = now + Duration::from_millis(r.transition().expect("a slide").duration_ms);
+    r.render(scene, landed).expect("render");
+    landed
+}
+
 #[test]
 fn footer_shows_floor_indicator_on_multi_floor() {
     let scene = two_floor_scene();
@@ -181,20 +200,28 @@ fn meeting_room_fills_and_hosts_group_chitchat() {
         // Stagger start times so wander cycles desync and the room sees a mix
         // of arrivals/departures.
         let started = now - Duration::from_secs(5 + (i as u64 * 11) % 80);
-        scene.agents.insert(id, slot(id, 0, i, started));
+        scene
+            .agents
+            .insert(id, slot(id, STANDARD_FLOOR, i, started));
     }
 
     let mut r = build(160, 56, vec![]);
-    r.render(&scene, now).expect("render");
+    let start = now;
+    now = land_on(&mut r, &scene, STANDARD_FLOOR, start);
     let layout = r.cached_layout().expect("layout").clone();
     let mr = layout
         .meeting_room_bounds(0)
-        .expect("floor 0 must have a meeting room at this size");
+        .expect("the standard floor must have a meeting room at this size");
 
     // Empty-room pixel baseline (same furniture, no agents) so the region diff
-    // isolates the characters.
+    // isolates the characters: the floor, empty under one agent upstairs.
     let mut r0 = build(160, 56, vec![]);
-    r0.render(&SceneState::uniform(cap), now).expect("render");
+    let upstairs = AgentId::from_transcript_path("/h/upstairs.jsonl");
+    let mut empty = SceneState::uniform(cap);
+    empty
+        .agents
+        .insert(upstairs, slot(upstairs, STANDARD_FLOOR + 1, 0, start));
+    land_on(&mut r0, &empty, STANDARD_FLOOR, start);
     let baseline = r0.buf().expect("a frame").clone();
 
     // The layout must actually carry meeting slots (otherwise the test is
@@ -272,8 +299,9 @@ fn meeting_glass_partition_connects_at_window_and_corner() {
     // Asserted relative to same-row references so the check is immune to the
     // time-of-day dim / weather tint applied globally.
     let mut r = build(192, 80, vec![]);
-    let scene = scene_with(vec![idle("/h/glass.jsonl", 0, t0())], 16);
-    r.render(&scene, t0()).expect("render");
+    let id = AgentId::from_transcript_path("/h/glass.jsonl");
+    let scene = scene_with(vec![slot(id, STANDARD_FLOOR, 0, t0())], 16);
+    land_on(&mut r, &scene, STANDARD_FLOOR, t0());
 
     let layout = r.cached_layout().expect("layout").clone();
     let v_x = layout

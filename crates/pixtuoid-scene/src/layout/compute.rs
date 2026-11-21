@@ -1324,13 +1324,16 @@ impl FloorVariant {
     /// its length. A variant missing here is unreachable — rustc's `dead_code` reds on
     /// the never-constructed arm, NOT `the_sweep_reaches_every_floor_variant`, which
     /// catches the other direction. `has_meeting` / `has_pantry_base` are `matches!`
-    /// lists; the `const _` above `compute` reds a variant in neither.
+    /// lists; the `const _` above `compute` reds a variant in neither. Its order
+    /// is what each floor lays out as: floor 0, a campaign's camp, and floor 1,
+    /// its first dungeon, take the variants with no walls to fight or rest
+    /// behind (`the_camp_and_the_first_dungeon_lay_out_wall_free`).
     pub(super) const ALL: [Self; 5] = [
-        FloorVariant::Standard,
-        FloorVariant::OpenPlan,
-        FloorVariant::Dense,
-        FloorVariant::Senior,
         FloorVariant::Lounge,
+        FloorVariant::Standard,
+        FloorVariant::Dense,
+        FloorVariant::OpenPlan,
+        FloorVariant::Senior,
     ];
     const COUNT: u64 = Self::ALL.len() as u64;
     /// Searched, not Fibonacci-derived: it maps floors `0..COUNT` to distinct
@@ -2399,9 +2402,40 @@ mod tests {
     }
 
     /// The open-plan goldens in `layout_golden.rs` and `walkable_golden.rs` check
-    /// a shape the lounge shares, so only this tells seed 11's open plan from a lounge.
+    /// a shape the lounge shares, so only this tells seed 2's open plan from a
+    /// lounge; the standard goldens are seed 11's.
     #[test]
-    fn the_open_plan_goldens_seed_is_the_open_plan() {
-        assert_eq!(FloorVariant::from_seed(11), FloorVariant::OpenPlan);
+    fn the_layout_goldens_seeds_are_their_variants() {
+        assert_eq!(FloorVariant::from_seed(2), FloorVariant::OpenPlan);
+        assert_eq!(FloorVariant::from_seed(11), FloorVariant::Standard);
+    }
+
+    /// Each variant's test seed lays it out.
+    #[test]
+    fn each_variant_seed_lays_out_its_variant() {
+        use crate::layout::{OPEN_PLAN_SEED, SENIOR_SEED, STANDARD_SEED};
+        assert_eq!(
+            FloorVariant::from_seed(STANDARD_SEED),
+            FloorVariant::Standard
+        );
+        assert_eq!(FloorVariant::from_seed(SENIOR_SEED), FloorVariant::Senior);
+        assert_eq!(
+            FloorVariant::from_seed(OPEN_PLAN_SEED),
+            FloorVariant::OpenPlan
+        );
+    }
+
+    /// A campaign's camp (floor 0) and its first dungeon (floor 1) lay out
+    /// with no wall to rest or fight behind.
+    #[test]
+    fn the_camp_and_the_first_dungeon_lay_out_wall_free() {
+        let floor = |i| FloorVariant::from_seed(crate::floor::floor_seed(i));
+        assert_eq!(
+            (floor(0), floor(1)),
+            (FloorVariant::Lounge, FloorVariant::OpenPlan)
+        );
+        for i in [0, 1] {
+            assert!(!floor(i).has_meeting(), "floor {i} encloses a meeting room");
+        }
     }
 }

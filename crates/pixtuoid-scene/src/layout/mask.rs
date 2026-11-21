@@ -282,7 +282,7 @@ mod tests {
         let l = crate::layout::SceneLayout::compute(
             crate::layout::Viewport::full(200, 130),
             Some(8),
-            0,
+            crate::layout::STANDARD_SEED,
         )
         .unwrap();
         let piece = l

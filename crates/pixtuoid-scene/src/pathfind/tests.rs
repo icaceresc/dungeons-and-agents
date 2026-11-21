@@ -2,7 +2,12 @@ use super::*;
 use crate::layout::{SceneLayout, WallSegment};
 
 fn make_layout() -> SceneLayout {
-    SceneLayout::compute(crate::layout::Viewport::full(160, 200), Some(4), 0).expect("layout fits")
+    SceneLayout::compute(
+        crate::layout::Viewport::full(160, 200),
+        Some(4),
+        crate::layout::STANDARD_SEED,
+    )
+    .expect("layout fits")
 }
 
 #[test]

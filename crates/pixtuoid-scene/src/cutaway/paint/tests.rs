@@ -1820,8 +1820,12 @@ fn lowest_painted_row(
 fn the_tables_span_ends_where_it_paints() {
     let pack = test_office();
     let theme = crate::theme::theme_by_name("normal").expect("theme");
-    let layout =
-        SceneLayout::compute(crate::layout::Viewport::full(160, 96), None, 0).expect("lays out");
+    let layout = SceneLayout::compute(
+        crate::layout::Viewport::full(160, 96),
+        None,
+        crate::layout::STANDARD_SEED,
+    )
+    .expect("lays out");
     for s in [1, pack.max_density_variant().get()] {
         let scale = RenderScale::new(s).expect("nonzero");
         let order = queued(&layout, &pack, scale, &[], |k| {
@@ -2444,6 +2448,7 @@ fn the_cutaway_paints_whole_art_pixels() {
     let walking = &frames[frames.len() / 2];
     let seated = frames.last().expect("a seated frame");
     let office = FloorSession::new(std::sync::Arc::new(pack.clone()))
+        .with_floor_seed(crate::layout::STANDARD_SEED)
         .step(
             crate::floor::FloorInputs {
                 scene: &pixtuoid_core::SceneState::uniform(16),

@@ -950,7 +950,12 @@ fn spot_claims_ignores_a_seated_agents_stale_target() {
 /// forward from the hashed index lands on a neighbouring seat of the SAME venue.
 #[test]
 fn a_claimed_seat_sends_the_agent_to_the_next_seat_of_the_same_venue() {
-    let l = SceneLayout::compute(crate::layout::Viewport::full(240, 160), None, 0).expect("fits");
+    let l = SceneLayout::compute(
+        crate::layout::Viewport::full(240, 160),
+        None,
+        crate::layout::STANDARD_SEED,
+    )
+    .expect("fits");
     let origin = l.home_desks[0];
     // A cycle-0 pick that is a MEETING seat, so the venue has siblings.
     let (id, taken) = (0u64..5000)

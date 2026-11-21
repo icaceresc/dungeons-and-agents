@@ -313,7 +313,9 @@ pub(crate) fn sit_down_as(
     sit_down_on(pack, facing, seated_ticks, id, 0)
 }
 
-/// [`sit_down_as`] on floor `floor`, the building's top.
+/// [`sit_down_as`] on floor `floor`, the building's top, laid out as the
+/// standard floor whatever its index, so its walls and rooms are there to
+/// cover.
 pub(crate) fn sit_down_on(
     pack: OfficeArt,
     facing: crate::layout::Facing,
@@ -329,7 +331,7 @@ pub(crate) fn sit_down_on(
     let layout = SceneLayout::compute(
         crate::layout::Viewport::full(LOGICAL.0, LOGICAL.1),
         None,
-        crate::floor::project_floor_scene(&scene, floor).floor_seed(),
+        crate::layout::STANDARD_SEED,
     )
     .expect("lays out");
     let home = layout
@@ -363,7 +365,8 @@ pub(crate) fn sit_down_on(
         PerFloor::new(std::sync::Arc::new(pack.clone())),
         PerOffice::new(),
     );
-    let floor_scene = crate::floor::project_floor_scene(&scene, floor);
+    let floor_scene = crate::floor::project_floor_scene(&scene, floor)
+        .with_floor_seed(crate::layout::STANDARD_SEED);
     let mut frames = Vec::new();
     let mut seated_at = None;
     for n in 1..=1200u64 {
@@ -1082,8 +1085,12 @@ pub(crate) fn kind_name(kind: &PieceKind) -> &'static str {
 fn no_wall_segment_is_taller_than_the_cast() {
     let pack = test_office();
     let (_, body_h) = base_size(&pack, PackPiece::Standing);
-    let layout =
-        SceneLayout::compute(crate::layout::Viewport::full(240, 144), None, 0).expect("lays out");
+    let layout = SceneLayout::compute(
+        crate::layout::Viewport::full(240, 144),
+        None,
+        crate::layout::STANDARD_SEED,
+    )
+    .expect("lays out");
     let mut order: Vec<(Span, PieceKind)> = Vec::new();
     wall_segments(
         &layout,

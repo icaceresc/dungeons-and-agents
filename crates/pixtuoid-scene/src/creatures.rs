@@ -737,7 +737,12 @@ mod tests {
     }
 
     fn layout(w: u16, h: u16) -> SceneLayout {
-        SceneLayout::compute(crate::layout::Viewport::full(w, h), None, 0).expect("layout fits")
+        SceneLayout::compute(
+            crate::layout::Viewport::full(w, h),
+            None,
+            crate::layout::STANDARD_SEED,
+        )
+        .expect("layout fits")
     }
 
     /// A planted foot stays planted: each creature cruises exactly one stride
