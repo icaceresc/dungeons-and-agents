@@ -2768,6 +2768,69 @@ fn floor_nav_slides_lands_and_clamps() {
     assert_eq!(nav.current(), 0, "the floor showing stays in the building");
 }
 
+/// Following slides to the action's floor once it has stayed there
+/// `FOLLOW_SETTLE`, so a short gap between turns never swings the view.
+#[test]
+fn following_slides_to_the_action_once_it_settles() {
+    let secs = |n: u64| SystemTime::UNIX_EPOCH + Duration::from_secs(1_000_000 + n);
+    let mut nav = FloorNav::default();
+    assert!(!nav.follow(1, secs(0)), "the action just moved");
+    assert!(!nav.follow(0, secs(3)), "and moved back before it settled");
+    assert!(!nav.follow(1, secs(4)));
+    assert!(!nav.follow(1, secs(8)), "the settle restarts on each move");
+    assert!(nav.follow(1, secs(9)));
+    nav.settle(2, secs(9) + Duration::from_millis(TRANSITION_DURATION_MS));
+    assert_eq!(nav.current(), 1);
+    assert!(!nav.follow(1, secs(60)), "the view already shows it");
+}
+
+/// A floor key holds the view where it put it for `FOLLOW_HOLD`, whatever the
+/// action does; then following resumes.
+#[test]
+fn a_floor_key_holds_the_view_then_following_resumes() {
+    let secs = |n: u64| SystemTime::UNIX_EPOCH + Duration::from_secs(1_000_000 + n);
+    let mut nav = FloorNav::default();
+    nav.navigate(0, secs(0));
+    assert!(!nav.follow(1, secs(0)));
+    assert!(!nav.follow(1, secs(19)), "the key still holds the view");
+    assert!(nav.follow(1, secs(20)));
+}
+
+/// The action is on the lowest dungeon floor where anyone works, or in the
+/// camp when no one does: one resting, one walking out or one at work in the
+/// camp moves no view.
+#[test]
+fn the_action_is_on_the_lowest_dungeon_floor_anyone_works_on() {
+    let running = ActivityState::Running { item: None };
+    let agent = |n: u32, floor: usize, state: ActivityState| {
+        let mut slot = make_slot(AgentId::from_parts("x", &n.to_string()), state);
+        slot.desk = Some(FloorDesk::new(floor, 0));
+        slot
+    };
+    let scene_of = |slots: Vec<AgentSlot>| {
+        let mut scene = SceneState::uniform(4);
+        for slot in slots {
+            scene.agents.insert(slot.agent_id, slot);
+        }
+        scene
+    };
+    let mut leaving = agent(3, 1, running.clone());
+    leaving.exiting_at = Some(t0());
+    let quiet = scene_of(vec![
+        agent(1, 0, ActivityState::Idle),
+        agent(2, 0, running.clone()),
+        agent(4, 1, ActivityState::Idle),
+        leaving,
+    ]);
+    assert_eq!(action_floor(&quiet), 0);
+    let fighting = scene_of(vec![
+        agent(1, 3, running.clone()),
+        agent(2, 2, ActivityState::RequiresAction { reason: None }),
+        agent(4, 0, running),
+    ]);
+    assert_eq!(action_floor(&fighting), 2);
+}
+
 /// A slide's footer speaks for its destination from the first frame, so its
 /// count matches the `F{floor}/{floors}` it names.
 #[test]

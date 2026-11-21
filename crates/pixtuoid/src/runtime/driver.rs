@@ -198,7 +198,8 @@ pub(crate) async fn reducer_task(
     // from socket JSON with no registry check and no length cap, so keying on it
     // lets a long-lived `run` accumulate an entry per distinct name seen.
     let mut gate_logged: std::collections::HashSet<&'static str> = std::collections::HashSet::new();
-    let mut scene = SceneState::new(*floor_caps.borrow_and_update());
+    let mut scene =
+        SceneState::new(*floor_caps.borrow_and_update()).with_seat_policy(sink.seat_policy());
     // Disabled once its painter is gone, or never had one (`serve`), so the
     // closed channel can't busy-loop the select.
     let mut caps_open = true;
@@ -751,6 +752,37 @@ mod tests {
                 "agents=[cc\u{b7}proj@0:idle] daemons=[]",
             ]
         );
+    }
+
+    /// A painter's scene seats by the campaign, an agent at work above the
+    /// camp, where headless's log above keeps it at the first desk.
+    #[tokio::test]
+    async fn a_painters_scene_seats_a_working_agent_in_the_dungeon() {
+        use pixtuoid_core::AgentId;
+        use pixtuoid_core::source::{AgentEvent, Transport};
+        use pixtuoid_core::state::CAMP_FLOOR;
+        let id = AgentId::from_parts("claude-code", "s");
+        let events = [
+            AgentEvent::SessionStart {
+                agent_id: id,
+                source: "claude-code".into(),
+                session_id: "s".into(),
+                cwd: PathBuf::from("/proj"),
+                parent_id: None,
+            },
+            AgentEvent::tool_use_start(id, Some("t0".into()), Some("Bash".into())),
+        ];
+        let (tx, rx) = tokio::sync::mpsc::channel(events.len());
+        for ev in events {
+            tx.send((Transport::Jsonl, ev))
+                .await
+                .expect("the events queue");
+        }
+        drop(tx);
+        let (sink, scene) = SceneSink::latest([FALLBACK_DESKS; MAX_FLOORS]);
+        reduce(rx, sink).await;
+        let desk = scene.borrow().agents[&id].desk.expect("it is seated");
+        assert!(desk.floor > CAMP_FLOOR, "at work in the dungeon: {desk:?}");
     }
 
     /// The reducer outruns a reader that stopped reading: it never waits on

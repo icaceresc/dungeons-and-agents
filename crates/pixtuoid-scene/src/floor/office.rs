@@ -147,7 +147,20 @@ pub struct Feed {
 pub struct FloorNav {
     current: usize,
     transition: Option<FloorTransition>,
+    /// Until when the floor a key chose keeps [`Self::follow`] off.
+    held_until: Option<SystemTime>,
+    /// The floor [`Self::follow`] last aimed at, and since when.
+    aim: Option<(usize, SystemTime)>,
 }
+
+/// How long a floor key's choice holds the view before it follows the action
+/// again ([`OfficeSession::follow`]).
+const FOLLOW_HOLD: Duration = Duration::from_secs(20);
+
+/// How long the action stays on one floor before the view follows it there:
+/// longer than a few seconds' gap between two turns, so the view doesn't swing
+/// away and back.
+const FOLLOW_SETTLE: Duration = Duration::from_secs(5);
 
 impl FloorNav {
     /// The floor showing, or the one a slide leaves.
@@ -165,13 +178,36 @@ impl FloorNav {
         self.transition.as_ref()
     }
 
-    /// [`OfficeSession::navigate`].
+    /// [`OfficeSession::navigate`]: it holds following off for [`FOLLOW_HOLD`].
     pub(crate) fn navigate(&mut self, target: usize, now: SystemTime) -> bool {
+        self.held_until = now.checked_add(FOLLOW_HOLD);
+        self.slide(target, now)
+    }
+
+    /// Slide to `target` at `now`, unless it shows or a slide is under way;
+    /// whether a slide began.
+    fn slide(&mut self, target: usize, now: SystemTime) -> bool {
         if target == self.current || self.transition.is_some() {
             return false;
         }
         self.transition = Some(FloorTransition::new(self.current, target, now));
         true
+    }
+
+    /// Slide to `target`, the floor the action is on at `now`, once it has
+    /// been for [`FOLLOW_SETTLE`] and no key holds the view; whether a slide
+    /// began.
+    pub(crate) fn follow(&mut self, target: usize, now: SystemTime) -> bool {
+        let since = match self.aim {
+            Some((aimed, since)) if aimed == target => since,
+            _ => now,
+        };
+        self.aim = Some((target, since));
+        let held = self.held_until.is_some_and(|until| now < until);
+        let settled = now
+            .duration_since(since)
+            .is_ok_and(|on| on >= FOLLOW_SETTLE);
+        !held && settled && self.slide(target, now)
     }
 
     /// [`OfficeSession::cancel_slide`], of `n_floors`.
@@ -342,9 +378,18 @@ impl OfficeSession {
     }
 
     /// Slide to floor `target`, unless it is the floor showing or a slide is
-    /// under way; whether a slide began.
+    /// under way; whether a slide began. A key's choice, so it holds
+    /// [`Self::follow`] off for a while.
     pub fn navigate(&mut self, target: usize, now: SystemTime) -> bool {
         self.nav.navigate(target, now)
+    }
+
+    /// Slide to the floor the action is on in `scene` (the FULL live scene)
+    /// at `now`, once the action has stayed there a few seconds and no floor
+    /// key holds the view; whether a slide began. A painter calls it each
+    /// frame to keep its view on the work.
+    pub fn follow(&mut self, scene: &SceneState, now: SystemTime) -> bool {
+        self.nav.follow(super::action_floor(scene), now)
     }
 
     /// Hand a pointer's lift to the floor showing, and its carry and drop to

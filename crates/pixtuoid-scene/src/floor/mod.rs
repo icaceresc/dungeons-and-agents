@@ -1225,6 +1225,26 @@ pub fn num_floors(scene: &SceneState) -> usize {
         .min(MAX_FLOORS)
 }
 
+/// The floor the work is on: the lowest dungeon floor holding an agent at
+/// work, else the camp ([`CAMP_FLOOR`](pixtuoid_core::state::CAMP_FLOOR)),
+/// where a [campaign](pixtuoid_core::state::SeatPolicy::Campaign) rests the
+/// rest.
+pub(crate) fn action_floor(scene: &SceneState) -> usize {
+    use pixtuoid_core::state::{ActivityState, CAMP_FLOOR};
+    (scene.agents.values())
+        .filter(|slot| slot.exiting_at.is_none())
+        .filter(|slot| {
+            matches!(
+                slot.state,
+                ActivityState::Running { .. } | ActivityState::RequiresAction { .. }
+            )
+        })
+        .filter_map(|slot| slot.desk.map(|desk| desk.floor))
+        .filter(|&floor| floor != CAMP_FLOOR)
+        .min()
+        .unwrap_or(CAMP_FLOOR)
+}
+
 /// The agents floor `floor_idx` draws: those holding a desk on it.
 pub(crate) fn floor_agents(
     scene: &SceneState,
