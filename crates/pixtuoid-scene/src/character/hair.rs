@@ -63,22 +63,58 @@ enum Role {
     Agent,
 }
 
-impl Role {
-    /// The role `agent`'s working directory names, if any. A child's title
-    /// leads with its role and a top-level one ends with it, so that end is
-    /// read first: a project named like a role never stands in for one.
+/// An Orca coworker's title, read: its role, and its project, the rest of it.
+struct Titled {
+    role: Role,
+    project: String,
+}
+
+impl Titled {
+    /// `agent`'s title, where its working directory's basename is one. A
+    /// child's title leads with its role and a top-level one ends with it, so
+    /// that end is read first: a project named like a role never stands in for
+    /// one.
     fn of(agent: &AgentSlot) -> Option<Self> {
         let title = pixtuoid_core::remote::cwd_basename(&agent.cwd)?;
         let parts: Vec<&str> = title.split(ROLE_SEPARATOR).collect();
-        let [first, .., last] = parts[..] else {
-            return None;
-        };
+        let last = parts.len().checked_sub(1).filter(|&last| last > 0)?;
         let ends = if agent.parent_id.is_some() {
-            [first, last]
+            [0, last]
         } else {
-            [last, first]
+            [last, 0]
         };
-        ends.into_iter().find_map(Self::of_part)
+        let (at, role) = ends
+            .into_iter()
+            .find_map(|at| Role::of_part(parts[at]).map(|role| (at, role)))?;
+        let rest: Vec<&str> = (parts.iter().enumerate())
+            .filter(|&(i, _)| i != at)
+            .map(|(_, part)| *part)
+            .collect();
+        Some(Self {
+            role,
+            project: rest.join(ROLE_SEPARATOR),
+        })
+    }
+}
+
+/// The project `agent` works in, as its outfit keys it: an Orca coworker's
+/// title less its role, so a project's orchestrator, workers and subagents
+/// match, else its working directory's basename.
+pub(crate) fn project_of(agent: &AgentSlot) -> Option<String> {
+    Titled::of(agent)
+        .map(|titled| titled.project)
+        .or_else(|| pixtuoid_core::remote::cwd_basename(&agent.cwd))
+}
+
+/// Whether `agent` is an Orca bot's own session, the owner's companion.
+pub(crate) fn is_companion(agent: &AgentSlot) -> bool {
+    Role::of(agent) == Some(Role::Companion)
+}
+
+impl Role {
+    /// The role `agent`'s title names, if any ([`Titled::of`]).
+    fn of(agent: &AgentSlot) -> Option<Self> {
+        Titled::of(agent).map(|titled| titled.role)
     }
 
     /// The role `part` of a title names by its last word or, failing that, its
@@ -530,6 +566,26 @@ mod tests {
                 Role::of(&in_cwd(cwd, child)),
                 role,
                 "{cwd} (child: {child})"
+            );
+        }
+    }
+
+    /// A title's project is the title less its role; a folder outside Orca is
+    /// its own project.
+    #[test]
+    fn a_titles_project_is_the_title_less_its_role() {
+        for (cwd, child, project) in [
+            ("/w/my-repo · orchestrator", false, "my-repo"),
+            ("/w/claude worker · my-repo", true, "my-repo"),
+            ("/w/worker of antigravity · my-repo", false, "my-repo"),
+            ("/w/Explore subagent · my-repo", true, "my-repo"),
+            ("/w/my-repo", false, "my-repo"),
+            ("/w/my-repo · reviewer", false, "my-repo · reviewer"),
+        ] {
+            assert_eq!(
+                project_of(&in_cwd(cwd, child)).as_deref(),
+                Some(project),
+                "{cwd}"
             );
         }
     }

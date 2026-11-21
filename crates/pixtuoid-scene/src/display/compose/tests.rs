@@ -826,6 +826,7 @@ fn a_sitters_chair_casts_the_shadow_they_do_not() {
 pub(crate) fn empty_frame(layout: &SceneLayout) -> SimFrame {
     SimFrame {
         floor_place: crate::floor::FloorPlace::at(0, 1),
+        outfits: std::collections::HashMap::new(),
         agents: Vec::new(),
         poses: std::collections::HashMap::new(),
         seated_agents: std::collections::HashMap::new(),

@@ -1305,7 +1305,7 @@ fn push_characters(
         let base =
             crate::pack::densest_frame(pack, pose.anim_name, pose.frame_idx, RenderScale::ONE);
         let (w, h) = base.logical;
-        let key = crate::character::character_key(pose, agent, pack, scale);
+        let key = crate::character::character_key(pose, (agent, frame.outfit(agent)), pack, scale);
         let seat = c.seat_desk;
         let chair = seat.and_then(|d| chair_span(pack, d.facing, d.at, layout.inner));
         if let (Some(d), Some(_)) = (seat, chair) {

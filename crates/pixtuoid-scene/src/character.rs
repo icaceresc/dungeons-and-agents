@@ -6,7 +6,7 @@ use crate::sprite::{Frame, Rgb};
 use pixtuoid_core::AgentSlot;
 
 use crate::frame_cache::FrameCache;
-use crate::sim::{CharacterGlow, outfit_seed_for};
+use crate::sim::CharacterGlow;
 
 mod colors;
 mod hair;
@@ -16,10 +16,10 @@ pub(crate) mod test_support;
 
 #[cfg(test)]
 pub(crate) use colors::{HAIR_KEY, PANTS_KEY, SHIRT_KEY, SKIN_KEY};
-pub(crate) use colors::{agent_overrides, cap_ink, work_glow_tint};
+pub(crate) use colors::{agent_overrides, cap_ink, party_outfit_seed, work_glow_tint};
 #[cfg(test)]
 pub(crate) use hair::dress;
-pub(crate) use hair::{Class, Dress, dress_for, outline};
+pub(crate) use hair::{Class, Dress, dress_for, outline, project_of};
 
 /// Which image of a character's art to draw: the part of its
 /// [`FrameKey`](crate::frame_cache::FrameKey) the sim's placement decides; the
@@ -73,13 +73,13 @@ impl SpritePose {
 /// people to the eye.
 pub(crate) fn character_frame<'c>(
     pose: SpritePose,
-    agent: &AgentSlot,
+    (agent, outfit): (&AgentSlot, u64),
     pack: &OfficeArt,
     scale: crate::render_scale::RenderScale,
     cache: &'c mut FrameCache,
 ) -> CharacterFrame<'c> {
     let dense = crate::pack::densest_frame(pack, pose.anim_name, pose.frame_idx, scale);
-    let key = character_key_at(&dense, pack, pose, agent);
+    let key = character_key_at(&dense, pack, pose, (agent, outfit));
     recolor(dense, &key, pack, cache)
 }
 
@@ -154,19 +154,20 @@ pub(crate) struct CharacterKey {
 /// [`character_frame`]'s [`CharacterKey`], without the recolor.
 pub(crate) fn character_key(
     pose: SpritePose,
-    agent: &AgentSlot,
+    (agent, outfit): (&AgentSlot, u64),
     pack: &OfficeArt,
     scale: crate::render_scale::RenderScale,
 ) -> CharacterKey {
     let dense = crate::pack::densest_frame(pack, pose.anim_name, pose.frame_idx, scale);
-    character_key_at(&dense, pack, pose, agent)
+    character_key_at(&dense, pack, pose, (agent, outfit))
 }
 
+/// The key of `agent` dressed in the outfit `outfit` seeds, its party's.
 fn character_key_at(
     dense: &crate::pack::DenseFrame<'_>,
     pack: &OfficeArt,
     pose: SpritePose,
-    agent: &AgentSlot,
+    (agent, outfit): (&AgentSlot, u64),
 ) -> CharacterKey {
     let SpritePose {
         anim_name,
@@ -184,8 +185,8 @@ fn character_key_at(
             glow_tint,
             density,
         },
-        outfit: outfit_seed_for(agent),
-        palette: agent_overrides(agent, glow_tint),
+        outfit,
+        palette: agent_overrides(agent, outfit, glow_tint),
         dress: dress_for(pack, agent, dense.frame, dense.head, density),
     }
 }
@@ -253,7 +254,8 @@ mod tests {
             glow_tint: None,
         };
         let coffee = pack.inner().variants_of(Piece::HoldingCoffee)[&density].frame_ms();
-        let coworker = character_frame(pose, agent, pack, scale, &mut cache)
+        let outfit = crate::sim::outfit_seed_for(agent);
+        let coworker = character_frame(pose, (agent, outfit), pack, scale, &mut cache)
             .frame
             .clone();
         let cat = &pack.inner().variants_of(Piece::CatSleep)[&density];

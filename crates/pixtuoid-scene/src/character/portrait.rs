@@ -51,7 +51,9 @@ impl OfficeArt {
             standing.frame.width(),
             standing.frame.height().saturating_add(headroom),
         );
-        let key = character_key(STANDING, agent, self, scale);
+        // No office in hand: its own outfit, as a lone agent's.
+        let outfit = crate::sim::outfit_seed_for(agent);
+        let key = character_key(STANDING, (agent, outfit), self, scale);
         let mut cache = FrameCache::new();
         let figure = keyed_character_frame(&key, self, scale, &mut cache).frame;
         let mut canvas = Frame::from_pixels(
@@ -110,7 +112,8 @@ mod tests {
     /// `art`'s densest scale.
     fn office_figure(art: &OfficeArt, agent: &AgentSlot) -> Frame {
         let scale = RenderScale::from(art.max_density_variant());
-        character_frame(POSE, agent, art, scale, &mut FrameCache::new())
+        let outfit = crate::sim::outfit_seed_for(agent);
+        character_frame(POSE, (agent, outfit), art, scale, &mut FrameCache::new())
             .frame
             .clone()
     }
@@ -266,7 +269,8 @@ mod tests {
             }
             assert!(i < 10_000, "no agent wears {:?}", styles.difference(&worn));
             let agent = make_slot_cwd(&format!("/p/style-{i}.jsonl"), "/work/atlas", false);
-            let key = character_key(POSE, &agent, &art, scale);
+            let outfit = crate::sim::outfit_seed_for(&agent);
+            let key = character_key(POSE, (&agent, outfit), &art, scale);
             let Some(style) = key.dress.and_then(|d| d.style) else {
                 continue;
             };

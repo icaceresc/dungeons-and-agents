@@ -2799,6 +2799,35 @@ fn a_floor_key_holds_the_view_then_following_resumes() {
     assert!(nav.follow(1, secs(20)));
 }
 
+/// A party member fighting on one floor wears its lead's outfit while the
+/// lead rests on another: the projection resolves the party on the whole
+/// office.
+#[test]
+fn a_party_split_across_floors_still_wears_one_outfit() {
+    let titled = |n: &str, title: &str, floor: usize| {
+        let mut slot = make_slot(AgentId::from_parts("x", n), ActivityState::Idle);
+        slot.cwd = Arc::from(Path::new(&format!("/w/{title}")));
+        slot.desk = Some(FloorDesk::new(floor, 0));
+        slot
+    };
+    let lead = titled("lead", "atlas · orchestrator", 0);
+    let mut worker = titled("worker", "worker · borealis", 1);
+    worker.parent_id = Some(lead.agent_id);
+    let mut scene = SceneState::uniform(4);
+    for slot in [&lead, &worker] {
+        scene.agents.insert(slot.agent_id, slot.clone());
+    }
+    let dungeon = project_floor_scene(&scene, 1);
+    assert!(
+        !dungeon.scene().agents.contains_key(&lead.agent_id),
+        "premise: its lead rests on another floor"
+    );
+    assert_eq!(
+        dungeon.outfits().get(&worker.agent_id),
+        Some(&crate::sim::outfit_seed_for(&lead))
+    );
+}
+
 /// The action is on the lowest dungeon floor where anyone works, or in the
 /// camp when no one does: one resting, one walking out or one at work in the
 /// camp moves no view.

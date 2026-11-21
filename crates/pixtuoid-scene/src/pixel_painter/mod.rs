@@ -350,6 +350,7 @@ fn enqueue_characters<'a>(
             )),
             kind: DrawableKind::Character {
                 agent,
+                outfit: frame.outfit(agent),
                 pose,
                 top_left: p.top_left,
                 label_anchor: p.label_anchor,

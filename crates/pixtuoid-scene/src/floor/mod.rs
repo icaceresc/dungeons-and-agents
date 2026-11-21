@@ -1339,12 +1339,21 @@ pub struct FloorScene {
     scene: SceneState,
     floor_place: FloorPlace,
     floor_seed: u64,
+    /// Each of its agents' party outfit seed, resolved on the whole office: a
+    /// party's lead may stand on another floor.
+    outfits: HashMap<AgentId, u64>,
 }
 
 impl FloorScene {
     /// The projected scene.
     pub(crate) fn scene(&self) -> &SceneState {
         &self.scene
+    }
+
+    /// Each of its agents' party outfit seed
+    /// ([`party_outfit_seed`](crate::character::party_outfit_seed)).
+    pub(crate) fn outfits(&self) -> &HashMap<AgentId, u64> {
+        &self.outfits
     }
 
     /// Where its floor stands.
@@ -1381,7 +1390,12 @@ impl FloorScene {
 /// building's is an empty one that tops it.
 pub fn project_floor_scene(scene: &SceneState, floor_idx: usize) -> FloorScene {
     let mut s = SceneState::default();
+    let mut outfits = HashMap::new();
     for slot in floor_agents(scene, floor_idx) {
+        outfits.insert(
+            slot.agent_id,
+            crate::character::party_outfit_seed(&scene.agents, slot),
+        );
         let mut slot = slot.clone();
         // On its way to another floor, it walks out to the door as one leaving
         // does, and is gone from here once it takes its new desk.
@@ -1404,6 +1418,7 @@ pub fn project_floor_scene(scene: &SceneState, floor_idx: usize) -> FloorScene {
             role: None,
         },
         floor_seed: floor_seed(floor_idx),
+        outfits,
     }
 }
 

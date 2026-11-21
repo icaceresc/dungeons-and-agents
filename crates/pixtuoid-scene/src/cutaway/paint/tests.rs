@@ -1112,9 +1112,10 @@ fn a_riders_head_is_its_figures_top_row() {
             let c = frame.characters.first()?;
             let agent = &frame.agents[c.agent_idx];
             let pose = crate::character::SpritePose::of(c, agent, theme);
-            let crest = crate::character::character_key(pose, agent, &pack, densest)
-                .dress
-                .map(|d| d.crest);
+            let crest =
+                crate::character::character_key(pose, (agent, frame.outfit(agent)), &pack, densest)
+                    .dress
+                    .map(|d| d.crest);
             crest
                 .is_some_and(|crest| crest != 0)
                 .then_some((layout, pack, frame))
@@ -1240,7 +1241,7 @@ fn a_caps_brim_sits_on_the_brow_in_every_pose() {
                 let agent = &frame.agents[c.agent_idx];
                 let key = crate::character::character_key(
                     crate::character::SpritePose::of(c, agent, theme),
-                    agent,
+                    (agent, frame.outfit(agent)),
                     &pack,
                     scale,
                 );
@@ -4356,7 +4357,12 @@ type FigureEdit = dyn Fn(&mut crate::sim::CharacterPlacement, &mut pixtuoid_core
 fn varied(frame: &SimFrame, edit: &FigureEdit) -> SimFrame {
     let mut varied = frame.clone();
     if let Some(c) = varied.characters.first_mut() {
-        edit(c, &mut varied.agents[c.agent_idx]);
+        let agent = &mut varied.agents[c.agent_idx];
+        edit(c, agent);
+        // As the projection would dress the edited agent: alone, so in its own.
+        varied
+            .outfits
+            .insert(agent.agent_id, crate::sim::outfit_seed_for(agent));
     }
     varied
 }

@@ -80,6 +80,8 @@ pub(super) enum DrawableKind<'a> {
     },
     Character {
         agent: &'a AgentSlot,
+        /// Its party's outfit seed ([`SimFrame::outfit`](crate::sim::SimFrame::outfit)).
+        outfit: u64,
         pose: SpritePose,
         top_left: Point,
         label_anchor: Point,
@@ -295,13 +297,14 @@ pub(super) fn paint_drawable(kind: &DrawableKind<'_>, c: &mut DrawableCtx<'_>) {
         }
         DrawableKind::Character {
             agent,
+            outfit,
             pose,
             top_left,
             effects,
             ..
         } => {
             paint_effects(buf, effects.iter().filter(|e| e.kind.beneath()), theme);
-            paint_character_at(buf, *pose, *top_left, agent, pack, cache);
+            paint_character_at(buf, *pose, *top_left, (agent, *outfit), pack, cache);
             paint_effects(buf, effects.iter().filter(|e| !e.kind.beneath()), theme);
         }
         DrawableKind::FilingCabinet { pos } => {
@@ -516,7 +519,7 @@ pub(crate) fn paint_character_at(
     buf: &mut RgbBuffer,
     pose: SpritePose,
     top_left: Point,
-    agent: &AgentSlot,
+    (agent, outfit): (&AgentSlot, u64),
     pack: &OfficeArt,
     cache: &mut FrameCache,
 ) -> Size {
@@ -526,7 +529,7 @@ pub(crate) fn paint_character_at(
         rise: _,
     } = character_frame(
         pose,
-        agent,
+        (agent, outfit),
         pack,
         crate::render_scale::RenderScale::ONE,
         cache,
