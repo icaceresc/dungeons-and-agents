@@ -531,11 +531,38 @@ fn pets_absent_returns_all_with_default_names() {
 }
 
 /// Floor 0 gets the first pet, and the campaign's floor 0 is its camp, where
-/// the owlbear (drawn in the dog's slot) rests.
+/// the owlbear rests.
 #[test]
 fn pets_absent_puts_the_owlbear_first() {
+    use pixtuoid_scene::pet::PetKind;
     let pets = resolve_pets(&AppConfig::default(), &mut Vec::new());
-    assert_eq!(pets[0].kind, pixtuoid_scene::pet::PetKind::Dog);
+    let kinds: Vec<_> = pets.iter().map(|p| p.kind).collect();
+    assert_eq!(kinds, [PetKind::Owlbear, PetKind::Raven, PetKind::Wolf]);
+}
+
+/// A config an older pixtuoid wrote, naming the cat and the dog, keeps its
+/// pets: the wolf and the owlbear took their places.
+#[test]
+fn pets_legacy_kind_names_still_load() {
+    use pixtuoid_scene::pet::PetKind;
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("config.toml");
+    std::fs::write(
+        &path,
+        "[[pets]]\nkind = \"cat\"\nname = \"Luna\"\n\n[[pets]]\nkind = \"dog\"\n",
+    )
+    .unwrap();
+    let mut warnings = Vec::new();
+    let pets = resolve_pets(&load(&path, &mut Vec::new()), &mut warnings);
+    assert!(warnings.is_empty(), "{warnings:?}");
+    let kinds: Vec<_> = pets.iter().map(|p| (p.kind, p.name.as_str())).collect();
+    assert_eq!(
+        kinds,
+        [
+            (PetKind::Wolf, "Luna"),
+            (PetKind::Owlbear, PetKind::Owlbear.default_name())
+        ]
+    );
 }
 
 #[test]
@@ -551,14 +578,14 @@ fn pets_empty_vec_returns_none() {
 fn pets_entry_absent_name_falls_back_to_default() {
     let cfg = AppConfig {
         pets: Some(vec![PetEntry {
-            kind: Some("dog".into()),
+            kind: Some("owlbear".into()),
             name: None,
         }]),
         ..AppConfig::default()
     };
     assert_eq!(
         resolve_pets(&cfg, &mut Vec::new())[0].name,
-        pixtuoid_scene::pet::PetKind::Dog.default_name()
+        pixtuoid_scene::pet::PetKind::Owlbear.default_name()
     );
 }
 
@@ -567,11 +594,11 @@ fn pets_entry_name_trimmed_empty_falls_back() {
     let cfg = AppConfig {
         pets: Some(vec![
             PetEntry {
-                kind: Some("cat".into()),
+                kind: Some("wolf".into()),
                 name: Some("  Mittens  ".into()),
             },
             PetEntry {
-                kind: Some("dog".into()),
+                kind: Some("owlbear".into()),
                 name: Some("   ".into()),
             },
         ]),
@@ -579,10 +606,10 @@ fn pets_entry_name_trimmed_empty_falls_back() {
     };
     let pets = resolve_pets(&cfg, &mut Vec::new());
     let name = |k| pets.iter().find(|p| p.kind == k).map(|p| p.name.as_str());
-    assert_eq!(name(pixtuoid_scene::pet::PetKind::Cat), Some("Mittens"));
+    assert_eq!(name(pixtuoid_scene::pet::PetKind::Wolf), Some("Mittens"));
     assert_eq!(
-        name(pixtuoid_scene::pet::PetKind::Dog),
-        Some(pixtuoid_scene::pet::PetKind::Dog.default_name())
+        name(pixtuoid_scene::pet::PetKind::Owlbear),
+        Some(pixtuoid_scene::pet::PetKind::Owlbear.default_name())
     );
 }
 
@@ -590,12 +617,12 @@ fn pets_entry_name_trimmed_empty_falls_back() {
 fn pets_loaded_from_toml() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("config.toml");
-    std::fs::write(&path, "[[pets]]\nkind = \"dog\"\n").unwrap();
+    std::fs::write(&path, "[[pets]]\nkind = \"owlbear\"\n").unwrap();
     let cfg = load(&path, &mut Vec::new());
     assert_eq!(
         cfg.pets,
         Some(vec![PetEntry {
-            kind: Some("dog".into()),
+            kind: Some("owlbear".into()),
             name: None
         }])
     );
@@ -607,17 +634,17 @@ fn pets_full_toml_resolves_names() {
     let path = dir.path().join("config.toml");
     std::fs::write(
         &path,
-        "[[pets]]\nkind = \"cat\"\nname = \"Luna\"\n\n[[pets]]\nkind = \"dog\"\n",
+        "[[pets]]\nkind = \"wolf\"\nname = \"Luna\"\n\n[[pets]]\nkind = \"owlbear\"\n",
     )
     .unwrap();
     let cfg = load(&path, &mut Vec::new());
     let pets = resolve_pets(&cfg, &mut Vec::new());
     assert_eq!(pets.len(), 2);
     let name = |k| pets.iter().find(|p| p.kind == k).map(|p| p.name.as_str());
-    assert_eq!(name(pixtuoid_scene::pet::PetKind::Cat), Some("Luna"));
+    assert_eq!(name(pixtuoid_scene::pet::PetKind::Wolf), Some("Luna"));
     assert_eq!(
-        name(pixtuoid_scene::pet::PetKind::Dog),
-        Some(pixtuoid_scene::pet::PetKind::Dog.default_name())
+        name(pixtuoid_scene::pet::PetKind::Owlbear),
+        Some(pixtuoid_scene::pet::PetKind::Owlbear.default_name())
     );
 }
 
@@ -639,7 +666,7 @@ fn pets_section_is_last_in_serialized_toml() {
     let cfg = AppConfig {
         theme: Some("normal".into()),
         pets: Some(vec![PetEntry {
-            kind: Some("cat".into()),
+            kind: Some("wolf".into()),
             name: None,
         }]),
         ..AppConfig::default()
@@ -656,7 +683,7 @@ fn pets_missing_kind_is_non_fatal() {
     let path = dir.path().join("config.toml");
     std::fs::write(
         &path,
-        "theme = \"cyberpunk\"\n[[pets]]\nname = \"Ghost\"\n\n[[pets]]\nkind = \"cat\"\n",
+        "theme = \"cyberpunk\"\n[[pets]]\nname = \"Ghost\"\n\n[[pets]]\nkind = \"wolf\"\n",
     )
     .unwrap();
     let cfg = load(&path, &mut Vec::new());
@@ -669,9 +696,9 @@ fn pets_missing_kind_is_non_fatal() {
     assert_eq!(
         pets.len(),
         1,
-        "the kindless stanza is skipped, the cat kept"
+        "the kindless stanza is skipped, the wolf kept"
     );
-    assert_eq!(pets[0].kind, pixtuoid_scene::pet::PetKind::Cat);
+    assert_eq!(pets[0].kind, pixtuoid_scene::pet::PetKind::Wolf);
 }
 
 #[test]
@@ -750,7 +777,7 @@ fn save_version_refuses_to_overwrite_a_malformed_config() {
 fn save_preserves_comments_and_unknown_keys_byte_for_byte() {
     let dir = tempfile::tempdir().unwrap();
     let p = dir.path().join("config.toml");
-    let original = "# pixtuoid config — hand-tuned\ntheme = \"normal\"\nfuture-key = 1 # written by a newer pixtuoid\n\n[[pets]]\nkind = \"cat\" # the office cat\n";
+    let original = "# pixtuoid config — hand-tuned\ntheme = \"normal\"\nfuture-key = 1 # written by a newer pixtuoid\n\n[[pets]]\nkind = \"wolf\" # the office wolf\n";
     std::fs::write(&p, original).unwrap();
 
     save_appearance(&p, "cyberpunk", None).unwrap();
@@ -769,7 +796,7 @@ fn save_version_inserts_new_key_before_pets_section() {
     // into the pet.
     let dir = tempfile::tempdir().unwrap();
     let p = dir.path().join("config.toml");
-    std::fs::write(&p, "theme = \"normal\"\n\n[[pets]]\nkind = \"cat\"\n").unwrap();
+    std::fs::write(&p, "theme = \"normal\"\n\n[[pets]]\nkind = \"wolf\"\n").unwrap();
 
     save_version(&p, "9.9.9").unwrap();
 
@@ -782,7 +809,7 @@ fn save_version_inserts_new_key_before_pets_section() {
     assert_eq!(
         cfg.pets,
         Some(vec![PetEntry {
-            kind: Some("cat".into()),
+            kind: Some("wolf".into()),
             name: None
         }])
     );
@@ -978,7 +1005,7 @@ fn save_flag_sources_replaces_the_table_and_keeps_the_rest_of_the_file() {
     let p = dir.path().join("config.toml");
     std::fs::write(
         &p,
-        "# hand-tuned\ntheme = \"normal\"\nfuture-key = 1\n\n[sources]\nclaude-code = true\n\n[[pets]]\nkind = \"cat\"\n",
+        "# hand-tuned\ntheme = \"normal\"\nfuture-key = 1\n\n[sources]\nclaude-code = true\n\n[[pets]]\nkind = \"wolf\"\n",
     )
     .unwrap();
 
@@ -989,7 +1016,7 @@ fn save_flag_sources_replaces_the_table_and_keeps_the_rest_of_the_file() {
     assert_eq!(
         cfg.pets,
         Some(vec![PetEntry {
-            kind: Some("cat".into()),
+            kind: Some("wolf".into()),
             name: None
         }]),
         "pets survive"

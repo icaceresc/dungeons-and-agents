@@ -209,7 +209,7 @@ fn plot_walking_dust(
     plot(cell.x, cell.y, inks.dust, 0.45);
 }
 
-/// One floating heart for the "pet the cat" interaction.
+/// One floating heart for the "pet the wolf" interaction.
 fn plot_pet_heart(plot: &mut impl FnMut(u16, u16, Rgb, f32), at: Point, phase_ms: u64) {
     let heart_color = Rgb {
         r: 255,

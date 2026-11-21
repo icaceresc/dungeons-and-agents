@@ -223,7 +223,7 @@ fn run(
     pack: &Arc<pixtuoid_scene::pack::OfficeArt>,
     pace: Pace,
 ) -> Result<Vec<Frame>> {
-    let pets = vec![Pet::defaulted(PetKind::Cat), Pet::defaulted(PetKind::Dog)];
+    let pets = vec![Pet::defaulted(PetKind::Wolf), Pet::defaulted(PetKind::Owlbear)];
     let (mut r, wire) = renderer(
         case.protocol,
         TERMINAL.0,
@@ -292,7 +292,7 @@ fn real_clock(
         TERMINAL.0,
         TERMINAL.1,
         HALF_BLOCK_CELL,
-        vec![Pet::defaulted(PetKind::Cat)],
+        vec![Pet::defaulted(PetKind::Wolf)],
         Arc::clone(pack),
     )?;
     r.set_weather(WeatherPolicy::Forced(Weather::Storm));
@@ -707,7 +707,7 @@ fn hitch(path: &Path) -> Result<()> {
         only.as_deref().unwrap_or_default()
     );
     for (term, run) in plan {
-        let pets = vec![Pet::defaulted(PetKind::Cat), Pet::defaulted(PetKind::Dog)];
+        let pets = vec![Pet::defaulted(PetKind::Wolf), Pet::defaulted(PetKind::Owlbear)];
         let (mut r, wire) = renderer(
             term.protocol,
             term.cols,

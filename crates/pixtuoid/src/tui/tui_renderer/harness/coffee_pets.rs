@@ -162,15 +162,15 @@ fn no_pet_when_pets_disabled() {
 #[test]
 fn pet_present_when_enabled() {
     let scene = scene_with(vec![running("/pet/0.jsonl", 0, "Edit", t0())], 16);
-    let mut r = build(100, 40, vec![PetKind::Cat]);
+    let mut r = build(100, 40, vec![PetKind::Wolf]);
     r.render(&scene, t0()).unwrap();
-    assert!(r.drawn_pet().is_some(), "a cat should be placed");
+    assert!(r.drawn_pet().is_some(), "a wolf should be placed");
 }
 
 #[test]
 fn pet_position_varies_over_its_roam() {
     let scene = scene_with(vec![running("/pet/0.jsonl", 0, "Edit", t0())], 16);
-    let mut r = build(100, 40, vec![PetKind::Cat]);
+    let mut r = build(100, 40, vec![PetKind::Wolf]);
     let mut seen = std::collections::HashSet::new();
     for step in 0..(pixtuoid_scene::PET_LONGEST_REST_MS + 10_000) / 500 {
         r.render(&scene, t0() + Duration::from_millis(step * 500))
@@ -197,7 +197,7 @@ fn petting_freezes_pet_position() {
         vec![idle("/pet/0.jsonl", 0, t0() - Duration::from_secs(120))],
         16,
     );
-    let mut r = build(100, 40, vec![PetKind::Cat]);
+    let mut r = build(100, 40, vec![PetKind::Wolf]);
     r.render(&scene, t0()).unwrap();
     let PetHover {
         centre: pos,
@@ -217,8 +217,8 @@ fn petting_freezes_pet_position() {
 #[test]
 fn pet_walk_is_frame_stable() {
     let scene = scene_with(vec![running("/pstab/0.jsonl", 0, "Edit", t0())], 16);
-    let mut r1 = build(160, 80, vec![PetKind::Cat]);
-    let mut r2 = build(160, 80, vec![PetKind::Cat]);
+    let mut r1 = build(160, 80, vec![PetKind::Wolf]);
+    let mut r2 = build(160, 80, vec![PetKind::Wolf]);
     for step in 0..(pixtuoid_scene::PET_LONGEST_REST_MS + 10_000) / 500 {
         let now = t0() + Duration::from_millis(step * 500);
         r1.render(&scene, now).unwrap();
@@ -234,7 +234,7 @@ fn pet_walk_is_frame_stable() {
 #[test]
 fn pet_walks_routed_ground_and_rests_on_walkable_floor() {
     let scene = scene_with(vec![running("/pwalk/0.jsonl", 0, "Edit", t0())], 16);
-    let mut r = build(160, 80, vec![PetKind::Cat]);
+    let mut r = build(160, 80, vec![PetKind::Wolf]);
     r.render(&scene, t0()).unwrap();
     let layout = r.cached_layout().expect("layout after prime").clone();
     let (mut walking, mut resting) = (0, 0);
@@ -247,7 +247,7 @@ fn pet_walks_routed_ground_and_rests_on_walkable_floor() {
         else {
             continue;
         };
-        if anim == PetKind::Cat.walk_anim().piece() {
+        if anim == PetKind::Wolf.walk_anim().piece() {
             // Coarse-cell walkable is the predicate A* itself guarantees;
             // per-pixel `is_walkable` is stricter than the router delivers
             // and would hold the pet to a higher bar than the agents.
@@ -280,7 +280,7 @@ fn pet_leg_boundary_no_pop() {
     // The two timestamps straddle the 40s leg boundary, where the snapped rest anchor
     // is also the next leg's snapped walk-start anchor.
     let scene = scene_with(vec![running("/pbnd/0.jsonl", 0, "Edit", t0())], 16);
-    let mut r = build(160, 80, vec![PetKind::Cat]);
+    let mut r = build(160, 80, vec![PetKind::Wolf]);
     r.render(&scene, t0() + Duration::from_millis(39_600))
         .unwrap();
     let before = r.drawn_pet().map(|f| (f.centre.x, f.centre.y));
@@ -298,8 +298,9 @@ fn pet_leg_boundary_no_pop() {
 }
 
 #[test]
-fn pet_tooltip_shows_cooldown_reaction_for_cat_and_dog() {
-    for (kind, word) in [(PetKind::Cat, "purr"), (PetKind::Dog, "woof")] {
+fn pet_tooltip_shows_cooldown_reaction_for_wolf_and_owlbear() {
+    for &kind in PetKind::ALL {
+        let word = kind.reaction().trim();
         let scene = scene_with(vec![running("/ck/0.jsonl", 0, "Edit", t0())], 16);
         let mut r = build(140, 48, vec![kind]);
         r.render(&scene, t0()).unwrap();
@@ -317,12 +318,12 @@ fn pet_tooltip_shows_cooldown_reaction_for_cat_and_dog() {
 
 #[test]
 fn pet_tooltip_shows_sleeping_when_all_idle() {
-    // A long-idle scene is required: the cat only sleeps near idle agents.
+    // A long-idle scene is required: the wolf only sleeps near idle agents.
     let scene = scene_with(
         vec![idle("/slp/0.jsonl", 0, t0() - Duration::from_secs(300))],
         16,
     );
-    let mut r = build(160, 64, vec![PetKind::Cat]);
+    let mut r = build(160, 64, vec![PetKind::Wolf]);
     let mut hit = None;
     for i in 0..40u64 {
         let now = t0() + Duration::from_secs(i);
@@ -330,19 +331,19 @@ fn pet_tooltip_shows_sleeping_when_all_idle() {
         if let Some(PetHover {
             centre: pos, anim, ..
         }) = r.drawn_pet()
-            && anim == PetKind::Cat.sleep_anim()
+            && anim == PetKind::Wolf.sleep_anim()
         {
             hit = Some((pos, now));
             break;
         }
     }
-    let (pos, now) = hit.expect("a long-idle cat must enter its sleep anim within the window");
+    let (pos, now) = hit.expect("a long-idle wolf must enter its sleep anim within the window");
     r.set_mouse_pos(Some((pos.x, pos.y / 2)));
     r.render(&scene, now).unwrap();
     let text = frame_text(r.frame_buffer());
     assert!(
         text.contains("sleeping"),
-        "hovering a sleeping cat shows the sleeping line; got:\n{text}"
+        "hovering a sleeping wolf shows the sleeping line; got:\n{text}"
     );
 }
 

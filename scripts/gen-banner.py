@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the README's banner: the office's neon sign, with the cat asleep on it and a coworker holding a coffee.
+"""Render the README's banner: the office's neon sign, with the wolf asleep on it and a coworker holding a coffee.
 
 The figures are the cutaway's own art as the office draws it, read from the
 golden `character.rs`'s `the_readme_banner_art_is_the_office_s_own` writes; the
@@ -45,13 +45,13 @@ PX = 4
 SPRITE_PX = 2
 # Sign pixels of board round the word, across and down.
 SIGN_PAD = (6, 4)
-# The cat's own pixels sunk into the sign's top frame, and the sign pixels
+# The wolf's own pixels sunk into the sign's top frame, and the sign pixels
 # between its tail and the sign's right edge.
-CAT_SINK, CAT_INSET = 2, 4
+WOLF_SINK, WOLF_INSET = 2, 4
 # Sign pixels between the sign and the coworker, and round the whole picture.
 GAP, MARGIN = 6, 2
 HALO_OPACITY = 0.22
-# The neon's light round the coworker and the cat, one opacity per ring outward.
+# The neon's light round the coworker and the wolf, one opacity per ring outward.
 # Only a dark page swallows the art's dark outline, so only it gets the light.
 GLOW = {"light": (), "dark": (0.40, 0.16)}
 N4 = ((1, 0), (-1, 0), (0, 1), (0, -1))
@@ -111,11 +111,11 @@ def render_svg(theme: str) -> str:
         },
     }
     gw, gh = sprite_size(art, "coworker", SPRITE_PX)
-    cw, ch = sprite_size(art, "cat", SPRITE_PX)
+    cw, ch = sprite_size(art, "wolf", SPRITE_PX)
     board_w = text_width(WORD, WORD_PX) + 2 * SIGN_PAD[0] * PX
     board_h = BASELINE * WORD_PX + 2 * SIGN_PAD[1] * PX
-    cat_above = ch - CAT_SINK * SPRITE_PX
-    content_h = max(board_h + 2 * PX + cat_above, gh)
+    wolf_above = ch - WOLF_SINK * SPRITE_PX
+    content_h = max(board_h + 2 * PX + wolf_above, gh)
     width = 2 * MARGIN * PX + board_w + 2 * PX + GAP * PX + gw
     height = 2 * MARGIN * PX + content_h
     floor = height - MARGIN * PX
@@ -124,41 +124,41 @@ def render_svg(theme: str) -> str:
     halo = "".join(
         text_path(WORD, tx + dx * PX, ty + dy * PX, WORD_PX) for dx, dy in N4
     )
-    # The cat's light stops at the sign's frame, which it lies on.
-    cat_rows = n + ch // SPRITE_PX - CAT_SINK
-    cats = Pack(
+    # The wolf's light stops at the sign's frame, which it lies on.
+    wolf_rows = n + ch // SPRITE_PX - WOLF_SINK
+    wolves = Pack(
         lit,
         {
-            "cat": (
-                [glowing(f, n, cat_rows) for f in art.animations["cat"][0]],
-                art.animations["cat"][1],
+            "wolf": (
+                [glowing(f, n, wolf_rows) for f in art.animations["wolf"][0]],
+                art.animations["wolf"][1],
             )
         },
     )
-    cat, cat_css = animation(
-        cats,
-        "cat",
-        bx + board_w - cw - CAT_INSET * PX - pad,
-        by - PX + CAT_SINK * SPRITE_PX + pad,
+    wolf, wolf_css = animation(
+        wolves,
+        "wolf",
+        bx + board_w - cw - WOLF_INSET * PX - pad,
+        by - PX + WOLF_SINK * SPRITE_PX + pad,
         SPRITE_PX,
     )
     css = "".join(
         [
             ".neon{animation:fl 6s steps(1,end) infinite}@keyframes fl{0%,89%,93%,100%{opacity:1}90%,92%{opacity:.35}}",
             "@media (prefers-reduced-motion:reduce){.neon{animation:none}}",
-            *cat_css,
+            *wolf_css,
         ]
     )
     return (
         "\n".join(
             [
                 f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" height="{height}" shape-rendering="crispEdges" role="img" aria-labelledby="t">',
-                f'<title id="t">{WORD}: a neon office sign, a cat asleep on it and a coworker holding a coffee</title>',
+                f'<title id="t">{WORD}: a neon office sign, a wolf asleep on it and a coworker holding a coffee</title>',
                 f"<style>{css}</style>",
                 f'<path fill="{pal.trim}" d="{_run(bx - PX, by - PX, board_w + 2 * PX, board_h + 2 * PX)}"/>',
                 f'<path fill="{pal.neon_panel}" d="{_run(bx, by, board_w, board_h)}"/>',
                 f'<g class="neon"><path fill="{pal.neon_brand}" fill-opacity="{HALO_OPACITY}" d="{halo}"/><path fill="{pal.neon_brand}" d="{text_path(WORD, tx, ty, WORD_PX)}"/></g>',
-                cat,
+                wolf,
                 sprite_path(
                     glowing(art.animations["coworker"][0][0], n),
                     bx + board_w + PX + GAP * PX - pad,
@@ -196,7 +196,7 @@ def stale(out_dir: pathlib.Path) -> list[str]:
 class SelfTest(unittest.TestCase):
     def test_read_art_keeps_each_animation_s_frames_in_order(self) -> None:
         art = read_art(
-            "@palette a=#010203 b=#040506\n@frame cat 750\n. a\n@frame guy 600\nb b\n@frame cat 750\na .\n"
+            "@palette a=#010203 b=#040506\n@frame wolf 750\n. a\n@frame guy 600\nb b\n@frame wolf 750\na .\n"
         )
         self.assertTrue(
             art.palette == {"a": "#010203", "b": "#040506"}, f"palette: {art.palette}"
@@ -204,7 +204,7 @@ class SelfTest(unittest.TestCase):
         self.assertTrue(
             art.animations
             == {
-                "cat": ([[[".", "a"]], [["a", "."]]], 750),
+                "wolf": ([[[".", "a"]], [["a", "."]]], 750),
                 "guy": ([[["b", "b"]]], 600),
             },
             f"animations: {art.animations}",
@@ -286,9 +286,9 @@ class SelfTest(unittest.TestCase):
             )
             self.assertTrue(
                 'class="neon"' in svg
-                and 'class="cat"' in svg
+                and 'class="wolf"' in svg
                 and "prefers-reduced-motion" in svg,
-                f"{theme}: the sign flickers, the cat sleeps and motion can be reduced",
+                f"{theme}: the sign flickers, the wolf sleeps and motion can be reduced",
             )
             self.assertTrue(
                 svg == render_svg(theme), f"{theme}: render must be deterministic"

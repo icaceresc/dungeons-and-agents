@@ -3262,25 +3262,25 @@ fn a_dressed_figure_at_a_top_insets_edge_keeps_its_hair_off_it() {
     );
 }
 
-/// A cat and two gateways of one source, the second degraded and in hand,
+/// A wolf and two gateways of one source, the second degraded and in hand,
 /// so it sorts last on a row no feet stand on.
 fn creatures() -> (SceneLayout, SimFrame) {
     let layout =
         SceneLayout::compute(crate::layout::Viewport::full(160, 96), None, 0).expect("lays out");
     let mut frame = empty_frame(&layout);
-    let (cat, lobster) = (Point { x: 40, y: 70 }, Point { x: 110, y: 70 });
+    let (wolf, lobster) = (Point { x: 40, y: 70 }, Point { x: 110, y: 70 });
     let row = |at, piece, frame| {
         let h = crate::sim::pack_frame_size(&test_office(), piece, frame).h;
         crate::layout::sort_row_at(crate::layout::Pivot::Center, at, h)
     };
     frame.pet = Some(crate::sim::PetPlacement {
-        kind: crate::pet::PetKind::Cat,
-        pos: cat,
-        sort_row: row(cat, PackPiece::CatWalk, 1),
+        kind: crate::pet::PetKind::Wolf,
+        pos: wolf,
+        sort_row: row(wolf, PackPiece::WolfWalk, 1),
         flip: true,
-        anim_name: PackPiece::CatWalk,
+        anim_name: PackPiece::WolfWalk,
         frame_idx: 1,
-        effects: crate::effects::pet_hearts(cat, 300).collect(),
+        effects: crate::effects::pet_hearts(wolf, 300).collect(),
         hearts_rise: false,
     });
     frame.mascots = vec![crate::sim::MascotPlacement {
@@ -3336,7 +3336,7 @@ fn the_cutaway_lists_the_pet_and_each_mascot_as_hovers() {
             _ => None,
         })
         .collect();
-    let expected: Vec<_> = std::iter::once(frame.pet.as_ref().expect("the cat").target())
+    let expected: Vec<_> = std::iter::once(frame.pet.as_ref().expect("the wolf").target())
         .chain(
             frame
                 .mascots
@@ -3350,7 +3350,7 @@ fn the_cutaway_lists_the_pet_and_each_mascot_as_hovers() {
             .map(|h| h.target.clone())
             .collect::<Vec<_>>(),
         expected,
-        "premise: the cat, then each gateway"
+        "premise: the wolf, then each gateway"
     );
     assert_eq!(list.hovers().listed(), creatures);
 
@@ -3401,22 +3401,22 @@ fn a_pet_painted_over_an_agent_is_the_hover() {
         x: u16::midpoint(body.x0, body.x1),
         y: body.y1 + 1,
     };
-    let cat = crate::sim::PetPlacement {
-        kind: crate::pet::PetKind::Cat,
+    let wolf = crate::sim::PetPlacement {
+        kind: crate::pet::PetKind::Wolf,
         pos: at,
         sort_row: crate::layout::sort_row_at(
             crate::layout::Pivot::Center,
             at,
-            crate::sim::pack_frame_size(&pack, PackPiece::CatWalk, 0).h,
+            crate::sim::pack_frame_size(&pack, PackPiece::WolfWalk, 0).h,
         ),
         flip: false,
-        anim_name: PackPiece::CatWalk,
+        anim_name: PackPiece::WolfWalk,
         frame_idx: 0,
         effects: Vec::new(),
         hearts_rise: false,
     };
-    let target = cat.target();
-    frame.pet = Some(cat);
+    let target = wolf.target();
+    frame.pet = Some(wolf);
     let cell = Bounds {
         x: at.x,
         y: body.y1,

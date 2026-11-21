@@ -158,8 +158,8 @@ mod tests {
     #[test]
     fn the_pet_parser_maps_a_name_and_lists_the_kinds_it_refuses_for() {
         let pet = |name: &str| Pets::try_parse_from(["snapshot", "--pet", name]).map(|p| p.pet);
-        let dog = PetKind::Dog;
-        assert_eq!(pet(dog.config_name()).unwrap(), dog);
+        let owlbear = PetKind::Owlbear;
+        assert_eq!(pet(owlbear.config_name()).unwrap(), owlbear);
         let refused = pet("bird").unwrap_err().to_string();
         for kind in PetKind::ALL {
             assert!(refused.contains(kind.config_name()), "{refused}");

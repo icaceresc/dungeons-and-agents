@@ -100,7 +100,7 @@
   {
     "icon": "🐾",
     "name": "Office pets",
-    "desc": "A cat or dog (one per floor) roams desks, pantry, sofas; sleeps near idle agents. Click to pet — pixel-art hearts float up",
+    "desc": "An owlbear, a raven or a wolf (one per floor) roams desks, pantry, sofas; the wolf sleeps near idle agents. Click to pet — pixel-art hearts float up",
     "pix": "pets",
     "channel": "pets"
   },

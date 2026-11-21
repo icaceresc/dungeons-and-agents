@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/banner/banner-dark.svg" />
-    <img alt="pixtuoid: a neon office sign, a cat asleep on it and a coworker holding a coffee" src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/banner/banner-light.svg" />
+    <img alt="pixtuoid: a neon office sign, a wolf asleep on it and a coworker holding a coffee" src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/banner/banner-light.svg" />
   </picture>
 </p>
 
@@ -93,7 +93,7 @@ Then:
 | <img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/pix-icons/glow.svg" alt="" width="20" height="20"> | **Per-tool monitor glow** | Each desk's monitor glows with the tool in use — Edit blue, Bash orange, Read cyan — so you can read the whole room at a glance |
 | <img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/pix-icons/tokens.svg" alt="" width="20" height="20"> | **Token meter** | Paper piles up on a desk as its session uses tokens; hover for the running total |
 | <img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/pix-icons/tree.svg" alt="" width="20" height="20"> | **Agent tree dashboard** | Press Tab to see every agent: which CLI it runs and what it's doing |
-| <img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/pix-icons/pets.svg" alt="" width="20" height="20"> | **Office pets** | A cat or dog (one per floor) roams desks, pantry, sofas; sleeps near idle agents. Click to pet — pixel-art hearts float up |
+| <img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/pix-icons/pets.svg" alt="" width="20" height="20"> | **Office pets** | An owlbear, a raven or a wolf (one per floor) roams desks, pantry, sofas; the wolf sleeps near idle agents. Click to pet — pixel-art hearts float up |
 | <img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/pix-icons/vibes.svg" alt="" width="20" height="20"> | **Office vibes** | Day turns to night outside the windows, the weather changes, and each theme gives the office a new look |
 | <img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/pix-icons/note.svg" alt="" width="20" height="20"> | **Lofi soundtrack** | A lofi soundtrack, made entirely in code, follows the office's time, weather and activity; `m` mutes, `+`/`-` sets the volume |
 | <img src="https://raw.githubusercontent.com/pixtuoid/pixtuoid/HEAD/docs/images/pix-icons/window.svg" alt="" width="20" height="20"> | **Floating desktop window** | `pixtuoid floating` opens the office in a frameless, always-on-top window — on your desktop, not just in your terminal |

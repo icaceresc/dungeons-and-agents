@@ -1962,9 +1962,9 @@ fn a_one_floor_session_draws_and_counts_only_the_agents_at_its_desks() {
 fn both_painters_paint_one_frame_per_beat() {
     use crate::anim::{CALM_TICK_MS, FULL_TICK_MS};
     use crate::sky::{Weather, WeatherPolicy};
-    let cat = Pet {
-        kind: crate::pet::PetKind::Cat,
-        name: "cat".into(),
+    let wolf = Pet {
+        kind: crate::pet::PetKind::Wolf,
+        name: "wolf".into(),
     };
     for (hour, weather) in [(23, Weather::Storm), (12, Weather::Clear)] {
         // On every tier's tick: an hour is a whole number of beats.
@@ -1979,7 +1979,7 @@ fn both_painters_paint_one_frame_per_beat() {
             let conditions = Conditions::default()
                 .with_weather(WeatherPolicy::Forced(weather))
                 .with_motion(motion);
-            let pet = Some(&cat);
+            let pet = Some(&wolf);
             let (classic, cutaway_px) = both_painters(&scene, conditions, pet, t0);
             let later = both_painters(
                 &scene,
@@ -2046,9 +2046,9 @@ fn a_frame_holds_for_the_wait_its_office_names() {
         sets_off: bool,
         asleep: Option<(Duration, Duration)>,
     }
-    let cat = Pet {
-        kind: crate::pet::PetKind::Cat,
-        name: "cat".into(),
+    let wolf = Pet {
+        kind: crate::pet::PetKind::Wolf,
+        name: "wolf".into(),
     };
     // between two beats, as a feed lands
     let t0 = crate::localclock::at_hour(23) + Duration::from_millis(5_037);
@@ -2191,14 +2191,14 @@ fn a_frame_holds_for_the_wait_its_office_names() {
         sets_off: false,
         asleep: None,
     };
-    // the cat walks most of a window, so it rides only where nothing else must
+    // the wolf walks most of a window, so it rides only where nothing else must
     let cases = [
         Case {
             weather: Weather::Storm,
             ..fed("arrival", Motion::Full, &arriving, &arriving)
         },
         Case {
-            pet: Some(&cat),
+            pet: Some(&wolf),
             window: Duration::from_secs(12),
             ..fed("calm", Motion::Calm, &lived_in, &lived_in)
         },
@@ -2232,7 +2232,7 @@ fn a_frame_holds_for_the_wait_its_office_names() {
             ..fed("reading", Motion::Full, &typing, &reading)
         },
         Case {
-            pet: Some(&cat),
+            pet: Some(&wolf),
             petted: true,
             window: a_second_past(switch + Duration::from_millis(crate::pet::PET_DURATION_MS)),
             ..fed("petting", Motion::Full, &typing, &typing)
@@ -2279,7 +2279,7 @@ fn a_frame_holds_for_the_wait_its_office_names() {
                     held = None;
                 }
                 if feed && case.petted {
-                    assert!(office.pet(cat.kind, now) && sparse.pet(cat.kind, now));
+                    assert!(office.pet(wolf.kind, now) && sparse.pet(wolf.kind, now));
                 }
                 let scene = if fed { case.after } else { case.before };
                 let draw = |office: &mut OfficeSession| {
@@ -2443,18 +2443,18 @@ fn under_still_a_reading_and_a_petting_hold_their_frame() {
             t0,
         ));
     }
-    let cat = Pet {
-        kind: crate::pet::PetKind::Cat,
-        name: "cat".into(),
+    let wolf = Pet {
+        kind: crate::pet::PetKind::Wolf,
+        name: "wolf".into(),
     };
     let conditions = Conditions::default().with_motion(Motion::Still);
     for look in looks() {
         let pack = Arc::new(crate::pack::test_office());
         let mut office = OfficeSession::new(Arc::clone(&pack));
         let mut plain = OfficeSession::new(pack);
-        assert!(office.pet(cat.kind, t0));
+        assert!(office.pet(wolf.kind, t0));
         let frame_at = |office: &mut OfficeSession, since: Duration| {
-            let pets = std::slice::from_ref(&cat);
+            let pets = std::slice::from_ref(&wolf);
             render_office_with(office, look, &scene, conditions, t0 + since, pets);
             office
                 .picture()
@@ -2504,14 +2504,14 @@ fn under_still_a_lived_in_room_waits_the_rest_tick() {
     }
     let mut gateway_up = idle.clone();
     gateway_at(&mut gateway_up, t0);
-    let cat = Pet {
-        kind: crate::pet::PetKind::Cat,
-        name: "cat".into(),
+    let wolf = Pet {
+        kind: crate::pet::PetKind::Wolf,
+        name: "wolf".into(),
     };
     let conditions = Conditions::default().with_motion(Motion::Still);
     let now = t0 + FRAME;
     let draw = |office: &mut OfficeSession, scene| {
-        let pets = std::slice::from_ref(&cat);
+        let pets = std::slice::from_ref(&wolf);
         let look = crate::look::Look::HALF_BLOCKS;
         render_office_with(office, look, scene, conditions, now, pets);
         office
@@ -2528,7 +2528,7 @@ fn under_still_a_lived_in_room_waits_the_rest_tick() {
     ] {
         let pack = Arc::new(crate::pack::test_office());
         let mut office = OfficeSession::new(Arc::clone(&pack));
-        assert!(!petted || office.pet(cat.kind, t0), "{case}");
+        assert!(!petted || office.pet(wolf.kind, t0), "{case}");
         let drawn = draw(&mut office, scene);
         if petted {
             assert!(
@@ -2931,36 +2931,36 @@ fn a_petting_plays_only_on_its_own_floor() {
     use crate::pet::{PET_DURATION_MS, PetKind};
     const { assert!(2 * TRANSITION_DURATION_MS < PET_DURATION_MS) };
     let slide = Duration::from_millis(TRANSITION_DURATION_MS);
-    let pets = [Pet::defaulted(PetKind::Cat)];
+    let pets = [Pet::defaulted(PetKind::Wolf)];
     let mut twins = PettedTwins::new();
     let start = SystemTime::UNIX_EPOCH + Duration::from_secs(1_000_000);
     twins.render(&pets, start);
     twins.navigate(1, start);
     let t0 = start + slide;
     twins.render(&pets, t0);
-    assert!(twins.petted.pet(PetKind::Cat, t0), "the record");
+    assert!(twins.petted.pet(PetKind::Wolf, t0), "the record");
     twins.render(&pets, t0);
-    assert!(twins.sits(1, PetKind::Cat), "the floor showing plays it");
+    assert!(twins.sits(1, PetKind::Wolf), "the floor showing plays it");
     twins.navigate(0, t0);
     twins.render(&pets, t0 + slide / 2);
     assert_eq!(twins.petted.nav().current(), 1, "premise: mid-slide");
-    assert!(twins.sits(1, PetKind::Cat), "the floor it leaves plays it");
+    assert!(twins.sits(1, PetKind::Wolf), "the floor it leaves plays it");
     assert!(
-        !twins.sits(0, PetKind::Cat),
+        !twins.sits(0, PetKind::Wolf),
         "the floor it reaches does not"
     );
     let t1 = t0 + slide;
     twins.render(&pets, t1);
-    assert!(!twins.sits(0, PetKind::Cat));
+    assert!(!twins.sits(0, PetKind::Wolf));
     assert!(
         (twins.petted.showing_pets(&pets, t1).petting).is_none(),
         "a pointer over floor 0 reads no petting"
     );
-    assert!(twins.petted.pet(PetKind::Cat, t1), "floor 0's own record");
+    assert!(twins.petted.pet(PetKind::Wolf, t1), "floor 0's own record");
     twins.navigate(1, t1);
     let t2 = t1 + slide;
     twins.render(&pets, t2);
-    assert!(twins.sits(1, PetKind::Cat), "floor 1's petting plays on");
+    assert!(twins.sits(1, PetKind::Wolf), "floor 1's petting plays on");
     assert!(
         (twins.petted.showing_pets(&pets, t2).petting).is_some(),
         "a pointer over floor 1 reads its petting"
@@ -2973,25 +2973,25 @@ fn a_petting_plays_only_on_its_own_floor() {
 #[test]
 fn a_petting_refuses_another_while_it_plays() {
     use crate::pet::{PET_DURATION_MS, PetKind};
-    let pets = [Pet::defaulted(PetKind::Cat)];
+    let pets = [Pet::defaulted(PetKind::Wolf)];
     let mut twins = PettedTwins::new();
     let t = SystemTime::UNIX_EPOCH + Duration::from_secs(1_000_000);
     twins.render(&pets, t);
-    assert!(twins.petted.pet(PetKind::Cat, t));
+    assert!(twins.petted.pet(PetKind::Wolf, t));
     let last = t + Duration::from_millis(PET_DURATION_MS - 1);
     twins.render(&pets, last);
     assert!(
-        twins.sits(0, PetKind::Cat),
+        twins.sits(0, PetKind::Wolf),
         "it plays to its last millisecond"
     );
     assert!((twins.petted.showing_pets(&pets, last).petting).is_some());
-    assert!(!twins.petted.pet(PetKind::Cat, last), "and refuses another");
+    assert!(!twins.petted.pet(PetKind::Wolf, last), "and refuses another");
     let over = t + Duration::from_millis(PET_DURATION_MS);
     twins.render(&pets, over);
-    assert!(!twins.sits(0, PetKind::Cat), "over at its length");
+    assert!(!twins.sits(0, PetKind::Wolf), "over at its length");
     assert!((twins.petted.showing_pets(&pets, over).petting).is_none());
     assert!(
-        twins.petted.pet(PetKind::Cat, over),
+        twins.petted.pet(PetKind::Wolf, over),
         "a new one is recorded"
     );
 }
@@ -3001,19 +3001,19 @@ fn a_petting_refuses_another_while_it_plays() {
 #[test]
 fn a_petting_plays_only_for_the_pet_petted() {
     use crate::pet::PetKind;
-    let (cats, dogs) = (
-        [Pet::defaulted(PetKind::Cat)],
-        [Pet::defaulted(PetKind::Dog)],
+    let (wolves, owlbears) = (
+        [Pet::defaulted(PetKind::Wolf)],
+        [Pet::defaulted(PetKind::Owlbear)],
     );
     let mut twins = PettedTwins::new();
     let t = SystemTime::UNIX_EPOCH + Duration::from_secs(1_000_000);
-    twins.render(&cats, t);
-    assert!(twins.petted.pet(PetKind::Cat, t));
+    twins.render(&wolves, t);
+    assert!(twins.petted.pet(PetKind::Wolf, t));
     let later = t + FRAME;
-    twins.render(&dogs, later);
-    assert!(!twins.sits(0, PetKind::Dog));
-    assert!((twins.petted.showing_pets(&dogs, later).petting).is_none());
-    assert!(twins.petted.pet(PetKind::Dog, later));
+    twins.render(&owlbears, later);
+    assert!(!twins.sits(0, PetKind::Owlbear));
+    assert!((twins.petted.showing_pets(&owlbears, later).petting).is_none());
+    assert!(twins.petted.pet(PetKind::Owlbear, later));
 }
 
 /// A lift goes to the floor showing and nothing during a slide; its carry and
@@ -3025,7 +3025,7 @@ fn a_grip_stays_on_the_floor_it_lifted_on() {
     let t0 = SystemTime::UNIX_EPOCH + Duration::from_secs(1_000_000);
     let at = Point { x: 4, y: 4 };
     let lift = Gesture::Lift {
-        figure: Figure::Pet(crate::pet::PetKind::Cat),
+        figure: Figure::Pet(crate::pet::PetKind::Wolf),
         at,
     };
     let mut nav = FloorNav::default();
@@ -3111,8 +3111,8 @@ fn an_office_session_shows_each_floor_and_slides_between_them() {
     assert_eq!((office.nav().current(), shown_floor(&office)), (1, Some(2)));
     let pets: Vec<crate::pet::Pet> = (0..8)
         .map(|i| crate::pet::Pet {
-            kind: crate::pet::PetKind::Cat,
-            name: format!("cat{i}"),
+            kind: crate::pet::PetKind::Wolf,
+            name: format!("wolf{i}"),
         })
         .collect();
     assert_eq!(
@@ -3701,8 +3701,8 @@ fn a_drop_and_the_next_lift_between_two_steps_both_land() {
         ids.next().expect("two agents"),
         ids.next().expect("two agents"),
     );
-    let cat = crate::pet::Pet {
-        kind: crate::pet::PetKind::Cat,
+    let wolf = crate::pet::Pet {
+        kind: crate::pet::PetKind::Wolf,
         name: "Mochi".into(),
     };
     let t0 = SystemTime::UNIX_EPOCH + Duration::from_secs(1_000_000);
@@ -3714,7 +3714,7 @@ fn a_drop_and_the_next_lift_between_two_steps_both_land() {
                     now: t0 + Duration::from_millis(ms),
                     conditions: Conditions::default(),
                     pets: PetInputs {
-                        pet: Some(&cat),
+                        pet: Some(&wolf),
                         petting: None,
                     },
                 },
@@ -3724,7 +3724,7 @@ fn a_drop_and_the_next_lift_between_two_steps_both_land() {
             .frame
     };
     let at = Point { x: 40, y: 70 };
-    for first in [Figure::Agent(a), Figure::Pet(cat.kind)] {
+    for first in [Figure::Agent(a), Figure::Pet(wolf.kind)] {
         let mut session = FloorSession::new(Arc::clone(&pack));
         step(&mut session, 0);
         session.floor_mut().grip(&Gesture::Lift {
@@ -3748,13 +3748,13 @@ fn a_drop_and_the_next_lift_between_two_steps_both_land() {
                 "the agent set down walks home and sits"
             ),
             _ => {
-                let rests = set_down.pet.expect("the cat is drawn").pos;
+                let rests = set_down.pet.expect("the wolf is drawn").pos;
                 let paints = crate::creatures::PET_LONGEST_REST_MS / 100 + 50;
                 assert!(
                     later
                         .take(paints as usize)
                         .any(|f| f.pet.is_some_and(|p| p.pos != rests)),
-                    "the cat set down rests, then roams on from {rests:?}"
+                    "the wolf set down rests, then roams on from {rests:?}"
                 );
             }
         }
@@ -3796,8 +3796,8 @@ fn a_lifted_creature_is_in_front_of_the_room() {
             current_pid: Some(1),
         },
     );
-    let cat = crate::pet::Pet {
-        kind: crate::pet::PetKind::Cat,
+    let wolf = crate::pet::Pet {
+        kind: crate::pet::PetKind::Wolf,
         name: "Mochi".into(),
     };
     let viewport = Viewport::full(160, 96);
@@ -3810,7 +3810,7 @@ fn a_lifted_creature_is_in_front_of_the_room() {
                     now,
                     conditions: Conditions::default(),
                     pets: PetInputs {
-                        pet: Some(&cat),
+                        pet: Some(&wolf),
                         petting: None,
                     },
                 },
@@ -3838,7 +3838,7 @@ fn a_lifted_creature_is_in_front_of_the_room() {
         },
     ];
     for (look, figure) in looks.into_iter().flat_map(|look| {
-        [Figure::Pet(cat.kind), Figure::Mascot(lobster.clone())].map(|figure| (look, figure))
+        [Figure::Pet(wolf.kind), Figure::Mascot(lobster.clone())].map(|figure| (look, figure))
     }) {
         let mut session = FloorSession::new(Arc::clone(&pack));
         render(&mut session, look, now);
@@ -4156,8 +4156,8 @@ fn a_creature_not_in_hand_sorts_on_its_frames_south_row() {
             current_pid: Some(1),
         },
     );
-    let cat = crate::pet::Pet {
-        kind: crate::pet::PetKind::Cat,
+    let wolf = crate::pet::Pet {
+        kind: crate::pet::PetKind::Wolf,
         name: "Mochi".into(),
     };
     let mut session = FloorSession::new(Arc::clone(&pack));
@@ -4171,7 +4171,7 @@ fn a_creature_not_in_hand_sorts_on_its_frames_south_row() {
                     now: t0 + FRAME * paint,
                     conditions: Conditions::default(),
                     pets: PetInputs {
-                        pet: Some(&cat),
+                        pet: Some(&wolf),
                         petting: None,
                     },
                 },
@@ -4242,8 +4242,8 @@ fn a_pet_flicked_within_one_paint_lands_at_the_drop() {
     use crate::layout::Point;
     let scene = make_scene(1, 4);
     let t0 = SystemTime::UNIX_EPOCH + Duration::from_secs(1_000_000);
-    let cat = crate::pet::Pet {
-        kind: crate::pet::PetKind::Cat,
+    let wolf = crate::pet::Pet {
+        kind: crate::pet::PetKind::Wolf,
         name: "Mochi".into(),
     };
     let mut session = FloorSession::new(Arc::new(crate::pack::test_office()));
@@ -4255,7 +4255,7 @@ fn a_pet_flicked_within_one_paint_lands_at_the_drop() {
                     now,
                     conditions: Conditions::default(),
                     pets: PetInputs {
-                        pet: Some(&cat),
+                        pet: Some(&wolf),
                         petting: None,
                     },
                 },
@@ -4264,15 +4264,15 @@ fn a_pet_flicked_within_one_paint_lands_at_the_drop() {
             .expect("lays out")
             .frame
             .pet
-            .expect("the cat is drawn")
+            .expect("the wolf is drawn")
             .pos
     };
     let before = pet_at(&mut session, t0);
     let at = Point { x: 130, y: 70 };
     let near = |p: Point| p.x.abs_diff(at.x) <= 8 && p.y.abs_diff(at.y) <= 8;
-    assert!(!near(before), "setup: the cat starts away from {at:?}");
+    assert!(!near(before), "setup: the wolf starts away from {at:?}");
     session.floor_mut().grip(&Gesture::Lift {
-        figure: Figure::Pet(cat.kind),
+        figure: Figure::Pet(wolf.kind),
         at,
     });
     session.floor_mut().grip(&Gesture::Drop(at));
@@ -4288,8 +4288,8 @@ fn a_lifted_pet_rests_where_it_is_set_down() {
     use crate::layout::Point;
     let scene = make_scene(1, 4);
     let t0 = SystemTime::UNIX_EPOCH + Duration::from_secs(1_000_000);
-    let cat = crate::pet::Pet {
-        kind: crate::pet::PetKind::Cat,
+    let wolf = crate::pet::Pet {
+        kind: crate::pet::PetKind::Wolf,
         name: "Mochi".into(),
     };
     let mut session = FloorSession::new(Arc::new(crate::pack::test_office()));
@@ -4302,19 +4302,19 @@ fn a_lifted_pet_rests_where_it_is_set_down() {
                     now,
                     conditions: Conditions::default(),
                     pets: PetInputs {
-                        pet: Some(&cat),
+                        pet: Some(&wolf),
                         petting: None,
                     },
                 },
                 viewport,
             )
             .expect("lays out");
-        stepped.frame.pet.expect("the cat is drawn").pos
+        stepped.frame.pet.expect("the wolf is drawn").pos
     };
     let before = pet_at(&mut session, t0);
     let at = Point { x: 60, y: 60 };
     session.floor_mut().grip(&Gesture::Lift {
-        figure: Figure::Pet(crate::pet::PetKind::Cat),
+        figure: Figure::Pet(crate::pet::PetKind::Wolf),
         at,
     });
     let held = pet_at(&mut session, t0 + Duration::from_millis(100));
@@ -4388,8 +4388,8 @@ fn figures_on(
 fn a_refit_that_moves_the_floor_re_seats_its_creatures_where_a_direct_fit_does() {
     use crate::hit::HoverTarget;
     let pack = Arc::new(crate::pack::test_office());
-    let cat = Pet {
-        kind: crate::pet::PetKind::Cat,
+    let wolf = Pet {
+        kind: crate::pet::PetKind::Wolf,
         name: "Mochi".into(),
     };
     let mut scene = make_scene(3, 8);
@@ -4413,7 +4413,7 @@ fn a_refit_that_moves_the_floor_re_seats_its_creatures_where_a_direct_fit_does()
             &scene,
             phone_office(top_px),
             Motion::Still,
-            Some(&cat),
+            Some(&wolf),
             now,
         );
         drawn.retain(|(who, _)| matches!(who, HoverTarget::Pet(_) | HoverTarget::Mascot(_)));

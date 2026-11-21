@@ -580,7 +580,7 @@ impl OfficeArt {
     ///
     /// let art = load_bundled_pack()?;
     /// let scale = RenderScale::from(art.max_density_variant());
-    /// let (frames, _) = art.frames_at(Piece::CatSit, scale);
+    /// let (frames, _) = art.frames_at(Piece::WolfSit, scale);
     /// for frame in frames {
     ///     let rgba: Vec<[u8; 4]> = frame
     ///         .as_slice()

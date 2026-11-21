@@ -1649,7 +1649,7 @@ fn every_placed_sprite_is_opaque_to_the_visual_clearance_predicate() {
 /// the elevator included. Its doorway is a hole in the WALL, not in the ground:
 /// `door_threshold` already stands clear to the south, so a cut here only ever
 /// produced walkable wall, and `creatures::walkable_target` draws wander
-/// destinations straight off this mask (#902 — a cat wandering up the channel).
+/// destinations straight off this mask (#902 — a wolf wandering up the channel).
 #[test]
 fn no_cell_of_the_north_wall_band_is_walkable() {
     let mut checked = 0usize;

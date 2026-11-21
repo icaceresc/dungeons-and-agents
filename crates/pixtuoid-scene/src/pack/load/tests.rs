@@ -870,7 +870,7 @@ fn a_door_needs_three_frames_a_typist_two_and_any_other_piece_one() {
 
 #[test]
 fn an_animation_with_no_frames_does_not_load() {
-    for name in ["seated", "desk", "cat_sit"] {
+    for name in ["seated", "desk", "wolf_sit"] {
         let err = refused(
             &format!("[animations.{name}]\nframes=[]\nframe_ms=100\n"),
             &[],

@@ -382,7 +382,7 @@ fn a_too_small_slide_footers_the_destination_floor() {
 fn transition_on_too_small_terminal_clears_state_and_lands() {
     // Under the `MIN_SCENE_*` gate: draw_too_small's bail.
     let scene = two_floor_scene();
-    let mut r = build(18, 10, vec![PetKind::Cat]);
+    let mut r = build(18, 10, vec![PetKind::Wolf]);
     let now = t0();
     r.render(&scene, now).unwrap();
     r.navigate_floor(1, now);

@@ -115,7 +115,7 @@ STAR_ICON = (
 METEOR = ("#...", ".#..", "..#.", "...#")
 # Start (column, row from the top) and travel, in chart pixels: its whole run stays in HEADROOM, right of the moon.
 METEOR_AT, METEOR_TRAVEL = (46, 1), (42, 4)
-CAT, CAT_PX = "cat_sit", 4
+WOLF, WOLF_PX = "wolf_sit", 4
 
 
 class Bucket(NamedTuple):
@@ -415,12 +415,12 @@ def render_svg(repo: str, series: list[Point], theme: str, today: dt.date) -> st
         text_path(label, x, sill_y + 4 * PX, LABEL_PX)
         for x, label in zip(month_label_xs(labels), labels)
     )
-    cat, cat_css = animation(
-        load_pack(PACK_DIR, (CAT,)),
-        CAT,
+    wolf, wolf_css = animation(
+        load_pack(PACK_DIR, (WOLF,)),
+        WOLF,
         win_x + PLOT_COLS * PX - 8 * PX,
         sill_y,
-        CAT_PX,
+        WOLF_PX,
     )
 
     head = header_layout(top, gain, per_floor)
@@ -438,7 +438,7 @@ def render_svg(repo: str, series: list[Point], theme: str, today: dt.date) -> st
             ".beacon{animation:bk 1.2s steps(1,end) infinite}@keyframes bk{0%{opacity:1}50%{opacity:.15}}",
             f".meteor{{opacity:0;animation:mt 7s steps(14,end) infinite}}@keyframes mt{{0%{{opacity:0;transform:translate(0,0)}}3%{{opacity:1}}12%{{opacity:0;transform:translate({METEOR_TRAVEL[0] * PX}px,{METEOR_TRAVEL[1] * PX}px)}}100%{{opacity:0}}}}",
             "@media (prefers-reduced-motion:reduce){.tw,.beacon,.meteor{animation:none}}",
-            *cat_css,
+            *wolf_css,
         ]
     )
     return (
@@ -469,7 +469,7 @@ def render_svg(repo: str, series: list[Point], theme: str, today: dt.date) -> st
                 f'<path fill="{pal.window_frame}" d="{frame}"/>',
                 f'<path fill="{pal.trim}" d="{_run(win_x - 3 * PX, sill_y, PLOT_COLS * PX + 6 * PX, 2 * PX)}"/>',
                 f'<path fill="{pal.text}" d="{"".join(ylabels)}{xlabels}"/>',
-                cat,
+                wolf,
                 f'<path fill="{pal.star}" d="{mask_path(STAR_ICON, head.icon_x, HEADER_Y - 2, COUNT_PX)}"/>',
                 f'<path fill="{pal.title}" d="{text_path(count, head.count_x, HEADER_Y, COUNT_PX)}"/>',
                 f'<path fill="{pal.text}" d="{text_path(" stars", head.count_x + text_width(count, COUNT_PX), HEADER_Y + (COUNT_PX - LABEL_PX) * BASELINE, LABEL_PX)}"/>',

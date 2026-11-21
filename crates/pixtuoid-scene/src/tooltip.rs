@@ -415,10 +415,7 @@ pub fn coffee() -> Tooltip {
 pub fn pet(kind: PetKind, anim: crate::pack::Piece, on_cooldown: bool, name: &str) -> Tooltip {
     let idle = format!(" {name} ");
     let text: &str = if on_cooldown {
-        match kind {
-            PetKind::Cat => " purr... ",
-            PetKind::Dog => " woof! ",
-        }
+        kind.reaction()
     } else if anim == kind.sleep_anim() {
         " Shhh... sleeping "
     } else if anim == kind.sit_anim() {

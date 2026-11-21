@@ -16,11 +16,11 @@ max-desks = 8
 # disable all pets. `name` is optional (shown in
 # the pet's hover tooltip). Keep [[pets]] last — it's a table section.
 [[pets]]
-kind = "cat"
-name = "Whiskers"   # optional — omit for "Wolf"
+kind = "wolf"
+name = "Ash"        # optional — omit for "Wolf"
 
 [[pets]]
-kind = "dog"        # name omitted → "Owlbear"
+kind = "owlbear"    # name omitted → "Owlbear"
 ```
 
 ## User settings (safe to edit)
@@ -31,7 +31,7 @@ kind = "dog"        # name omitted → "Owlbear"
 | `max-desks` | auto | Cap desks per floor (≥ 1; `0` is ignored with a warning). If unset, auto-computed from terminal size. Excess agents overflow to additional floors. Applies to the `run` TUI; `pixtuoid floating` sizes its floors from the window. |
 | `look` | `"auto"` | Which office the TUI paints. `auto` draws the cutaway office in terminal graphics where the terminal supports them, else the classic half-block office, and doesn't ask the terminal over ssh (every repaint would cross the network) or inside GNU screen (which shows the question in its status line); `cutaway` always asks; `classic` starts in the classic office and asks where `auto` does, for the cutaway `t` can switch to. `run --look <value>` overrides it, and `run --protocol <value>` (`pixtuoid run --help` lists the protocols) draws the cutaway in that protocol whatever protocol the terminal reports; an unknown value is ignored with a warning. Terminal graphics need macOS or Linux; on Windows `run` and `doctor` stay classic. `pixtuoid doctor` shows what your terminal supports. |
 | `motion` | `"auto"` | How much of the office moves — flickers, twinkles, a pet's roam, lightning, New Year's fireworks. `full` moves all of it; `calm` plays it at a quarter of the pace with a quarter of the repaints, but walks as `full` does; `still` holds it still for reduced motion, and a walk ends where it's going at once, the elevator shut. `auto` is `full`, except `calm` over SIXEL or iTerm2 graphics, inside tmux or over ssh; the floating window's `auto` is `full`. An unknown value is ignored with a warning. |
-| `[[pets]]` | all kinds, default names, the owlbear (`dog`) first | One stanza per pet; floor 0 shows the first, every other floor one picked by its seed. `kind` (`"cat"`/`"dog"`) is required; `name` is optional (the hover-tooltip label, default `Wolf`/`Owlbear`). Omit the section for all pets; `pets = []` for none; an unknown `kind` is skipped without affecting other settings. Keep it last (it's a table section). |
+| `[[pets]]` | all kinds, default names: owlbear, raven, wolf | One stanza per pet; floor 0 shows the first, every other floor one picked by its seed. `kind` (`"owlbear"`/`"raven"`/`"wolf"`) is required; `"dog"` and `"cat"`, which an older pixtuoid wrote, still read as the owlbear and the wolf. `name` is optional (the hover-tooltip label, default `Owlbear`/`Raven`/`Wolf`). Omit the section for all pets; `pets = []` for none; an unknown `kind` is skipped without affecting other settings. Keep it last (it's a table section). |
 
 ## System-managed (don't edit — pixtuoid writes these for you)
 

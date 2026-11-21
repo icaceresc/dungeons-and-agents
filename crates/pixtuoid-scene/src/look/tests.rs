@@ -117,7 +117,7 @@ fn carry_to_each_edge(
 }
 
 /// No figure is drawn under an inset: in either look, frame after frame of
-/// agents walking in and wandering off beside a cat and a gateway's mascot,
+/// agents walking in and wandering off beside a wolf and a gateway's mascot,
 /// and with each of the three carried to each edge and corner of the canvas,
 /// every box [`Hits::figures`] reports lies inside the insets.
 #[test]
@@ -138,7 +138,7 @@ fn no_figure_is_drawn_under_an_inset() {
         DaemonPresenceUpdate::GatewayUp { pid: Some(7) },
         t0 - Duration::from_secs(3_600),
     );
-    let cat = crate::pet::Pet::defaulted(crate::pet::PetKind::Cat);
+    let wolf = crate::pet::Pet::defaulted(crate::pet::PetKind::Wolf);
     let viewport = Viewport {
         size: SIZE,
         insets: Insets {
@@ -154,7 +154,7 @@ fn no_figure_is_drawn_under_an_inset() {
         RenderInputs {
             world: FloorInputs {
                 pets: PetInputs {
-                    pet: Some(&cat),
+                    pet: Some(&wolf),
                     petting: None,
                 },
                 ..bare.world
@@ -227,7 +227,7 @@ fn no_figure_is_drawn_under_an_inset() {
         let now = t0 + Duration::from_secs(600);
         for held in [
             Figure::Agent(agent),
-            Figure::Pet(cat.kind),
+            Figure::Pet(wolf.kind),
             Figure::Mascot(gateway.clone()),
         ] {
             carry_to_each_edge(

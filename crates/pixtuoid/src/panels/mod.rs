@@ -2741,9 +2741,9 @@ mod mouse_tests {
             }
         );
         assert_eq!(
-            release(HitAction::Pet(PetKind::Cat), Some(&scene)),
+            release(HitAction::Pet(PetKind::Wolf), Some(&scene)),
             Carried {
-                petted: vec![PetKind::Cat],
+                petted: vec![PetKind::Wolf],
                 ..Carried::default()
             }
         );

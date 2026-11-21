@@ -371,7 +371,7 @@ mod tests {
     /// in hand sets that one down where it is.
     #[test]
     fn a_grip_keeps_every_drop_and_holds_one_figure() {
-        let (a, b) = (Figure::Pet(PetKind::Cat), Figure::Pet(PetKind::Dog));
+        let (a, b) = (Figure::Pet(PetKind::Wolf), Figure::Pet(PetKind::Owlbear));
         let mut grip = Grip::default();
         grip.push(&Gesture::Lift {
             figure: a.clone(),
@@ -434,13 +434,13 @@ mod tests {
     fn a_pet_mid_petting_still_lifts() {
         let now = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(100);
         let pet = HoverTarget::Pet(PetHover {
-            kind: PetKind::Cat,
+            kind: PetKind::Wolf,
             centre: pt(0, 0),
-            anim: crate::pack::Piece::CatSit,
+            anim: crate::pack::Piece::WolfSit,
         });
         let playing = PetState {
             petted_at: now,
-            kind: PetKind::Cat,
+            kind: PetKind::Wolf,
         };
         let mut p = Pointer::default();
         assert_eq!(
@@ -453,7 +453,7 @@ mod tests {
         assert!(matches!(
             p.moved(pt(9, 5)),
             Some(Gesture::Lift {
-                figure: Figure::Pet(PetKind::Cat),
+                figure: Figure::Pet(PetKind::Wolf),
                 ..
             })
         ));
@@ -473,13 +473,13 @@ mod tests {
         );
         let mascot = HoverTarget::Mascot(key.clone());
         let pet = HoverTarget::Pet(PetHover {
-            kind: PetKind::Cat,
+            kind: PetKind::Wolf,
             centre: pt(0, 0),
-            anim: crate::pack::Piece::CatSit,
+            anim: crate::pack::Piece::WolfSit,
         });
         let playing = PetState {
             petted_at: now,
-            kind: PetKind::Cat,
+            kind: PetKind::Wolf,
         };
         let affords = |click, lift| Affordance { click, lift };
         for (hit, petting, want) in [
@@ -492,14 +492,14 @@ mod tests {
                 Some(SceneHit::Figure(&pet)),
                 None,
                 affords(
-                    Some(HitAction::Pet(PetKind::Cat)),
-                    Some(Figure::Pet(PetKind::Cat)),
+                    Some(HitAction::Pet(PetKind::Wolf)),
+                    Some(Figure::Pet(PetKind::Wolf)),
                 ),
             ),
             (
                 Some(SceneHit::Figure(&pet)),
                 Some(&playing),
-                affords(None, Some(Figure::Pet(PetKind::Cat))),
+                affords(None, Some(Figure::Pet(PetKind::Wolf))),
             ),
             (
                 Some(SceneHit::Figure(&mascot)),

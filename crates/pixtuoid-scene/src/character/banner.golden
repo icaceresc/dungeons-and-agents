@@ -50,7 +50,7 @@
 . . . . . . a x y y y y y y x a x y y y y y y x a a . . . . . .
 . . . . . . a x x x x x x x x a x x x x x x x x a . . . . . . .
 . . . . . . a x x x x x x x x a x x x x x x x x a . . . . . . .
-@frame cat 750
+@frame wolf 750
 . . . . . . . . . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . . . . . . . . . .
@@ -67,7 +67,7 @@ a a a a a a B B B B A A A A A A A A A A A z a .
 . . . a B B B B B B A A A A A A A A A A A z a .
 . . . a B B B B B B A A A A A A z a a a a a . .
 . . . . a a a a a a a a a a a a a . . . . . . .
-@frame cat 750
+@frame wolf 750
 . . . . . . . . . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . . . . . . . . . .
@@ -84,7 +84,7 @@ a a a a a a B B B B A A A A A A A A A A A z a .
 . . . a B B B B B B A A A A A A A A A A A z a .
 . . . a B B B B B B A A A A A A z a a a a a . .
 . . . . a a a a a a a a a a a a a . . . . . . .
-@frame cat 750
+@frame wolf 750
 . . . . . . . . . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . . . . . . . . . .
@@ -101,7 +101,7 @@ a a a a a a B B B B A A A A A A A A A A A z a .
 . . . a B B B B B B A A A A A A A A A A A z a .
 . . . a B B B B B B A A A A A A z a a a a a . .
 . . . . a a a a a a a a a a a a a . . . . . . .
-@frame cat 750
+@frame wolf 750
 . . . . . . . . . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . . . . . . . . . .
 . . . . . . . . . . . . . . . . . . . . . . . .

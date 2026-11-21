@@ -90,12 +90,15 @@ pub enum Piece {
     NoticeBoard,
     WallClock,
     MeetingChair,
-    CatWalk,
-    CatSit,
-    CatSleep,
-    DogWalk,
-    DogSit,
-    DogSleep,
+    WolfWalk,
+    WolfSit,
+    WolfSleep,
+    OwlbearWalk,
+    OwlbearSit,
+    OwlbearSleep,
+    RavenWalk,
+    RavenSit,
+    RavenSleep,
     LobsterWalk,
     LobsterRest,
 }
@@ -133,8 +136,9 @@ impl Piece {
             | Piece::AttackBerserkerBack
             | Piece::Walking
             | Piece::WalkingBack
-            | Piece::CatWalk
-            | Piece::DogWalk
+            | Piece::WolfWalk
+            | Piece::OwlbearWalk
+            | Piece::RavenWalk
             | Piece::LobsterWalk
             | Piece::ChristmasTree
             | Piece::ChristmasTreeShort => 2,
@@ -162,8 +166,9 @@ pub enum Walk {
     Walking,
     WalkingBack,
     WalkingCoffee,
-    CatWalk,
-    DogWalk,
+    WolfWalk,
+    OwlbearWalk,
+    RavenWalk,
     LobsterWalk,
 }
 
@@ -174,8 +179,9 @@ impl Walk {
             Walk::Walking => Piece::Walking,
             Walk::WalkingBack => Piece::WalkingBack,
             Walk::WalkingCoffee => Piece::WalkingCoffee,
-            Walk::CatWalk => Piece::CatWalk,
-            Walk::DogWalk => Piece::DogWalk,
+            Walk::WolfWalk => Piece::WolfWalk,
+            Walk::OwlbearWalk => Piece::OwlbearWalk,
+            Walk::RavenWalk => Piece::RavenWalk,
             Walk::LobsterWalk => Piece::LobsterWalk,
         }
     }
@@ -234,8 +240,9 @@ mod tests {
                 ("christmas_tree", 2),
                 ("christmas_tree_short", 2),
                 ("door", 3),
-                ("cat_walk", 2),
-                ("dog_walk", 2),
+                ("wolf_walk", 2),
+                ("owlbear_walk", 2),
+                ("raven_walk", 2),
                 ("lobster_walk", 2),
             ]
         );

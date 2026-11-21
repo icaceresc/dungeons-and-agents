@@ -811,7 +811,7 @@ mod tests {
         let pack = test_pack();
         let roams = [
             Roam::mascot(pack.inner().stride(Walk::LobsterWalk), DaemonState::Running),
-            Roam::pet(pack.inner().stride(PetKind::Cat.walk_anim())),
+            Roam::pet(pack.inner().stride(PetKind::Wolf.walk_anim())),
         ];
         let min = crate::layout::min_layout_size();
         let (mut walking, mut resting) = (0u32, 0u32);
@@ -892,14 +892,14 @@ mod tests {
     #[test]
     fn a_walk_under_way_finishes_when_the_office_stills() {
         let pack = test_pack();
-        let roam = Roam::pet(pack.inner().stride(PetKind::Cat.walk_anim()));
+        let roam = Roam::pet(pack.inner().stride(PetKind::Wolf.walk_anim()));
         let l = layout(192, 80);
         let mut walk = CreatureWalk::at_home(&l, 3, at(0));
         let full = drive(&mut walk, roam, &l, Motion::Full, (0, 120_000));
         let off = full
             .iter()
             .position(|s| s.is_some_and(|s| s.walking.is_some()))
-            .expect("the cat sets off");
+            .expect("the wolf sets off");
         let mut walk = CreatureWalk::at_home(&l, 3, at(0));
         let start = off as u64 * PAINT_FRAME_MS;
         drive(
@@ -930,7 +930,7 @@ mod tests {
     #[test]
     fn an_off_screen_floor_resumes_without_replaying_its_walks() {
         let pack = test_pack();
-        let roam = Roam::pet(pack.inner().stride(PetKind::Dog.walk_anim()));
+        let roam = Roam::pet(pack.inner().stride(PetKind::Owlbear.walk_anim()));
         let l = layout(192, 80);
         let mut walk = CreatureWalk::at_home(&l, 5, at(0));
         drive(&mut walk, roam, &l, Motion::Full, (0, 60_000));
@@ -961,7 +961,7 @@ mod tests {
     #[test]
     fn longest_rest_bounds_every_rest() {
         let walk = CreatureWalk::at_home(&layout(192, 80), 0, at(0));
-        let roam = Roam::pet(test_pack().inner().stride(PetKind::Cat.walk_anim()));
+        let roam = Roam::pet(test_pack().inner().stride(PetKind::Wolf.walk_anim()));
         for roams in 0..2_000 {
             let w = CreatureWalk {
                 roams,
@@ -1036,28 +1036,28 @@ mod tests {
     fn petting_holds_a_pet_where_it_stands() {
         let mut office = Office::new(192, 80);
         let scene = SceneState::default();
-        let cat = Pet::defaulted(PetKind::Cat);
+        let wolf = Pet::defaulted(PetKind::Wolf);
         let walking_at = (0..120_000)
             .step_by(PAINT_FRAME_MS as usize)
             .find(|&ms| {
                 office
-                    .frame(&scene, Some(&cat), None, ms)
+                    .frame(&scene, Some(&wolf), None, ms)
                     .pet
-                    .is_some_and(|p| p.anim_name == PetKind::Cat.walk_anim().piece())
+                    .is_some_and(|p| p.anim_name == PetKind::Wolf.walk_anim().piece())
             })
-            .expect("the cat sets off");
+            .expect("the wolf sets off");
         let held = office
-            .frame(&scene, Some(&cat), None, walking_at + PAINT_FRAME_MS)
+            .frame(&scene, Some(&wolf), None, walking_at + PAINT_FRAME_MS)
             .pet
             .expect("drawn");
         let petting = PetState {
             petted_at: at(walking_at + PAINT_FRAME_MS),
-            kind: PetKind::Cat,
+            kind: PetKind::Wolf,
         };
         let pet_ms = walking_at + PAINT_FRAME_MS;
         for ms in (pet_ms..pet_ms + crate::pet::PET_DURATION_MS).step_by(PAINT_FRAME_MS as usize) {
             let p = office
-                .frame(&scene, Some(&cat), Some(&petting), ms)
+                .frame(&scene, Some(&wolf), Some(&petting), ms)
                 .pet
                 .expect("drawn");
             assert_eq!(
@@ -1066,7 +1066,7 @@ mod tests {
                     p.pos.x.abs_diff(held.pos.x) <= 1,
                     p.pos.y.abs_diff(held.pos.y) <= 1
                 ),
-                (PetKind::Cat.sit_anim(), true, true),
+                (PetKind::Wolf.sit_anim(), true, true),
                 "petted at +{}ms",
                 ms - pet_ms
             );
@@ -1075,7 +1075,7 @@ mod tests {
         let after = office
             .frame(
                 &scene,
-                Some(&cat),
+                Some(&wolf),
                 None,
                 pet_ms + crate::pet::PET_DURATION_MS,
             )
@@ -1133,7 +1133,7 @@ mod tests {
     #[test]
     fn a_pet_petted_mid_walk_walks_on_from_where_it_was_held() {
         let pack = test_pack();
-        let roam = Roam::pet(pack.inner().stride(PetKind::Cat.walk_anim()));
+        let roam = Roam::pet(pack.inner().stride(PetKind::Wolf.walk_anim()));
         let l = layout(192, 80);
         let mut router = AStarRouter::new();
         let mut ground = Ground {
@@ -1153,7 +1153,7 @@ mod tests {
             if s.walking.is_some() {
                 break s;
             }
-            assert!(ms < 120_000, "the cat sets off");
+            assert!(ms < 120_000, "the wolf sets off");
         };
         let until = ms + crate::pet::PET_DURATION_MS;
         while ms < until {
@@ -1186,21 +1186,21 @@ mod tests {
     fn a_walking_creature_is_told_to_the_painter() {
         let mut office = Office::new(192, 80);
         let scene = SceneState::default();
-        let cat = Pet::defaulted(PetKind::Cat);
+        let wolf = Pet::defaulted(PetKind::Wolf);
         let (mut rested, mut walked) = (false, false);
         for ms in (0..120_000).step_by(PAINT_FRAME_MS as usize) {
             let walking = office
-                .frame(&scene, Some(&cat), None, ms)
+                .frame(&scene, Some(&wolf), None, ms)
                 .pet
-                .is_some_and(|p| p.anim_name == PetKind::Cat.walk_anim().piece());
+                .is_some_and(|p| p.anim_name == PetKind::Wolf.walk_anim().piece());
             let told = office.session.moves_off_beat();
-            assert!(!walking || told, "the cat walks unseen at {ms} ms");
+            assert!(!walking || told, "the wolf walks unseen at {ms} ms");
             rested |= !walking && !told;
             walked |= walking;
         }
         assert!(
             rested && walked,
-            "the cat rests ({rested}) and sets off ({walked})"
+            "the wolf rests ({rested}) and sets off ({walked})"
         );
     }
 
@@ -1213,12 +1213,12 @@ mod tests {
     fn a_resting_creature_sets_off_only_in_a_step() {
         let mut office = Office::new(192, 80);
         let scene = SceneState::default();
-        let cat = Pet::defaulted(PetKind::Cat);
+        let wolf = Pet::defaulted(PetKind::Wolf);
         let beat = crate::anim::FULL_TICK_MS;
         let mut set_off = 0;
         for turn in 0..120_000 / beat {
             let ms = turn * beat + 1;
-            office.frame(&scene, Some(&cat), None, ms);
+            office.frame(&scene, Some(&wolf), None, ms);
             if office.session.moves_off_beat() {
                 set_off += 1;
                 continue;
@@ -1233,11 +1233,11 @@ mod tests {
                     .any(|w| w.walks_at(at(ms + into)));
                 assert!(
                     !walks,
-                    "the cat set off {into} ms after the step at {ms} ms"
+                    "the wolf set off {into} ms after the step at {ms} ms"
                 );
             }
         }
-        assert!(set_off > 0, "the cat never set off");
+        assert!(set_off > 0, "the wolf never set off");
     }
 
     /// A walking pet turns to where its leg heads, both ways; a resting one
@@ -1246,16 +1246,16 @@ mod tests {
     fn a_pet_faces_where_it_walks_and_sleeps_among_idlers() {
         let mut office = Office::new(192, 80);
         let scene = SceneState::default();
-        let dog = Pet::defaulted(PetKind::Dog);
+        let owlbear = Pet::defaulted(PetKind::Owlbear);
         let (mut west, mut east, mut slept) = (0, 0, 0);
         let mut last: Option<(Point, bool)> = None;
         for ms in (0..300_000).step_by(PAINT_FRAME_MS as usize) {
             let p = office
-                .frame(&scene, Some(&dog), None, ms)
+                .frame(&scene, Some(&owlbear), None, ms)
                 .pet
                 .expect("drawn");
-            if p.anim_name != PetKind::Dog.walk_anim().piece() {
-                slept += usize::from(p.anim_name == PetKind::Dog.sleep_anim());
+            if p.anim_name != PetKind::Owlbear.walk_anim().piece() {
+                slept += usize::from(p.anim_name == PetKind::Owlbear.sleep_anim());
                 last = None;
                 continue;
             }
@@ -1285,7 +1285,7 @@ mod tests {
 
     /// Under Still no figure walks and the elevator doesn't open: an agent
     /// walking in, one walking out and a gateway's mascot arriving each end
-    /// where they would, at once, the cat never leaves where it rests, and the
+    /// where they would, at once, the wolf never leaves where it rests, and the
     /// door stays shut. Under Full each of them walks and the door opens.
     #[test]
     fn under_still_no_figure_walks_and_the_elevator_stays_shut() {
@@ -1314,7 +1314,7 @@ mod tests {
         if let Some(slot) = after.agents.get_mut(&out_id) {
             slot.exiting_at = Some(at(exit_ms));
         }
-        let cat = Pet::defaulted(PetKind::Cat);
+        let wolf = Pet::defaulted(PetKind::Wolf);
         let seen = |motion: Motion| {
             let mut office = Office::new(192, 80);
             office.conditions = office.conditions.with_motion(motion);
@@ -1324,14 +1324,14 @@ mod tests {
             let mut rests_at = None;
             for ms in (0..60_000).step_by(PAINT_FRAME_MS as usize) {
                 let scene = if ms < exit_ms { &before } else { &after };
-                let f = office.frame(scene, Some(&cat), None, ms);
-                let pet = f.pet.as_ref().expect("the cat is drawn");
+                let f = office.frame(scene, Some(&wolf), None, ms);
+                let pet = f.pet.as_ref().expect("the wolf is drawn");
                 let rests_at = *rests_at.get_or_insert(pet.pos);
                 let now = [
                     walking(f.poses.get(&in_id)),
                     walking(f.poses.get(&out_id)),
                     f.mascots.iter().any(|m| m.anim_name == Piece::LobsterWalk),
-                    pet.anim_name == PetKind::Cat.walk_anim().piece() || pet.pos != rests_at,
+                    pet.anim_name == PetKind::Wolf.walk_anim().piece() || pet.pos != rests_at,
                     f.door_frame != 0,
                 ];
                 for (was, is) in seen.iter_mut().zip(now) {
