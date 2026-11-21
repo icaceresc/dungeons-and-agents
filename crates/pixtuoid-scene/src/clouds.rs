@@ -1022,7 +1022,11 @@ impl Clouds {
         };
         let mut was = Self::keyed(&moment.sky);
         for k in 1..=AHEAD_FRAMES {
-            let sky = Sky::at(moment.timing.later(PAINT_FRAME * k), moment.sky.policy());
+            let sky = Sky::at_hour(
+                moment.timing.later(PAINT_FRAME * k),
+                moment.sky.policy(),
+                moment.sky.hour(),
+            );
             let keyed = Self::keyed(&sky);
             if keyed == was {
                 continue;

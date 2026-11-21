@@ -1,0 +1,7 @@
+# The camp: a campaign's floor 0 (`FloorRole::Camp`). build.rs lays this over
+# pack.toml: a table merges key by key and any other value replaces the
+# office's whole, so name only what the camp redraws, under the office's own
+# names. Its sprites are `camp_*.sprite` beside the office's.
+
+[animations."desk_chair@4x"]
+frames = ["camp_desk_chair@4x.sprite"]

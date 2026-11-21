@@ -9,14 +9,14 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
-use crate::pack::OfficeArt;
+use crate::pack::{OfficeArt, RolePacks};
 use crate::pet::{PetKind, PetState};
 use crate::sprite::{Rgb, RgbBuffer};
 use pixtuoid_core::SceneState;
 
 use super::{
-    AudioFrame, Conditions, FloorInputs, FloorTransition, PerFloor, PerOffice, PetInputs,
-    waypoint_kind_of,
+    AudioFrame, Conditions, FloorInputs, FloorRole, FloorScene, FloorTransition, PerFloor,
+    PerOffice, PetInputs, waypoint_kind_of,
 };
 
 /// One floor of a painter's office: its raster and sim stores, and what its
@@ -108,7 +108,7 @@ impl FloorView {
             scene,
             Some(&self.last_occupied),
             |idx| waypoint_kind_of(layout, idx),
-            (floor, conditions.weather),
+            (floor, conditions),
             now,
         )
     }
@@ -284,6 +284,57 @@ fn compose_slide(
     }
 }
 
+/// What an office's floors are, and the art each draws.
+#[derive(Debug, Clone)]
+pub enum Building {
+    /// An office: every floor drawn in one pack, in its host's theme, under
+    /// its host's sky.
+    Office(Arc<OfficeArt>),
+    /// A campaign: each floor drawn in its [`FloorRole`]'s pack and its
+    /// theme's look for that role ([`Theme::for_role`](crate::theme::Theme::for_role)),
+    /// under the night.
+    Campaign(RolePacks),
+}
+
+impl From<Arc<OfficeArt>> for Building {
+    fn from(pack: Arc<OfficeArt>) -> Self {
+        Self::Office(pack)
+    }
+}
+
+impl From<RolePacks> for Building {
+    fn from(packs: RolePacks) -> Self {
+        Self::Campaign(packs)
+    }
+}
+
+impl Building {
+    /// The pack floor `floor` draws.
+    fn pack(&self, floor: usize) -> &Arc<OfficeArt> {
+        match self {
+            Self::Office(pack) => pack,
+            Self::Campaign(packs) => packs.of(FloorRole::of(floor)),
+        }
+    }
+
+    /// Floor `floor` of `scene` (the FULL live scene), as this building's.
+    fn project(&self, scene: &SceneState, floor: usize) -> FloorScene {
+        let projected = super::project_floor_scene(scene, floor);
+        match self {
+            Self::Office(_) => projected,
+            Self::Campaign(_) => projected.in_campaign(),
+        }
+    }
+
+    /// What its floors are drawn under, where its host decides `conditions`.
+    fn conditions(&self, conditions: Conditions) -> Conditions {
+        match self {
+            Self::Office(_) => conditions,
+            Self::Campaign(_) => conditions.with_hour(crate::sky::SkyHour::Night),
+        }
+    }
+}
+
 /// How far past its beat's turn, or a change it scheduled, an office next
 /// paints: a painter arms the wait on the monotonic clock while both fall on
 /// the wall clock, and the frame must land past them.
@@ -299,7 +350,7 @@ pub const REST_TICK: Duration = Duration::from_secs(1);
 /// composed frame.
 #[derive(Debug)]
 pub struct OfficeSession {
-    pack: Arc<OfficeArt>,
+    building: Building,
     /// Each floor's view, kept past the last frame's floor count so a floor
     /// that empties and fills again resumes its own.
     views: Vec<FloorView>,
@@ -320,12 +371,13 @@ pub struct OfficeSession {
 }
 
 impl OfficeSession {
-    /// An empty office drawing with `pack`.
-    pub fn new(pack: Arc<OfficeArt>) -> Self {
+    /// An empty `building`: an [`Arc<OfficeArt>`] is an office in that pack.
+    pub fn new(building: impl Into<Building>) -> Self {
+        let building = building.into();
         Self {
-            views: vec![FloorView::new(Arc::clone(&pack))],
+            views: vec![FloorView::new(Arc::clone(building.pack(0)))],
             n_floors: 1,
-            pack,
+            building,
             office: PerOffice::default(),
             nav: FloorNav::default(),
             slide: None,
@@ -397,7 +449,8 @@ impl OfficeSession {
         self.evict_missing(scene);
         self.n_floors = super::num_floors(scene);
         while self.views.len() < self.n_floors {
-            self.views.push(FloorView::new(Arc::clone(&self.pack)));
+            let pack = self.building.pack(self.views.len());
+            self.views.push(FloorView::new(Arc::clone(pack)));
         }
         self.nav.settle(self.n_floors, now);
     }
@@ -477,19 +530,26 @@ impl OfficeSession {
         let scene = inputs.world.scene;
         let now = inputs.world.now;
         self.prepare(scene, now);
+        let building = &self.building;
         let draw = |views: &mut Vec<FloorView>,
                     office: &mut PerOffice,
                     pettings: &[Option<PetState>],
                     floor: usize,
                     look| {
-            let floor_scene = super::project_floor_scene(scene, floor);
+            let floor_scene = building.project(scene, floor);
+            let theme = (floor_scene.floor_place().role())
+                .map_or(inputs.theme, |role| inputs.theme.for_role(role));
             let pets = floor_pets(floor, pets, pettings, now);
-            let world = floor_world(inputs.world, &floor_scene, pets);
+            let world = FloorInputs {
+                conditions: building.conditions(inputs.world.conditions),
+                ..floor_world(inputs.world, &floor_scene, pets)
+            };
             views[floor].render(
                 office,
                 look,
                 crate::look::RenderInputs {
                     world,
+                    theme,
                     ..inputs.on(&floor_scene)
                 },
             );
@@ -577,7 +637,7 @@ impl OfficeSession {
             scene,
             Some(&HashSet::new()),
             |_| None,
-            (current, conditions.weather),
+            (current, self.building.conditions(conditions)),
             now,
         )
     }
@@ -599,7 +659,8 @@ impl OfficeSession {
     ) -> AudioFrame {
         self.prepare(scene, now);
         let floor = self.nav.current();
-        (self.office.audio).frame(scene, None, |_| None, (floor, conditions.weather), now)
+        let conditions = self.building.conditions(conditions);
+        (self.office.audio).frame(scene, None, |_| None, (floor, conditions), now)
     }
 
     /// One frame of audio intent for the floor showing, in `scene` (the FULL
@@ -612,6 +673,7 @@ impl OfficeSession {
     ) -> AudioFrame {
         // `nav` settles within `n_floors`, and a view is kept for each.
         let current = self.nav.current();
+        let conditions = self.building.conditions(conditions);
         self.views[current].audio_frame(&mut self.office, scene, (current, conditions), now)
     }
 
@@ -626,8 +688,8 @@ impl OfficeSession {
     /// The floor the footer counts, tallies and names: its projection, as
     /// [`FooterInputs::new`](crate::footer::FooterInputs::new) asks.
     #[doc(hidden)]
-    pub fn footer_scene(&self, scene: &SceneState) -> super::FloorScene {
-        super::project_floor_scene(scene, self.footer_floor_index())
+    pub fn footer_scene(&self, scene: &SceneState) -> FloorScene {
+        self.building.project(scene, self.footer_floor_index())
     }
 
     /// Whether the floor showing's last frame changes between beats: someone

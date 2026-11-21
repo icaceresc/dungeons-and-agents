@@ -15,7 +15,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
 
-use pixtuoid_scene::pack::OfficeArt;
+use pixtuoid_scene::pack::RolePacks;
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, PhysicalPosition};
 use winit::event::{ElementState, MouseButton, WindowEvent};
@@ -45,7 +45,8 @@ pub(crate) enum FloatingEvent {
 pub(crate) struct FloatingApp {
     cfg: FloatingConfig,
     theme: &'static Theme,
-    pack: std::sync::Arc<OfficeArt>,
+    /// Each floor's art: the window draws a campaign.
+    packs: RolePacks,
     config_path: PathBuf,
     /// The panels, the pause (toggled by [`PAUSE`](crate::panels::keys::PAUSE)) and
     /// the theme picker, as the TUI holds them.
@@ -205,7 +206,7 @@ impl FloatingApp {
     pub(crate) fn new(
         cfg: FloatingConfig,
         Appearance { theme, motion }: Appearance,
-        pack: OfficeArt,
+        packs: RolePacks,
         pets: Vec<pixtuoid_scene::pet::Pet>,
         Settings {
             config_path,
@@ -220,8 +221,7 @@ impl FloatingApp {
         let (landing, mut landed) = tokio::sync::mpsc::unbounded_channel();
         let saves = crate::panels::Saves::spawn(config_path.clone(), landing.clone())?;
         let audio_ctl = crate::audio::AudioController::new(audio, saves.clone());
-        let pack = std::sync::Arc::new(pack);
-        let mut renderer = OfficeRenderer::new(std::sync::Arc::clone(&pack));
+        let mut renderer = OfficeRenderer::new(packs.clone());
         renderer.set_audio(audio_ctl.handle().clone());
         renderer.set_pets(pets);
         let proxy = boot.proxy.clone();
@@ -250,7 +250,7 @@ impl FloatingApp {
         Ok(Self {
             cfg,
             theme,
-            pack,
+            packs,
             config_path,
             ui,
             connected,
@@ -451,7 +451,8 @@ impl FloatingApp {
         };
         let volume_flash = self.audio_ctl.tick(Instant::now());
         let audio_audible = self.audio_ctl.handle().is_audible();
-        let at = super::geometry::window_geometry(size, self.pack.max_density_variant(), self.zoom);
+        let at =
+            super::geometry::window_geometry(size, self.packs.max_density_variant(), self.zoom);
         super::geometry::sync_floor_caps(
             &mut self.last_caps_size,
             &floor_caps,
@@ -522,7 +523,9 @@ impl FloatingApp {
                 self.theme,
             ),
         };
-        self.overlays.update(next, at, (self.theme, &*self.pack));
+        // The chrome draws its icons in the camp's art, the floor it opens on.
+        let chrome = self.packs.of(pixtuoid_scene::floor::FloorRole::Camp);
+        self.overlays.update(next, at, (self.theme, chrome));
         let comp = super::compose::composition(
             office,
             super::compose::Change::from(self.renderer.dirty()),
@@ -640,7 +643,7 @@ impl ApplicationHandler<FloatingEvent> for FloatingApp {
         if self.window.is_some() {
             return; // already created — a re-resume must not spawn a second window
         }
-        let min = super::geometry::min_window(self.pack.max_density_variant());
+        let min = super::geometry::min_window(self.packs.max_density_variant());
         let size = LogicalSize::new(self.cfg.width, self.cfg.height);
         let mut attrs = Window::default_attributes()
             .with_title("pixtuoid")
@@ -704,7 +707,7 @@ impl ApplicationHandler<FloatingEvent> for FloatingApp {
         if let Some(boot) = self.boot.take() {
             self.live = Some(boot.spawn(
                 window.inner_size(),
-                self.pack.max_density_variant(),
+                self.packs.max_density_variant(),
                 self.zoom,
             ));
             // The first point the window, its GPU and the pipeline all exist.
@@ -762,7 +765,7 @@ impl ApplicationHandler<FloatingEvent> for FloatingApp {
                         self.modifiers,
                         self.zoom,
                         window.inner_size(),
-                        self.pack.max_density_variant(),
+                        self.packs.max_density_variant(),
                     )
                 {
                     self.zoom = zoom;

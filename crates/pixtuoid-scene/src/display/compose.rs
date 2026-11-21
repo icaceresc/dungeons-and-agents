@@ -257,7 +257,7 @@ pub(crate) fn compose<'a>(
 ) -> DisplayList<'a> {
     let timing = conditions.motion.timing(now);
     let moment = Moment::resolve(
-        crate::sky::Sky::at(timing, conditions.weather),
+        crate::sky::Sky::at_hour(timing, conditions.weather, conditions.hour),
         office.theme,
         frame.floor_place.altitude(),
         timing,
@@ -315,7 +315,7 @@ pub(crate) fn compose_at<'a>(
         flash_phase: crate::screen::FlashPhase::of(&moment.sky, frame),
         hovers: pieces.iter().filter_map(Piece::hover).collect(),
         pieces,
-        backdrop: crate::display::Backdrop::of(office.layout, theme),
+        backdrop: crate::display::Backdrop::of(office.layout, theme).with_windows(pack.windows()),
         recolours: crate::display::Recolours::of(theme),
         host_text,
         pack,
@@ -684,13 +684,15 @@ fn collect_pieces(
     } = inputs;
     let layout = office.layout;
     let mut order: Vec<(Span, PieceKind)> = Vec::new();
-    push_windows(
-        office,
-        moment,
-        &GlassWeather::of(moment),
-        &mut order,
-        outside,
-    );
+    if office.pack.windows() {
+        push_windows(
+            office,
+            moment,
+            &GlassWeather::of(moment),
+            &mut order,
+            outside,
+        );
+    }
     let mut badges = Vec::new();
     let carried = push_characters(frame, office, (&mut order, &mut badges));
     let host_text = crate::display::text::HostRuns {

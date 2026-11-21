@@ -57,9 +57,9 @@ pub(crate) fn run(
         floating,
         ..
     } = cfg;
-    let pack = pixtuoid_scene::pack::load_bundled_pack()
-        .context("loading the bundled sprite pack for the floating window")?;
-    let min = geometry::min_window(pack.max_density_variant());
+    let packs = pixtuoid_scene::pack::load_bundled_role_packs()
+        .context("loading the bundled sprite packs for the floating window")?;
+    let min = geometry::min_window(packs.max_density_variant());
     let floating_cfg = floating.at_least(min.width, min.height);
     let connected = ConnectedSources::new(connected);
     let socket_path = socket.unwrap_or_else(ClaudeCodeSource::default_socket_path);
@@ -97,7 +97,7 @@ pub(crate) fn run(
                 theme,
                 motion: motion.or(pixtuoid_scene::anim::Motion::Full),
             },
-            pack,
+            packs,
             pets,
             window::Settings {
                 config_path,

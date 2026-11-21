@@ -78,6 +78,37 @@ impl Weather {
     }
 }
 
+/// Which hour a frame's sky shows, and the room's light with it: an input of
+/// every frame, as its weather is.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum SkyHour {
+    /// The viewer's own hour, and the moon of the viewer's date.
+    #[default]
+    Local,
+    /// The dead of night whatever the clock, under a waxing moon high over
+    /// the windows: a campaign's camp sleeps under it, and its dungeons burn
+    /// their torches.
+    Night,
+}
+
+impl SkyHour {
+    /// The local hour [`Self::Night`] shows: deep enough into the night that
+    /// its [`nightfall`] is whole.
+    const NIGHT_HOUR: f32 = 23.0;
+    /// Days into its lunation the pinned night's moon is: past its first
+    /// quarter, so it rose before dusk and stands high at
+    /// [`Self::NIGHT_HOUR`].
+    const NIGHT_MOON_AGE: f32 = SYNODIC_DAYS * 0.4;
+
+    /// The local hour of day and the moon's age at `now` under this.
+    fn at(self, now: SystemTime) -> (f32, f32) {
+        match self {
+            Self::Local => (local_hour_frac(now), moon_age_at(now)),
+            Self::Night => (Self::NIGHT_HOUR, Self::NIGHT_MOON_AGE),
+        }
+    }
+}
+
 /// Which weather a frame shows: an input of every frame, so two offices
 /// rendered side by side each show their own.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -599,8 +630,14 @@ fn moon_age_at(now: SystemTime) -> f32 {
 }
 
 /// Illuminated fraction of the moon (0 new .. 1 full), from the synodic month.
+#[cfg(test)]
 fn moon_phase_at(now: SystemTime) -> f32 {
-    (1.0 - libm::cosf(std::f32::consts::TAU * moon_age_at(now) / SYNODIC_DAYS)) / 2.0
+    moon_phase_of(moon_age_at(now))
+}
+
+/// Illuminated fraction of a moon `age` days into its lunation.
+fn moon_phase_of(age: f32) -> f32 {
+    (1.0 - libm::cosf(std::f32::consts::TAU * age / SYNODIC_DAYS)) / 2.0
 }
 
 /// Lightning cadence: one strike per bucket this long, at a hashed offset
@@ -780,6 +817,7 @@ pub(crate) struct InteriorLight {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Sky {
     policy: WeatherPolicy,
+    hour: SkyHour,
     weather: WeatherMix,
     body: SkyBody,
     moon_phase: f32,
@@ -790,10 +828,21 @@ pub(crate) struct Sky {
 }
 
 impl Sky {
+    /// The sky at `timing` under `policy`, at the viewer's hour.
+    #[cfg(test)]
     pub(crate) fn at(timing: crate::anim::Timing, policy: WeatherPolicy) -> Self {
+        Self::at_hour(timing, policy, SkyHour::Local)
+    }
+
+    /// The sky at `timing` under `policy`, showing `hour`.
+    pub(crate) fn at_hour(
+        timing: crate::anim::Timing,
+        policy: WeatherPolicy,
+        hour: SkyHour,
+    ) -> Self {
         let now = timing.now;
-        let (moon_phase, moon_age) = (moon_phase_at(now), moon_age_at(now));
-        let h = local_hour_frac(now);
+        let (h, moon_age) = hour.at(now);
+        let moon_phase = moon_phase_of(moon_age);
         let nightfall = nightfall(h);
         let weather = policy.weather_at(now);
         let strike = strike_phase_at(timing.beat, policy);
@@ -805,6 +854,7 @@ impl Sky {
         tracing::trace!(weather = ?weather, strike = ?strike, nightfall, "sky.at");
         Self {
             policy,
+            hour,
             weather,
             body: body_at(h, nightfall, moon_phase, moon_age),
             moon_phase,
@@ -852,6 +902,11 @@ impl Sky {
         self.policy
     }
 
+    /// The hour this sky was sampled showing: its hour at any other instant.
+    pub(crate) fn hour(&self) -> SkyHour {
+        self.hour
+    }
+
     pub(crate) fn body(&self) -> &SkyBody {
         &self.body
     }
@@ -867,7 +922,7 @@ impl Sky {
         }
     }
 
-    /// [`moon_phase_at`] at this instant.
+    /// [`moon_phase_of`] its moon at this instant.
     pub(crate) fn moon_phase(&self) -> f32 {
         self.moon_phase
     }

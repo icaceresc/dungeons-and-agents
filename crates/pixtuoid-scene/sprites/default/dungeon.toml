@@ -1,8 +1,11 @@
-# A dungeon: every campaign floor below the camp. build.rs lays this over
-# pack.toml (crates/pixtuoid-scene/AGENTS.md#the-sprite-format), so it names
-# only what the dungeon redraws. Its sprites are scripts/gen-art.py's
-# `dungeon_*`, registered here by hand, each on the canvas of the piece it
-# stands in for.
+# A dungeon: every campaign floor below the camp (`FloorRole::Dungeon`).
+# build.rs lays this over pack.toml as it lays camp.toml, so it names only what
+# the dungeon redraws, under the office's own names. Its sprites are
+# scripts/gen-art.py's `dungeon_*`, registered here by hand, each on the canvas
+# of the piece it stands in for.
+
+[walls]
+windows = false
 
 # The dungeon's materials: rock, a monster's hide, a spider's chitin, bone and
 # a torch's flame.

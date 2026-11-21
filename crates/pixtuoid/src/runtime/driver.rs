@@ -10,7 +10,6 @@
 //! tested here, as the headless loop's signal and stdout are.
 
 use std::path::PathBuf;
-use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime};
 
 use anyhow::Result;
@@ -50,24 +49,24 @@ pub(crate) fn run(cfg: RunConfig) -> Result<Option<QuitSignal>> {
     super::on_runtime(|rt| rt.block_on(run_async(cfg, tui)))?
 }
 
-/// The TUI's pack, the plan for painting it, and how its office moves in
+/// The TUI's campaign packs, the plan for painting them, and how its office moves in
 /// each look.
 type Boot = (
-    Arc<pixtuoid_scene::pack::OfficeArt>,
+    pixtuoid_scene::pack::RolePacks,
     crate::graphics::Plan,
     enum_map::EnumMap<pixtuoid_scene::look::LookKind, pixtuoid_scene::anim::Motion>,
 );
 
-/// Load the pack, whose densest art the plan fits, plan, and pick the motion
+/// Load the packs, whose densest art the plan fits, plan, and pick the motion
 /// each look affords on it unless the config names one.
 fn boot_tui(cfg: &RunConfig) -> Result<Boot> {
-    let pack = Arc::new(pixtuoid_scene::pack::load_bundled_pack()?);
-    let plan = crate::graphics::plan_this_terminal(cfg.look, pack.max_density_variant(), true);
+    let packs = pixtuoid_scene::pack::load_bundled_role_packs()?;
+    let plan = crate::graphics::plan_this_terminal(cfg.look, packs.max_density_variant(), true);
     tracing::info!(look = ?cfg.look, plan = ?plan, "graphics plan");
     let link = crate::graphics::Link::of_env();
     let motions = enum_map::EnumMap::from_fn(|look| cfg.motion.or(plan.motion(look, link)));
     tracing::info!(mode = ?cfg.motion, motions = ?motions, "motion");
-    Ok((pack, plan, motions))
+    Ok((packs, plan, motions))
 }
 
 async fn run_async(cfg: RunConfig, tui: Option<Boot>) -> Result<Option<QuitSignal>> {
@@ -106,7 +105,7 @@ async fn run_async(cfg: RunConfig, tui: Option<Boot>) -> Result<Option<QuitSigna
             let pipeline = super::pipeline::spawn_pipeline(socket_path, connected, boot_caps, sink);
             headless_loop(log, pipeline.health_rx).await
         }
-        Some((pack, plan, motions)) => {
+        Some((packs, plan, motions)) => {
             let (sink, scene_rx) = SceneSink::latest(boot_caps);
             let super::pipeline::Pipeline {
                 health_rx,
@@ -119,7 +118,7 @@ async fn run_async(cfg: RunConfig, tui: Option<Boot>) -> Result<Option<QuitSigna
             );
             crate::tui::run_tui(crate::tui::TuiSession {
                 scene_rx,
-                pack,
+                packs,
                 plan,
                 motions,
                 floor_caps,
@@ -376,6 +375,7 @@ mod tests {
     use crate::runtime::today::TodayFile;
     use crate::runtime::{FALLBACK_DESKS, TRANSITION_LOG_CAPACITY};
     use pixtuoid_core::source::manager::SourceDeath;
+    use std::sync::Arc;
     use tokio::sync::watch;
 
     type HealthPair = (

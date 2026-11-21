@@ -25,11 +25,14 @@ pub use piece::{Piece, Walk};
 use strum::VariantArray as _;
 
 use crate::display::Icon;
+use crate::floor::FloorRole;
 use crate::render_scale::RenderScale;
 
 pub(crate) use density::{DenseFrame, densest, densest_frame};
 #[cfg(test)]
-pub(crate) use load::{frames_read_by, load_filled_pack, load_pack_from_strings};
+pub(crate) use load::{
+    frames_read_by, frames_read_by_json, load_filled_pack, load_pack_from_strings,
+};
 #[cfg(test)]
 pub(crate) use lookup::MONITOR_KEYS;
 pub(crate) use lookup::{
@@ -57,6 +60,8 @@ pub(crate) struct Pack {
     hairstyles: BTreeMap<String, Hairstyle>,
     character_outline: Rgb,
     icons: BTreeMap<String, Sprite>,
+    /// Whether the north wall shows windows, from `[walls]`.
+    windows: bool,
     /// [`Pack::density_variants`], counted once at load: a painter asks for it
     /// every frame.
     densities: Vec<Density>,
@@ -293,6 +298,12 @@ impl Pack {
     /// density of 2 and up, dressed or bare, from `[characters]`.
     pub(crate) fn character_outline(&self) -> Rgb {
         self.character_outline
+    }
+
+    /// Whether the north wall shows windows, and the posts between them,
+    /// from `[walls]`.
+    pub(crate) fn windows(&self) -> bool {
+        self.windows
     }
 
     /// The icon `name`'s art, from `[icons]`.
@@ -610,6 +621,11 @@ impl OfficeArt {
     pub(crate) fn icon(&self, icon: Icon) -> &Sprite {
         &self.icons[icon]
     }
+
+    /// [`Pack::windows`].
+    pub(crate) fn windows(&self) -> bool {
+        self.pack.windows()
+    }
 }
 
 /// `desk`'s art `sprite` at `density`, its props' marks and bulb read.
@@ -675,8 +691,60 @@ const BUNDLED_PACK_JSON: &str = include_str!(concat!(env!("OUT_DIR"), "/bundled_
 /// If the embedded manifest or a bundled sprite fails to load, or the pack
 /// can't draw the office.
 pub fn load_bundled_pack() -> Result<OfficeArt, PackError> {
+    load_bundled_manifest(BUNDLED_PACK_JSON)
+}
+
+/// The pack each [`FloorRole`] of a campaign draws.
+#[derive(Debug, Clone)]
+pub struct RolePacks(EnumMap<FloorRole, std::sync::Arc<OfficeArt>>);
+
+impl RolePacks {
+    /// The pack `role` draws.
+    pub fn of(&self, role: FloorRole) -> &std::sync::Arc<OfficeArt> {
+        &self.0[role]
+    }
+
+    /// The densest variant any role's pack draws: the scale a campaign's
+    /// painter fits ([`OfficeArt::max_density_variant`]).
+    pub fn max_density_variant(&self) -> Density {
+        (self.0.values())
+            .map(|pack| pack.max_density_variant())
+            .max()
+            .unwrap_or(Density::ONE)
+    }
+}
+
+/// The compiled-in default pack as each [`FloorRole`] draws it: `pack.toml`
+/// with the role's manifest beside it (`camp.toml`, `dungeon.toml`) laid
+/// over it, or as it is for a role that ships none.
+///
+/// # Errors
+///
+/// As [`load_bundled_pack`], for any role's pack.
+pub fn load_bundled_role_packs() -> Result<RolePacks, PackError> {
+    let packs = EnumMap::try_from_fn(|role: FloorRole| {
+        load_bundled_manifest(bundled_role_json(role)).map(std::sync::Arc::new)
+    })?;
+    Ok(RolePacks(packs))
+}
+
+/// The manifest `role`'s pack loads: `pack.toml` with its manifest laid over
+/// it, as `build.rs` embeds it.
+fn bundled_role_json(role: FloorRole) -> &'static str {
+    BUNDLED_ROLES
+        .iter()
+        .find(|(name, _)| *name == role.name())
+        .map_or(BUNDLED_PACK_JSON, |&(_, json)| json)
+}
+
+/// Each floor role's manifest stem, and `pack.toml` with that manifest laid
+/// over it as `build.rs` transcodes it to JSON.
+const BUNDLED_ROLES: &[(&str, &str)] = include!(concat!(env!("OUT_DIR"), "/bundled_roles.rs"));
+
+/// The bundled sprites drawn as `manifest_json` names them, parsed.
+fn load_bundled_manifest(manifest_json: &str) -> Result<OfficeArt, PackError> {
     Ok(OfficeArt::parse(load_pack_from_json(
-        BUNDLED_PACK_JSON,
+        manifest_json,
         &bundled_sprite_srcs(),
     )?)?)
 }
@@ -830,12 +898,28 @@ mod tests {
     }
 
     /// Art that loads but draws other than its author meant is a finding, so
-    /// the bundled pack has none.
+    /// the bundled pack has none, as each floor role draws it too.
     #[test]
     fn the_bundled_pack_passes_its_own_validation() {
-        let pack = test_default_pack();
-        let report = validate_pack(&pack);
+        let report = validate_pack(&test_default_pack());
         assert_eq!(report.finding_count(), 0, "{report:?}");
+        let packs = load_bundled_role_packs().expect("every role's pack loads");
+        for &role in FloorRole::VARIANTS {
+            let report = validate_pack(packs.of(role).inner());
+            assert_eq!(report.finding_count(), 0, "{role:?}: {report:?}");
+        }
+    }
+
+    /// Each manifest beside `pack.toml` is a floor role's: one named for no
+    /// role is laid over nothing, and ships as dead bytes.
+    #[test]
+    fn every_bundled_role_manifest_is_a_roles() {
+        for (name, _) in BUNDLED_ROLES {
+            assert!(
+                FloorRole::VARIANTS.iter().any(|role| role.name() == *name),
+                "{name}.toml names no floor role"
+            );
+        }
     }
 
     /// A desk's front is its own art, cut down: on the desk's canvas, every
@@ -928,23 +1012,30 @@ mod tests {
 
     /// `build.rs` embeds every sprite in `sprites/default/`, so one no animation,
     /// hairstyle or building registers — a generated file whose `pack.toml`
-    /// entry was never written — ships as dead bytes and draws nothing. A sprite
-    /// the pack still loads without is exactly that.
+    /// or role manifest entry was never written — ships as dead bytes and
+    /// draws nothing. A sprite every pack still loads without is exactly that.
     #[test]
     fn every_bundled_sprite_is_a_frame_the_pack_loads() {
         let unregistered = undrawn(BUNDLED_PACK_TOML, &bundled_sprite_srcs());
         assert!(
             unregistered.is_empty(),
-            "sprites pack.toml never registers: {unregistered:?}"
+            "sprites no manifest registers: {unregistered:?}"
         );
     }
 
-    /// The sprites `toml` loads without: the ones nothing it registers draws.
+    /// The sprites `toml` loads without that no floor role's pack loads
+    /// either: the ones nothing registers draws.
     fn undrawn<'a>(toml: &str, srcs: &[(&'a str, &'a str)]) -> Vec<&'a str> {
-        let read: std::collections::HashSet<String> = crate::pack::frames_read_by(toml, srcs)
+        let mut read: std::collections::HashSet<String> = crate::pack::frames_read_by(toml, srcs)
             .expect("the whole set loads")
             .into_iter()
             .collect();
+        for &role in FloorRole::VARIANTS {
+            read.extend(
+                crate::pack::frames_read_by_json(bundled_role_json(role), &bundled_sprite_srcs())
+                    .expect("the role's pack loads"),
+            );
+        }
         srcs.iter()
             .map(|&(name, _)| name)
             .filter(|&name| !read.contains(name))

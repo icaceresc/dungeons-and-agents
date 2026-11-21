@@ -1,0 +1,23 @@
+# Placeholder for the camp's chair: the task chair recoloured in wood, a
+# stand-in stump until the camp art redraws it (camp.toml registers it).
+@frame 0
+. . . . . . . . . . κ κ O O O O O O O O κ κ . . . . . . . . . .
+. . . . . . . . . κ O O D D D D D D D D O O κ . . . . . . . . .
+. . . . . . . . κ O D D D D D d d D D D D D O κ . . . . . . . .
+. . . . . . . κ O D D D D D D d d D D D D D D O κ . . . . . . .
+. . . . . . . κ D D D D D D D d d D D D D D D D κ . . . . . . .
+. . . . . . κ O D D D D D D D d d D D D D D D D O κ . . . . . .
+. . . κ κ κ κ D D D D D D D D d d D D D D D D D D κ κ κ κ . . .
+. . κ O O O O D D D D D D D D d d D D D D D D D D O O O O κ . .
+. . κ d d d d D D D D D D D D d d D D D D D D D D d d d d κ . .
+. . κ d d d d D D D D D D D D d d D D D D D D D D d d d d κ . .
+. . κ d d d d D D D D D D D D d d D D D D D D D D d d d d κ . .
+. . . κ κ κ κ D d d d d d d d d d d d d d d d d D κ κ κ κ . . .
+. . . . . . . κ d d d d d d d d d d d d d d d d κ . . . . . . .
+. . . . . . . . κ κ κ κ κ κ κ d d κ κ κ κ κ κ κ . . . . . . . .
+. . . . . . . . . . . . . . κ d d κ . . . . . . . . . . . . . .
+. . . . . . κ κ κ κ κ κ κ κ κ d d κ κ κ κ κ κ κ κ κ . . . . . .
+. . . . . κ d d d d d d d d d d d d d d d d d d d d κ . . . . .
+. . . . κ d d d κ κ κ κ κ κ d d d κ κ κ κ κ κ κ d d d κ . . . .
+. . . . κ d d d κ . . . . κ d d d κ . . . . . κ d d d κ . . . .
+. . . . . κ κ κ . . . . . . κ κ κ . . . . . . . κ κ κ . . . . .

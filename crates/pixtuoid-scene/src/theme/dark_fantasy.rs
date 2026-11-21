@@ -4,9 +4,116 @@ use super::*;
 
 /// The `dark-fantasy` dark theme: a torchlit stone keep under a night sky.
 pub static DARK_FANTASY: Theme = Theme {
+    camp: Some(&DARK_FANTASY_CAMP),
+    ..KEEP
+};
+
+/// [`DARK_FANTASY`]'s camp: the keep's palette out on trampled earth inside a
+/// rough wooden palisade, lit by fire.
+pub(crate) static DARK_FANTASY_CAMP: Theme = Theme {
+    name: "dark-fantasy-camp",
+    display_name: "Dark Fantasy Camp",
+    surface: SurfaceColors {
+        // The palisade: split logs, their gaps the posts' darker grain.
+        wall: Rgb {
+            r: 66,
+            g: 47,
+            b: 31,
+        },
+        wall_trim: Rgb {
+            r: 36,
+            g: 25,
+            b: 16,
+        },
+        // Trampled grass over dark earth.
+        carpet_base: Rgb {
+            r: 50,
+            g: 54,
+            b: 34,
+        },
+        carpet_light: Rgb {
+            r: 70,
+            g: 72,
+            b: 42,
+        },
+        carpet_dark: Rgb {
+            r: 34,
+            g: 34,
+            b: 23,
+        },
+        window_frame: Rgb {
+            r: 44,
+            g: 31,
+            b: 20,
+        },
+        bg_fallback: Rgb {
+            r: 20,
+            g: 21,
+            b: 15,
+        },
+    },
+    office: OfficeColors {
+        // The corridor's runner is the camp's beaten path.
+        runner_base: Rgb {
+            r: 74,
+            g: 58,
+            b: 40,
+        },
+        runner_stripe: Rgb {
+            r: 88,
+            g: 70,
+            b: 48,
+        },
+        runner_edge: Rgb {
+            r: 50,
+            g: 39,
+            b: 27,
+        },
+        ..KEEP.office
+    },
+    lighting: LightingColors {
+        // Firelight: deeper and redder than the keep's lamps.
+        floor_lamp_halo: Rgb {
+            r: 255,
+            g: 128,
+            b: 44,
+        },
+        desk_lamp: Rgb {
+            r: 255,
+            g: 158,
+            b: 66,
+        },
+        ..KEEP.lighting
+    },
+    furniture: FurnitureColors {
+        // The lounge's rug is a hide by the fire.
+        rug_field: Rgb {
+            r: 92,
+            g: 70,
+            b: 46,
+        },
+        rug_trim: Rgb {
+            r: 58,
+            g: 43,
+            b: 29,
+        },
+        rug_accent: Rgb {
+            r: 128,
+            g: 100,
+            b: 64,
+        },
+        ..KEEP.furniture
+    },
+    camp: None,
+    ..KEEP
+};
+
+/// What [`DARK_FANTASY`] and its camp share.
+const KEEP: Theme = Theme {
     name: "dark-fantasy",
     display_name: "Dark Fantasy",
     kind: ThemeKind::Dark,
+    camp: None,
     surface: SurfaceColors {
         wall: Rgb {
             r: 62,

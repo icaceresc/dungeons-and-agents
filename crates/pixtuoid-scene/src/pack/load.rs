@@ -44,6 +44,23 @@ struct PackToml {
     /// Each icon's one-frame art, by name.
     #[serde(default)]
     icons: BTreeMap<String, String>,
+    #[serde(default)]
+    walls: WallsToml,
+}
+
+/// The `[walls]` table: what the office's north wall is cut with.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields, default)]
+struct WallsToml {
+    /// Whether it shows windows, and the posts between them; a dungeon's is
+    /// solid stone.
+    windows: bool,
+}
+
+impl Default for WallsToml {
+    fn default() -> Self {
+        Self { windows: true }
+    }
 }
 
 /// One `[buildings.<name>]` table (the base art, with the planes the building
@@ -273,6 +290,7 @@ fn build_pack(parsed: PackToml, get_src: &mut dyn FnMut(&str) -> Result<String>)
         hairstyles,
         character_outline,
         icons,
+        windows: parsed.walls.windows,
         densities: Vec::new(),
     };
     pack.count_densities();
@@ -563,9 +581,19 @@ pub(crate) fn load_filled_pack(pack_toml: &str, frames: &[(&str, &str)]) -> Resu
 /// As [`load_pack_from_strings`].
 #[cfg(test)]
 pub(crate) fn frames_read_by(pack_toml: &str, frames: &[(&str, &str)]) -> Result<Vec<String>> {
+    frames_read_by_json(&transcode(pack_toml), frames)
+}
+
+/// [`frames_read_by`] a manifest a build script transcoded to JSON.
+///
+/// # Errors
+///
+/// As [`load_pack_from_json`].
+#[cfg(test)]
+pub(crate) fn frames_read_by_json(pack_json: &str, frames: &[(&str, &str)]) -> Result<Vec<String>> {
     let lookup = frame_lookup(frames);
     let mut read = Vec::new();
-    build_pack(manifest_from_json(&transcode(pack_toml))?, &mut |fname| {
+    build_pack(manifest_from_json(pack_json)?, &mut |fname| {
         read.push(fname.to_owned());
         lookup(fname)
     })?;

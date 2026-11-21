@@ -7,6 +7,7 @@ pub(crate) static TOKYO_NIGHT: Theme = Theme {
     name: "tokyo-night",
     display_name: "Tokyo Night",
     kind: ThemeKind::Dark,
+    camp: None,
     surface: SurfaceColors {
         wall: Rgb {
             r: 26,

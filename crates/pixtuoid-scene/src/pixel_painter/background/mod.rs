@@ -102,11 +102,11 @@ impl BaseFillCache {
 }
 
 /// The ground and the north `wall`'s band, the posts between its windows
-/// included, over the whole of `buf`, at `moment`.
+/// included where it shows `windows`, over the whole of `buf`, at `moment`.
 pub(super) fn paint_ground_and_walls(
     base_fill: &mut BaseFillCache,
     buf: &mut RgbBuffer,
-    wall: &crate::outside::Wall,
+    (wall, windows): (&crate::outside::Wall, bool),
     moment: &Moment,
     theme: &Theme,
 ) {
@@ -126,11 +126,13 @@ pub(super) fn paint_ground_and_walls(
         },
     );
 
-    let rows = window_rows(top_wall_h);
-    for post in window_posts(wall.span.clone()) {
-        for x in post {
-            for y in rows.clone() {
-                buf.put_checked(x, y, window_frame);
+    if windows {
+        let rows = window_rows(top_wall_h);
+        for post in window_posts(wall.span.clone()) {
+            for x in post {
+                for y in rows.clone() {
+                    buf.put_checked(x, y, window_frame);
+                }
             }
         }
     }
