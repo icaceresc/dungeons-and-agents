@@ -382,7 +382,7 @@ fn mark(
         | PieceKind::WallSeg { .. }
         | PieceKind::Chair { .. }
         | PieceKind::DeskProp(_)
-        | PieceKind::DeskFront { .. }
+        | PieceKind::DeskOverlay { .. }
         | PieceKind::Creature { .. }
         | PieceKind::PropBand { .. }
         | PieceKind::Table { .. }
@@ -621,8 +621,20 @@ fn paint_piece(
         PieceKind::Desk { at, desk, screen } => {
             paint_desk(at, desk, screen, (pack, scale), &mut cache.art, buf);
         }
-        PieceKind::DeskFront { at, desk, screen } => {
-            paint_desk_front(at, desk, screen, (pack, scale), &mut cache.art, buf);
+        PieceKind::DeskOverlay {
+            at,
+            desk,
+            overlay,
+            screen,
+        } => {
+            paint_desk_overlay(
+                at,
+                (desk, overlay),
+                screen,
+                (pack, scale),
+                &mut cache.art,
+                buf,
+            );
         }
         PieceKind::Chair { at } => paint_chair(at, pack, scale, buf),
         PieceKind::DeskProp(prop) => {
@@ -1009,24 +1021,21 @@ fn paint_desk(
     );
 }
 
-/// The front of the `which` desk drawn at `at`, over its props: drawn on the
-/// desk's canvas as [`paint_desk`] draws the desk.
-fn paint_desk_front(
+/// `overlay` of the `which` desk drawn at `at`: drawn on the desk's canvas as
+/// [`paint_desk`] draws the desk, its screen keys lit as the desk's.
+fn paint_desk_overlay(
     at: crate::layout::Point,
-    which: Desk,
+    (which, overlay): (Desk, crate::pack::Piece),
     screen: Screen,
     (pack, scale): (&OfficeArt, RenderScale),
     art: &mut ArtCache,
     buf: &mut RgbBuffer,
 ) {
-    let Some(front) = which.front() else {
-        return;
-    };
     let span = desk_span(pack, which, at, scale);
-    let f = crate::pack::densest_frame(pack, front, 0, scale);
+    let f = crate::pack::densest_frame(pack, overlay, 0, scale);
     let (x, top_y) = (scale.to_buffer(span.x0), scale.to_buffer(span.y0));
     blit_frame_scaled(
-        art.desk(front, &f, screen).unwrap_or(f.frame),
+        art.desk(overlay, &f, screen).unwrap_or(f.frame),
         x,
         top_y,
         f.blit_at,

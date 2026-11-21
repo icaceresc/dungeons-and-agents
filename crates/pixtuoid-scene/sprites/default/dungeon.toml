@@ -31,17 +31,35 @@ windows = false
 "ɚ" = { of = "ɘ", level = -5 }   # bone, darkest
 "ɜ" = { of = "ɛ", level = -3 }   # flame, its dark red tips
 
-# The lairs: a monster on each desk's own canvas, keeping its `cup` and
-# `tower` marks and a torch whose flame burns in the bulb key; its eyes or
-# sigil in the screen keys, so the fighter's tool lights them.
+# The lairs, each on its desk's own canvas: empty, keeping the desk's `cup`
+# and `tower` marks and a torch whose flame burns in the bulb key.
+# PLACEHOLDERS until the lair art lands: the empty lairs are cut from
+# gen-art's lair helpers, and the foes are the whole monster lairs.
 [animations."desk@4x"]
-frames = ["dungeon_desk@4x.sprite"]
+frames = ["dungeon_lair_placeholder@4x.sprite"]
 
 [animations."desk_north@4x"]
-frames = ["dungeon_desk_north@4x.sprite"]
+frames = ["dungeon_lair_north_placeholder@4x.sprite"]
 
 [animations."desk_front@4x"]
+frames = ["dungeon_lair_front_placeholder@4x.sprite"]
+
+# Its foe, drawn on its lair's canvas only while the seat's sitter works:
+# `foe` under the sitter's props, `foe_front` over them, `foe_north` at the
+# back-turned seat's lair. Its eyes or sigil in the screen keys, so the
+# fighter's tool lights them. pack.toml has no `@4x` of these to merge into,
+# so each names its base's `frame_ms`.
+[animations."foe@4x"]
+frames = ["dungeon_desk@4x.sprite"]
+frame_ms = 600
+
+[animations."foe_front@4x"]
 frames = ["dungeon_desk_front@4x.sprite"]
+frame_ms = 600
+
+[animations."foe_north@4x"]
+frames = ["dungeon_desk_north@4x.sprite"]
+frame_ms = 600
 
 [animations."desk_chair@4x"]
 frames = ["dungeon_desk_chair@4x.sprite"]

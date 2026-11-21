@@ -1670,6 +1670,9 @@ pub pixtuoid_scene::pack::Piece::ExitSign
 pub pixtuoid_scene::pack::Piece::FilingCabinet
 pub pixtuoid_scene::pack::Piece::FishTank
 pub pixtuoid_scene::pack::Piece::FloorLamp
+pub pixtuoid_scene::pack::Piece::Foe
+pub pixtuoid_scene::pack::Piece::FoeFront
+pub pixtuoid_scene::pack::Piece::FoeNorth
 pub pixtuoid_scene::pack::Piece::HoldingCoffee
 pub pixtuoid_scene::pack::Piece::KitchenIsland
 pub pixtuoid_scene::pack::Piece::LobsterRest

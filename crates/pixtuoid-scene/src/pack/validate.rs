@@ -98,6 +98,9 @@ pub(crate) struct ValidationReport {
     /// density its plant is drawn at and it is not, where it would show
     /// coarser.
     pub(crate) misfit_stand_ins: Vec<String>,
+    /// Each overlay ([`Piece::overlay_of`]) on a canvas other than its
+    /// piece's: it is drawn at that piece's corner, so it would stand off it.
+    pub(crate) misfit_overlays: Vec<String>,
 }
 
 /// A density variant's timing that differs from its base's, which is the
@@ -150,6 +153,7 @@ impl ValidationReport {
             unread_variant_timing,
             off_beat_loops,
             misfit_stand_ins,
+            misfit_overlays,
         } = self;
         unmarked_heads.len()
             + missing_hair_views.len()
@@ -158,6 +162,7 @@ impl ValidationReport {
             + unread_variant_timing.len()
             + off_beat_loops.len()
             + misfit_stand_ins.len()
+            + misfit_overlays.len()
     }
 }
 
@@ -232,6 +237,23 @@ fn validate_loops(pack: &Pack, loops: &[(Piece, usize)], beat_ms: u64) -> Valida
                     .misfit_stand_ins
                     .push(density_variant_name(stand_in.name(), density));
             }
+        }
+    }
+
+    // A variant's frames are its base's times its density, as above.
+    for &overlay in Piece::VARIANTS {
+        let Some(base) = overlay.overlay_of() else {
+            continue;
+        };
+        let canvas = |f: &Frame| (f.width(), f.height());
+        let base_canvas = canvas(pack.piece(base).first());
+        if pack
+            .piece(overlay)
+            .frames()
+            .iter()
+            .any(|f| canvas(f) != base_canvas)
+        {
+            report.misfit_overlays.push(overlay.name().to_string());
         }
     }
 
@@ -576,8 +598,9 @@ mod tests {
                 frame_ms: 400,
             }],
             misfit_stand_ins: vec!["christmas_tree".to_string()],
+            misfit_overlays: vec!["foe".to_string()],
         };
-        assert_eq!(report.finding_count(), 7);
+        assert_eq!(report.finding_count(), 8);
     }
 
     #[test]

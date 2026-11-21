@@ -102,9 +102,11 @@ fn the_desk_props_stand_on_their_marks() {
                         scale.to_buffer(p.span.y0) + my * k,
                     )
                 };
-                // This desk's props follow it in the list: cup, tower, sheet.
+                // This desk's props follow it in the list, past the foe its
+                // working sitter stands at it: cup, tower, sheet.
                 let props: Vec<StoodProp> = pieces[i + 1..]
                     .iter()
+                    .skip_while(|q| matches!(q.kind, PieceKind::DeskOverlay { .. }))
                     .map_while(|q| match q.kind {
                         PieceKind::DeskProp(prop) => Some(prop),
                         _ => None,
@@ -3148,7 +3150,7 @@ fn every_piece_paints_only_inside_its_span() {
             "character",
             "clock",
             "desk",
-            "desk front",
+            "desk overlay",
             "desk prop",
             "door",
             "effect",

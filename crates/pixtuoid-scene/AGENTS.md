@@ -127,7 +127,16 @@ whole, so a redrawn animation keeps its `frame_ms`. Its sprites sit beside the
 office's, prefixed with its role (`camp_desk@4x.sprite`); one no manifest
 registers fails the bundled-sprite test, and each role's pack passes the
 same validation as the office's. `[walls] windows = false` draws the north
-wall solid: no windows, no posts between them.
+wall solid: no windows, no posts between them. A key `pack.toml` lacks (a new
+`@4x`) merges into nothing, so it names its own `frame_ms`, the base's.
+
+A desk's foe stands on the desk's own canvas only while its sitter works
+(running a tool or waiting on its user): `foe` (the viewer-facing desk's) and
+`foe_north` (the back-turned desk's) drawn under the sitter's props, `foe_front`
+over them, then `desk_front`. One frame each, the size of its desk's, at any
+density its desk is drawn at; validation reports one on another canvas. Its
+screen keys (`j`, `J`) light with the sitter's tool as the desk's do. The
+office draws them empty; a role's manifest redraws them.
 
 ## When refactoring
 
