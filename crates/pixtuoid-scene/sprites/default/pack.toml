@@ -127,6 +127,18 @@
 # agent's iron is one metal and their colour shows on the tabard and the crest.
 "Σ" = "#7e838c"   # iron: a helm's bowl, mail's lit rings
 "г" = "#4a3020"   # dark leather: the belt
+# The campaign's creatures (scripts/gen-art.py's owlbear, wolf and raven), in the
+# dog's, the cat's and the gateway mascot's slots.
+"ƀ" = "#6b4a32"   # the owlbear's fur: a bear's warm brown
+"ƃ" = "#8c7d6a"   # the owlbear's feathers: its head, tufts, chest and tail
+"Ɔ" = "#d2c3a2"   # the owlbear's face disc, pale buff
+"ƈ" = "#d3a24c"   # the owlbear's beak, horn
+"Ƌ" = "#7f848c"   # the wolf's grey coat
+"Ə" = "#cfccc4"   # the wolf's pale throat, belly and muzzle
+"Ɛ" = "#e0a83a"   # the wolf's amber eye
+"Ƒ" = "#2c2a3a"   # the raven's black, kept off the outline's
+"Ɠ" = "#4a5574"   # the raven's blue sheen
+"Ɩ" = "#686674"   # the raven's beak and feet, slate
 
 # Shades of a recolor key, derived from it: `level` steps along the key's ramp
 # (`Rgb::ramp`). They carry no colour of their own, so a per-agent recolor
@@ -176,6 +188,17 @@
 "ϑ" = { of = "Σ", level = -5 }   # iron, darkest: between the rings, a helm's rim
 "ϖ" = { of = "Σ", level = 5 }    # iron, a glint
 "ғ" = { of = "г", level = -2 }   # leather, shaded: the belt's lower edge
+"Ɓ" = { of = "ƀ", level = 2 }    # the owlbear's fur, lit
+"Ƃ" = { of = "ƀ", level = -2 }   # the owlbear's fur, shaded
+"Ɗ" = { of = "ƀ", level = -5 }   # the owlbear's fur, darkest: its paws, its far legs
+"Ƅ" = { of = "ƃ", level = 2 }    # the owlbear's feathers, lit
+"ƅ" = { of = "ƃ", level = -2 }   # the owlbear's feathers, shaded: their scallops
+"Ƈ" = { of = "Ɔ", level = -2 }   # the face disc's rim
+"Ɖ" = { of = "ƈ", level = -3 }   # the beak's hook, shaded
+"ƌ" = { of = "Ƌ", level = 2 }    # the wolf's coat, lit
+"ƍ" = { of = "Ƌ", level = -2 }   # the wolf's coat, shaded: its saddle, its far legs
+"Ǝ" = { of = "Ƌ", level = -5 }   # the wolf's coat, darkest: ear backs, paws, the brush's tip
+"ƕ" = { of = "Ƒ", level = -2 }   # the raven's black, shaded
 
 [animations.seated]
 frames   = ["seated.sprite"]
