@@ -1,7 +1,8 @@
 //! Focus-jump: click a sprite → the terminal app hosting that agent comes to the
 //! foreground. `resolve_pid` (slot cache → per-source probe) → `ancestor_walk`
 //! (pid → the first *focusable* ancestor, i.e. the terminal GUI app) → per-OS
-//! `activate`. App-level only by design — no tab/pane precision.
+//! `activate`. App-level only by design — no tab/pane precision; a host that
+//! runs the sessions gets the clicked one from [`FOCUS_FEED_ENV`]'s file.
 //!
 //! ONE failure rule (user-directed, no fallbacks): any miss — no pid, walk
 //! reaches pid 1, remote agent, activation denied, unsupported compositor — is a
@@ -126,10 +127,33 @@ pub(crate) fn resolve_pid(
         .find_map(|path| (probe.pid_for_session)(path, &slot.session_id))
 }
 
+/// Names a file each focus appends its agent's session to, one JSON line. The
+/// OS raises only the app hosting an agent; a host that runs the sessions
+/// itself (an IDE's plugin) reads the line and brings that session forward.
+pub(crate) const FOCUS_FEED_ENV: &str = "PIXTUOID_FOCUS_FEED";
+
 /// The painter-agnostic focus dispatch: ANY painter's trigger resolves + walks +
 /// activates through this ONE entry with the real OS table.
 pub(crate) fn focus_slot(slot: &AgentSlot) {
+    if let Some(feed) = std::env::var_os(FOCUS_FEED_ENV) {
+        note_focus(std::path::Path::new(&feed), slot);
+    }
     focus_agent(slot, &FocusPaths::from_env(), &OsProcessTable, activate_os);
+}
+
+/// Appends `slot`'s source and session to `feed`; a miss is the module's
+/// silent no-op, so the OS focus still runs.
+fn note_focus(feed: &std::path::Path, slot: &AgentSlot) {
+    use std::io::Write as _;
+    let line = serde_json::json!({"source": &*slot.source, "session_id": &*slot.session_id});
+    let written = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(feed)
+        .and_then(|mut file| writeln!(file, "{line}"));
+    if let Err(error) = written {
+        tracing::debug!(error = ?error, feed = ?feed, "focus: feed not written");
+    }
 }
 
 /// The ONE caller of the per-OS glue. `activate` is injected so dispatch tests
@@ -464,6 +488,28 @@ mod tests {
         child.wait().expect("the child exits");
         let me = i32::try_from(std::process::id()).expect("a pid");
         assert_eq!(parent, Some(me));
+    }
+
+    /// Each focus is one more line naming the agent's source and session, so
+    /// a host that runs the sessions finds the one clicked.
+    #[test]
+    fn each_focus_appends_its_session_to_the_feed() {
+        let dir = tempfile::tempdir().expect("a temp dir");
+        let feed = dir.path().join("focus.jsonl");
+        note_focus(&feed, &slot("claude-code", "ses-a", None));
+        note_focus(&feed, &slot("codex", "ses-b", None));
+        let lines: Vec<serde_json::Value> = std::fs::read_to_string(&feed)
+            .expect("the feed")
+            .lines()
+            .map(|line| serde_json::from_str(line).expect("a JSON line"))
+            .collect();
+        assert_eq!(
+            lines,
+            [
+                serde_json::json!({"source": "claude-code", "session_id": "ses-a"}),
+                serde_json::json!({"source": "codex", "session_id": "ses-b"}),
+            ]
+        );
     }
 }
 

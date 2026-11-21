@@ -83,6 +83,16 @@ Either install the shim (`cargo install pixtuoid-hook`) or set
 **`$PIXTUOID_HOOK`** to an absolute path to it — that override wins over both
 lookups and is embedded into the agent CLI's config, so it must be absolute.
 
+### Bringing the clicked session forward (`$PIXTUOID_FOCUS_FEED`)
+
+Clicking a coworker, or <kbd>Enter</kbd> on it in the <kbd>Tab</kbd>
+dashboard, raises the app that hosts its agent, never a tab or pane in it. An
+app that runs the sessions itself, such as an IDE's plugin, can bring that
+exact session forward: set **`$PIXTUOID_FOCUS_FEED`** to a file path, and each
+focus appends one JSON line, `{"source": "claude-code", "session_id": "<id>"}`,
+the agent's source and the session id its events carry. The app is still
+raised.
+
 ### Truecolor preflight
 
 The pixel-art office renders in 24-bit color. On launch, `pixtuoid run`
