@@ -107,10 +107,9 @@ impl PoseHistory {
             None => self.last.remove(&agent_id),
         };
     }
-    /// Drop entries for agents no longer in `scene`. Without this, every AgentId
-    /// ever rendered leaks an entry for the process lifetime, per floor.
-    pub(crate) fn evict_missing(&mut self, scene: &pixtuoid_core::state::SceneState) {
-        self.last.retain(|id, _| scene.agents.contains_key(id));
+    /// Keep only the entries of agents `keeps` answers for.
+    pub(crate) fn retain(&mut self, keeps: impl Fn(&AgentId) -> bool) {
+        self.last.retain(|id, _| keeps(id));
     }
     /// Whether an entry exists for `agent_id`.
     pub fn contains(&self, agent_id: AgentId) -> bool {

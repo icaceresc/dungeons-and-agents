@@ -407,8 +407,9 @@ impl OfficeSession {
     /// chitchat: one seam, so no frame path skips either half.
     #[doc(hidden)]
     pub fn evict_missing(&mut self, scene: &SceneState) {
-        for view in &mut self.views {
+        for (floor, view) in self.views.iter_mut().enumerate() {
             view.floor.evict_missing(scene);
+            view.floor.ctx.evict_off_floor(scene, floor);
         }
         self.office.evict_missing(scene);
     }
