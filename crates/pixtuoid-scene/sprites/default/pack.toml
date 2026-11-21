@@ -133,9 +133,9 @@
 "Ƌ" = "#7f848c"   # the wolf's grey coat
 "Ə" = "#cfccc4"   # the wolf's pale throat, belly and muzzle
 "Ɛ" = "#e0a83a"   # the wolf's amber eye
-"Ƒ" = "#2c2a3a"   # the raven's black, kept off the outline's
-"Ɠ" = "#4a5574"   # the raven's blue sheen
-"Ɩ" = "#686674"   # the raven's beak and feet, slate
+"Ƒ" = "#34314a"   # the raven's black, a blue-violet one so it reads on a dark floor
+"Ɠ" = "#7a7ec8"   # the raven's blue-violet sheen
+"Ɩ" = "#8e8c9e"   # the raven's beak and feet, slate
 
 # Shades of a recolor key, derived from it: `level` steps along the key's ramp
 # (`Rgb::ramp`). They carry no colour of their own, so a per-agent recolor
