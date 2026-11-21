@@ -45,6 +45,11 @@ PANTS, PANTS_SH, PANTS_LT = "P", "p", "("
 OUTLINE, WHITE = "n", "&"
 EYE = "e"
 SHOE, SHOE_HI = ";", ":"
+# The knight's armour: iron (its helm, and its mail as rings of the iron's
+# shades) and the leather of its belt; one base each in [palette], the rest
+# their [ramps].
+IRON, IRON_LT, IRON_SH, IRON_DK, IRON_HI = "Σ", "μ", "υ", "ϑ", "ϖ"
+LEATHER, LEATHER_SH = "г", "ғ"
 WOOD, WOOD_SH, WOOD_LT, WOOD_HI, WOOD_DK, POOL = "D", "d", "O", "σ", "ψ", "ω"
 BEZEL, SLATE, SHADOW = "M", "3", "4"
 # The desk monitor's screen: the cutaway relights these keys, so only desk art
@@ -414,8 +419,8 @@ STANDING_ROWS, TYPING_ROWS, SEATED_ROWS, COUCH_ROWS = 12, 11, 10, 9
 # Rows every standing and front- or back-view seated pose shares: the face
 # (the eyes and mouth hang off it) and the shoulders.
 FACE_TOP, FACE_BOTTOM, SHOULDER_Y = 12, 26, 26
-# A seated shirt ends on the seat, where the base's hand row starts; a
-# standing one on the belt.
+# A seated tabard ends on the seat, where the base's hand row starts; a
+# standing one is belted where the legs begin.
 SEAT_Y, BELT_Y = 36, 38
 # Where a sleeve ends and a hanging hand begins.
 CUFF_Y = 34
@@ -1366,6 +1371,138 @@ def style_ponytail():
     return {"front": (b, f), "back": back, "side": (sb, so), "crown": c, "ears": False}
 
 
+def clip_rows(g, keep):
+    """Clear every row of `g` (on the pose grid) that `keep` does not hold."""
+    for y in range(LAYER_H):
+        if not keep(y - LIFT):
+            g[y] = [T] * FIG_W
+
+
+def iron_lit(g, cx, cy, r, glints=()):
+    """Iron lit as a ball: past a circle offset up and west, toward the light,
+    it drops a shade, its upper-west edge catches the light, and `glints` (on
+    the pose grid) shine."""
+    lx, ly = cx - 3.0, cy - 3.5 + LIFT
+    metal = {(x, y) for y in range(LAYER_H) for x in range(FIG_W) if g[y][x] == IRON}
+    for x, y in metal:
+        if math.hypot(x + 0.5 - lx, y + 0.5 - ly) > r:
+            g[y][x] = IRON_SH
+        elif (x - 1, y) not in metal or (x, y - 1) not in metal:
+            g[y][x] = IRON_LT
+    for x, y in glints:
+        put(g, x, y + LIFT, IRON_HI)
+
+
+def plume(g, x, y, sweep):
+    """A horsehair plume in the agent's hair colour from an iron socket at
+    (x, y) on the pose grid: seen from the front or behind (`sweep` 0) a full
+    tuft rising over the bowl, in profile swept `sweep` columns back and
+    falling."""
+    if sweep:
+        lock(g, x, y + LIFT, x - sweep * 0.6, y - 4.5 + LIFT, 5.0, 4.0)
+        lock(g, x - sweep * 0.6, y - 4.5 + LIFT, x - sweep, y + LIFT, 4.0, 2.0)
+    else:
+        ellipse(g, x, y - 2.0 + LIFT, 3.0, 4.0)
+        lock(g, x, y + 1 + LIFT, x, y - 2 + LIFT, 2.4, 4.4)
+    rim_light(g)
+    rect(g, int(x) - 2, int(y) + LIFT, int(x) + 2, int(y) + 2 + LIFT, IRON_DK)
+
+
+def coif(g, cx, cy, rx, ry, shoulders):
+    """The mail hood under the helm: an oval round the head, and where it falls
+    onto the shoulders, `shoulders`, `(x0, y0, x1, y1)` on the pose grid."""
+    ring = layer()
+    ellipse(ring, cx, cy + LIFT, rx, ry, IRON)
+    for y in range(LAYER_H):
+        for x in range(FIG_W):
+            x0, y0, x1, y1 = shoulders
+            if ring[y][x] != T or (x0 <= x < x1 and y0 <= y - LIFT < y1):
+                g[y][x] = IRON_DK if (x + y - LIFT) % 2 else IRON_SH
+
+
+def style_knight_helm():
+    """An open-faced iron helm: a rounded bowl lit as a ball, a riveted brow
+    band, a nasal bar down between the eyes, a mail coif round the face and
+    over the neck, and a plume in the agent's hair colour."""
+    rim_rows = (12, 15)  # the brow band's rows, half-open: under them the face
+    bowl = (FIG_CX, 13.0, 10.8, 10.2)
+    rivets = (8, 12, 20, 24)
+
+    def band(g, cols, rivet_cols):
+        for y in range(*rim_rows):
+            for x in cols:
+                if g[y + LIFT][x] != T:
+                    g[y + LIFT][x] = IRON_DK if y == rim_rows[1] - 1 else IRON_SH
+        for x in rivet_cols:
+            put(g, x, rim_rows[0] + LIFT, IRON_LT)
+
+    b = layer()
+    coif(b, FIG_CX, 17.5, 11.2, 10.6, (9, 22, 23, 28))
+    f = layer()
+    ellipse(f, bowl[0], bowl[1] + LIFT, bowl[2], bowl[3], IRON)
+    clip_rows(f, lambda y: y < rim_rows[1])
+    iron_lit(f, bowl[0], bowl[1], bowl[2] - 1.5, [(10, 6), (11, 5)])
+    band(f, range(FIG_W), rivets)
+    rect(f, 15, rim_rows[1] + LIFT, 17, 21 + LIFT, IRON)  # the nasal
+    rect(f, 16, rim_rows[1] + LIFT, 17, 21 + LIFT, IRON_SH)
+    put(f, 15, rim_rows[1] + LIFT, IRON_LT)
+    plume(f, FIG_CX, 3.0, 0)
+
+    back = layer()
+    coif(back, FIG_CX, 17.5, 10.8, 10.0, (9, 22, 23, 28))
+    shell = layer()
+    ellipse(shell, bowl[0], bowl[1] + LIFT, bowl[2] - 0.2, bowl[3], IRON)
+    clip_rows(shell, lambda y: y < rim_rows[1] + 1)
+    iron_lit(shell, bowl[0], bowl[1], bowl[2] - 1.5, [(10, 6), (11, 5)])
+    paste(back, shell)
+    for y in range(rim_rows[0] + 1, rim_rows[1] + 1):
+        for x in range(FIG_W):
+            if back[y + LIFT][x] in (IRON, IRON_LT, IRON_SH, IRON_HI):
+                back[y + LIFT][x] = IRON_DK if y == rim_rows[1] else IRON_SH
+    plume(back, FIG_CX, 3.0, 0)
+
+    sb = layer()
+    coif(sb, 12.5, 16.5, 10.0, 11.0, (6, 22, 20, 28))
+    so = layer()
+    coif(so, 15.5, 19.0, 3.6, 8.0, (12, 22, 20, 28))  # over the cheek and jaw
+    shell = layer()
+    disc(shell, SIDE_CX, SIDE_CY + LIFT, 11.0, IRON)
+    clip_rows(shell, lambda y: y < rim_rows[1] - 1)
+    iron_lit(shell, SIDE_CX, SIDE_CY, 10.5, [(9, 5), (10, 4)])
+    paste(so, shell)
+    for y in range(rim_rows[0] - 1, rim_rows[1] - 1):
+        for x in range(FIG_W):
+            if so[y + LIFT][x] in (IRON, IRON_LT, IRON_SH, IRON_HI):
+                so[y + LIFT][x] = IRON_DK if y == rim_rows[1] - 2 else IRON_SH
+    for x in (8, 13, 18, 23):
+        if so[rim_rows[0] - 1 + LIFT][x] != T:
+            put(so, x, rim_rows[0] - 1, IRON_LT)
+    rect(so, 25, rim_rows[1] - 2 + LIFT, 27, 19 + LIFT, IRON)  # the nasal
+    rect(so, 26, rim_rows[1] - 2 + LIFT, 27, 19 + LIFT, IRON_SH)
+    plume(so, SIDE_CX - 1.0, 2.0, 8)
+
+    c = layer()
+    disc(c, CROWN_CX, CROWN_CY + LIFT, CROWN_R, IRON)
+    iron_lit(c, CROWN_CX, CROWN_CY, CROWN_R + 1.5, [(11, 10), (12, 9)])
+    for y in range(LAYER_H):
+        for x in range(FIG_W):
+            d = math.hypot(x + 0.5 - CROWN_CX, y + 0.5 - CROWN_CY - LIFT)
+            if c[y][x] != T and d > CROWN_R - 1.2:
+                c[y][x] = IRON_DK
+    crest = layer()
+    top, tail = CROWN_CY - CROWN_R + 1.5 + LIFT, CROWN_CY + 3 + LIFT
+    lock(crest, CROWN_CX, top, CROWN_CX, tail, 3.6, 2.2)
+    rim_light(crest)
+    paste(c, crest)
+    return {
+        "front": (b, f),
+        "back": back,
+        "side": (sb, so),
+        "crown": c,
+        "ears": False,
+    }
+
+
 def tail(x0, y0, x1, y1, tie_y):
     """A ponytail's tail, lit on its own, with its tie."""
     t = layer()
@@ -1383,8 +1520,14 @@ def tail(x0, y0, x1, y1, tie_y):
     return t
 
 
-# Per-agent hairstyles, by the name a pack registers them under.
+# Per-agent hairstyles, by the name a pack registers them under: the knight
+# prototype wears its helm alone.
 HAIRSTYLES = {
+    "knight_helm": style_knight_helm,
+}
+# The modern styles, written to no sprite while the knights wear only the helm:
+# kept to be redrawn as hoods and other helmets.
+UNWORN_HAIRSTYLES = {
     "mop": style_mop,
     "messy": style_messy,
     "side_part": style_side_part,
@@ -1487,29 +1630,58 @@ def side_face(g, dy):
 
 
 def neck_shadow(g, dy):
-    """The neck's shadow above the collar, where the shoulders begin."""
-    rect(g, 12, SHOULDER_Y + dy, 20, SHOULDER_Y + 1 + dy, SKIN_DK)
+    """The mail collar's shadow under the chin, where the shoulders begin."""
+    rect(g, 12, SHOULDER_Y + dy, 20, SHOULDER_Y + 1 + dy, IRON_DK)
 
 
-def shirt(g, dy, bottom, back=False, sleeves=True):
-    """The shirt from the shoulders to `bottom`, lit on the west, with sleeves
-    hanging at the sides; the neck's shadow above the collar, and the collar's
-    V in front or a fold at the foot of the back."""
-    rect(g, 9, SHOULDER_Y + dy, 23, SHOULDER_Y + 1 + dy, SHIRT)
-    rect(g, 6, SHOULDER_Y + 1 + dy, 26, bottom + dy, SHIRT)
-    rect(g, 20, SHOULDER_Y + 1 + dy, 26, bottom + dy, SHIRT_SH)
-    rect(g, 6, SHOULDER_Y + 1 + dy, 7, bottom + dy, SHIRT_LT)
+# ---- the knight's garb: iron mail under a cloth tabard in the agent's colour
+# (`B` and its ramp), a leather belt, the agent's leggings (`P`), leather boots.
+# The tabard's columns, half-open: the mail shows at its sides and on the arms.
+TABARD_X0, TABARD_X1 = 9, 23
+# A standing tabard's foot, over the thighs; a seated one ends on the seat.
+TABARD_HEM = 41
+
+
+def mail(g, x0, y0, x1, y1, dy, shade=False):
+    """Mail from (x0, y0) to (x1, y1) on the pose grid: its rings a checker of
+    two iron shades, one shade darker turned from the light. The checker is
+    the pose grid's, not the canvas's, so a bobbing walk's rings ride with the
+    body instead of shimmering."""
+    ring, gap = (IRON_SH, IRON_DK) if shade else (IRON, IRON_SH)
+    for y in range(y0, y1):
+        for x in range(x0, x1):
+            put(g, x, y + dy, gap if (x + y) % 2 else ring)
+
+
+def belt(g, y, dy, x0=6, x1=26, buckle=True):
+    """A leather belt two rows deep from row `y`, its lower edge shaded, an
+    iron buckle at the front."""
+    rect(g, x0, y + dy, x1, y + 2 + dy, LEATHER)
+    rect(g, x0, y + 1 + dy, x1, y + 2 + dy, LEATHER_SH)
+    if buckle:
+        rect(g, 14, y + dy, 18, y + 2 + dy, IRON_LT)
+        rect(g, 15, y + dy, 17, y + 1 + dy, IRON_SH)
+
+
+def tabard(g, dy, bottom, back=False, sleeves=True, hem=None):
+    """Mail from the shoulders to `bottom`, its sleeves hanging at the sides,
+    and over it the tabard to `hem` (`bottom` unless it hangs past the belt),
+    lit on the west and trimmed along its foot, belted just above `bottom`;
+    the mail collar's shadow, and in front the tabard's neck opening."""
+    hem = bottom if hem is None else hem
+    mail(g, 9, SHOULDER_Y, 23, SHOULDER_Y + 1, dy)
+    mail(g, 6, SHOULDER_Y + 1, 26, bottom, dy)
     if sleeves:
-        rect(g, 5, SHOULDER_Y + 2 + dy, 27, CUFF_Y + dy, SHIRT)
-        rect(g, 22, SHOULDER_Y + 2 + dy, 27, CUFF_Y + dy, SHIRT_SH)
-        rect(g, 5, SHOULDER_Y + 2 + dy, 6, CUFF_Y + dy, SHIRT_LT)
-        rect(g, 8, SHOULDER_Y + 3 + dy, 9, bottom + dy, SHIRT_SH)
-        rect(g, 23, SHOULDER_Y + 3 + dy, 24, bottom + dy, SHIRT_OUT)
+        mail(g, 5, SHOULDER_Y + 2, TABARD_X0, CUFF_Y, dy)
+        mail(g, TABARD_X1, SHOULDER_Y + 2, 27, CUFF_Y, dy, shade=True)
+    rect(g, TABARD_X0, SHOULDER_Y + 1 + dy, TABARD_X1, hem + dy, SHIRT)
+    rect(g, TABARD_X1 - 3, SHOULDER_Y + 1 + dy, TABARD_X1, hem + dy, SHIRT_SH)
+    rect(g, TABARD_X0, SHOULDER_Y + 1 + dy, TABARD_X0 + 1, hem + dy, SHIRT_LT)
+    rect(g, TABARD_X0, hem - 1 + dy, TABARD_X1, hem + dy, SHIRT_OUT)
     neck_shadow(g, dy)
-    if back:
-        rect(g, 15, bottom - 5 + dy, 17, bottom + dy, SHIRT_SH)
-    else:
-        rect(g, 13, SHOULDER_Y + 1 + dy, 19, SHOULDER_Y + 2 + dy, SKIN_DK)
+    if not back:
+        mail(g, 13, SHOULDER_Y + 1, 19, SHOULDER_Y + 2, dy, shade=True)
+    belt(g, min(bottom, BELT_Y) - 2, dy, buckle=not back)
 
 
 def hands_level(g, dy):
@@ -1523,7 +1695,7 @@ def hands_typing(frame):
 
     def draw(g, dy):
         up, down = (4, 24) if frame == 0 else (24, 4)
-        rect(g, down, SEAT_Y + dy, down + S, SEAT_Y + 2 + dy, SHIRT_SH)
+        mail(g, down, SEAT_Y, down + S, SEAT_Y + 2, dy, shade=True)
         mitt(g, up, SEAT_Y + dy)
         mitt(g, down, SEAT_Y + 2 + dy)
 
@@ -1540,11 +1712,7 @@ def elbows_typing(frame):
         hands(g, dy)
         west = frame == 0
         x0 = 2 if west else FIG_W - 5
-        rect(
-            g, x0, SHOULDER_Y + 3 + dy, x0 + 3, CUFF_Y + dy, SHIRT if west else SHIRT_SH
-        )
-        if west:
-            rect(g, x0, SHOULDER_Y + 3 + dy, x0 + 1, CUFF_Y + dy, SHIRT_LT)
+        mail(g, x0, SHOULDER_Y + 3, x0 + 3, CUFF_Y, dy, shade=not west)
 
     return draw
 
@@ -1590,9 +1758,10 @@ STAND = Step("standing", 0, PLANT, PLANT, 0)
 
 
 def legs(g, dy, step, view):
-    """Hips, two legs and shoes: a lifted foot rides up its leg with the ground
-    showing under it, the leading foot plants a pixel outward, a heel-up foot
-    shows only its toe (front) or its sole (back)."""
+    """Hips, two legs in leggings and leather boots, each turned down in a cuff:
+    a lifted foot rides up its leg with the ground showing under it, the
+    leading foot plants a pixel outward, a heel-up foot shows only its toe
+    (front) or its sole (back)."""
     rect(g, 8, BELT_Y + dy, 24, BELT_Y + 2 + dy, PANTS)
     for (side, x0), foot in zip(((-1, 8), (1, 17)), (step.west, step.east)):
         x0 += side * foot.out
@@ -1601,6 +1770,7 @@ def legs(g, dy, step, view):
         rect(g, x0, BELT_Y + 2 + dy, x0 + 7, top, PANTS)
         rect(g, x0 + 5, BELT_Y + dy, x0 + 7, top, PANTS_SH)
         rect(g, x0 - 1, top, x0 + 7, ground, SHOE)
+        rect(g, x0, top - 1, x0 + 7, top, LEATHER)
         if view == "front":
             rect(g, x0, top, x0 + 6, top + 1, SHOE_HI)
         elif foot.toe:
@@ -1615,20 +1785,19 @@ def arms_swinging(g, dy, swing, mug_east=False):
         if side > 0 and mug_east:
             continue
         x0 -= side * ((sw > 0) - (sw < 0))
-        rect(
+        mail(
             g,
             x0 + (1 if side < 0 else 0),
-            SHOULDER_Y + 2 + dy,
+            SHOULDER_Y + 2,
             x0 + (4 if side < 0 else 3),
-            CUFF_Y + sw + dy,
-            SHIRT if side < 0 else SHIRT_SH,
+            CUFF_Y + sw,
+            dy,
+            shade=side > 0,
         )
-        if side < 0:
-            rect(g, x0 + 1, SHOULDER_Y + 2 + dy, x0 + 2, CUFF_Y + sw + dy, SHIRT_LT)
         mitt(g, x0, CUFF_Y + sw + dy)
     if mug_east:
-        rect(g, 24, SHOULDER_Y + 2 + dy, 27, 32 + dy, SHIRT_SH)
-        rect(g, 21, 29 + dy, 26, 33 + dy, SHIRT_SH)
+        mail(g, 24, SHOULDER_Y + 2, 27, 32, dy, shade=True)
+        mail(g, 21, 29, 26, 33, dy, shade=True)
         mug(g, 16, 27 + dy)
         mitt(g, 21, 29 + dy)
 
@@ -1646,26 +1815,25 @@ def mug(g, x, y):
 
 def arms_mug_both(g, dy):
     for x0 in (5, 25):  # upper arms bent in at the elbow
-        rect(
-            g, x0, SHOULDER_Y + 2 + dy, x0 + 3, 32 + dy, SHIRT if x0 < 16 else SHIRT_SH
-        )
-    rect(g, 7, 31 + dy, 12, 35 + dy, SHIRT)
-    rect(g, 20, 31 + dy, 25, 35 + dy, SHIRT_SH)
+        mail(g, x0, SHOULDER_Y + 2, x0 + 3, 32, dy, shade=x0 > 16)
+    mail(g, 7, 31, 12, 35, dy)
+    mail(g, 20, 31, 25, 35, dy, shade=True)
     mug(g, 13, 29 + dy)
     mitt(g, 10, 31 + dy)
     mitt(g, 19, 31 + dy)
 
 
 def side_body(g, dy):
-    """Seated in profile: a narrow torso, the near arm reaching forward, the lap
-    to the knee."""
+    """Seated in profile: a narrow torso in its tabard, belted, the near arm's
+    mail reaching forward, the lap to the knee."""
     rect(g, 9, 27 + dy, 22, SEAT_Y + dy, SHIRT)
-    rect(g, 13, 27 + dy, 19, 28 + dy, SKIN_DK)  # the neck above the collar
+    rect(g, 13, 27 + dy, 19, 28 + dy, IRON_DK)  # the mail collar
     rect(g, 9, 27 + dy, 11, SEAT_Y + dy, SHIRT_LT)
     rect(g, 19, 28 + dy, 22, SEAT_Y + dy, SHIRT_SH)
-    rect(g, 12, 28 + dy, 17, 32 + dy, SHIRT_SH)
-    rect(g, 16, 30 + dy, 24, 34 + dy, SHIRT)
-    rect(g, 16, 33 + dy, 24, 34 + dy, SHIRT_SH)
+    belt(g, SEAT_Y - 2, dy, 9, 22, buckle=False)
+    mail(g, 12, 28, 17, 32, dy, shade=True)
+    mail(g, 16, 30, 24, 34, dy)
+    rect(g, 16, 33 + dy, 24, 34 + dy, IRON_SH)
     mitt(g, 24, 30 + dy, wrist_west=True)
     rect(g, 9, SEAT_Y + dy, 28, SEATED_ROWS * S + dy, PANTS)
     rect(g, 9, SEAT_Y + dy, 28, SEAT_Y + 1 + dy, PANTS_LT)
@@ -1673,33 +1841,34 @@ def side_body(g, dy):
 
 
 def asleep_body(g, dy, lean):
-    """Face down on folded arms: shoulders rising behind the head, forearms
-    crossed under it on the desk, hands tucked at the elbows, the torso behind
-    the arms, the thighs at the chair's edge."""
-    rect(g, 4 + lean, 18 + dy, 28 + lean, 26 + dy, SHIRT)
-    rect(g, 22 + lean, 18 + dy, 28 + lean, 26 + dy, SHIRT_SH)
-    rect(g, 4 + lean, 18 + dy, 6 + lean, 26 + dy, SHIRT_LT)
-    rect(g, 1, 23 + dy, 10, 31 + dy, SHIRT)
-    rect(g, 22, 23 + dy, 31, 31 + dy, SHIRT_SH)
-    rect(g, 1, 23 + dy, 10, 24 + dy, SHIRT_LT)
-    rect(g, 8, 26 + dy, 24, 31 + dy, SKIN)
-    rect(g, 8, 30 + dy, 24, 31 + dy, SKIN_SH)
-    rect(g, 15, 26 + dy, 17, 31 + dy, SKIN_SH)
+    """Face down on folded arms: the tabard's shoulders rising behind the head,
+    mailed forearms crossed under it on the desk, hands tucked at the elbows,
+    the torso behind the arms, the thighs at the chair's edge."""
+    mail(g, 4 + lean, 18, 28 + lean, 26, dy)
+    rect(g, 7 + lean, 18 + dy, 25 + lean, 26 + dy, SHIRT)
+    rect(g, 21 + lean, 18 + dy, 25 + lean, 26 + dy, SHIRT_SH)
+    rect(g, 7 + lean, 18 + dy, 8 + lean, 26 + dy, SHIRT_LT)
+    mail(g, 1, 23, 10, 31, dy)
+    mail(g, 22, 23, 31, 31, dy, shade=True)
+    mail(g, 8, 26, 24, 31, dy)
+    rect(g, 8, 30 + dy, 24, 31 + dy, IRON_DK)
+    rect(g, 15, 26 + dy, 17, 31 + dy, IRON_DK)
     mitt(g, 1, 20 + dy)
     mitt(g, 27, 20 + dy)
-    rect(g, 4, 31 + dy, 28, 36 + dy, SHIRT)
-    rect(g, 22, 31 + dy, 28, 36 + dy, SHIRT_SH)
+    mail(g, 4, 31, 28, 36, dy)
+    rect(g, 7, 31 + dy, 25, 36 + dy, SHIRT)
+    rect(g, 21, 31 + dy, 25, 36 + dy, SHIRT_SH)
     rect(g, 1, 34 + dy, 9, 38 + dy, PANTS)
     rect(g, 23, 34 + dy, 31, 38 + dy, PANTS_SH)
 
 
 # ---- poses -------------------------------------------------------------------------
 def seated_front(hands):
-    return lambda g, dy: (shirt(g, dy, SEAT_Y), hands(g, dy))
+    return lambda g, dy: (tabard(g, dy, SEAT_Y), hands(g, dy))
 
 
 def seated_rear(hands):
-    return lambda g, dy: (shirt(g, dy, SEAT_Y, back=True), hands(g, dy))
+    return lambda g, dy: (tabard(g, dy, SEAT_Y, back=True), hands(g, dy))
 
 
 def standing_body(view, step=STAND, arms=None, mug_east=False):
@@ -1708,7 +1877,7 @@ def standing_body(view, step=STAND, arms=None, mug_east=False):
 
     def draw(g, dy):
         legs(g, dy, step, view)
-        shirt(g, dy, BELT_Y, back=view == "back", sleeves=False)
+        tabard(g, dy, BELT_Y, back=view == "back", sleeves=False, hem=TABARD_HEM)
         if arms:
             arms(g, dy)
         else:
@@ -1718,10 +1887,15 @@ def standing_body(view, step=STAND, arms=None, mug_east=False):
 
 
 def couch_back(g, dy):
-    rect(g, 9, SHOULDER_Y + dy, 23, SHOULDER_Y + 1 + dy, SHIRT)
-    rect(g, 5, SHOULDER_Y + 1 + dy, 27, COUCH_ROWS * S + dy, SHIRT)
-    rect(g, 21, SHOULDER_Y + 1 + dy, 27, COUCH_ROWS * S + dy, SHIRT_SH)
-    rect(g, 5, SHOULDER_Y + 1 + dy, 7, COUCH_ROWS * S + dy, SHIRT_LT)
+    """The tabard's back square over the seat back, mail on the shoulders and
+    arms."""
+    top, foot = SHOULDER_Y + 1, COUCH_ROWS * S
+    mail(g, 9, SHOULDER_Y, 23, top, dy)
+    mail(g, 5, top, TABARD_X0, foot, dy)
+    mail(g, TABARD_X1, top, 27, foot, dy, shade=True)
+    rect(g, TABARD_X0, top + dy, TABARD_X1, foot + dy, SHIRT)
+    rect(g, TABARD_X1 - 3, top + dy, TABARD_X1, foot + dy, SHIRT_SH)
+    rect(g, TABARD_X0, top + dy, TABARD_X0 + 1, foot + dy, SHIRT_LT)
     neck_shadow(g, dy)
 
 
