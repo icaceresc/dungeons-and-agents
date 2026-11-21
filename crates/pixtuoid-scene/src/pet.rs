@@ -92,8 +92,8 @@ impl PetKind {
     /// gives no `name`.
     pub fn default_name(self) -> &'static str {
         match self {
-            PetKind::Cat => "Office Cat",
-            PetKind::Dog => "Office Dog",
+            PetKind::Cat => "Wolf",
+            PetKind::Dog => "Owlbear",
         }
     }
 
@@ -143,8 +143,8 @@ mod tests {
 
     #[test]
     fn default_name_cat_and_dog() {
-        assert_eq!(PetKind::Cat.default_name(), "Office Cat");
-        assert_eq!(PetKind::Dog.default_name(), "Office Dog");
+        assert_eq!(PetKind::Cat.default_name(), "Wolf");
+        assert_eq!(PetKind::Dog.default_name(), "Owlbear");
     }
 
     #[test]

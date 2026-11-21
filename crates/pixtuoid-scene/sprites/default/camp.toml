@@ -1,7 +1,110 @@
 # The camp: a campaign's floor 0 (`FloorRole::Camp`). build.rs lays this over
 # pack.toml: a table merges key by key and any other value replaces the
 # office's whole, so name only what the camp redraws, under the office's own
-# names. Its sprites are `camp_*.sprite` beside the office's.
+# names. Its sprites are `camp_*.sprite` beside the office's, drawn by
+# scripts/gen-art.py on each office piece's own canvas; the camp redraws only
+# the @4x furniture, so the classic (1x) office keeps its own.
 
+# the bedroll, its pack and its lantern (scripts/gen-art.py's camp_desk)
+[animations."desk@4x"]
+frames = ["camp_desk@4x.sprite"]
+
+# the bedroll seen past its sleeper
+[animations."desk_north@4x"]
+frames = ["camp_desk_north@4x.sprite"]
+
+# the pack, over a sleeper's cup
+[animations."desk_front@4x"]
+frames = ["camp_desk_front@4x.sprite"]
+
+# a log stump
 [animations."desk_chair@4x"]
 frames = ["camp_desk_chair@4x.sprite"]
+
+# an adventurer curled under a blanket in their colour
+[animations."seated_sleeping@4x"]
+frames = ["camp_seated_sleeping@4x.sprite"]
+
+# the other sleeper, curled the other way
+[animations."seated_sleeping_alt@4x"]
+frames = ["camp_seated_sleeping_alt@4x.sprite"]
+
+# the campfire
+[animations."side_table@4x"]
+frames = ["camp_side_table@4x.sprite"]
+
+# a torch on a pole, its glow the lamp's
+[animations."floor_lamp@4x"]
+frames = ["camp_floor_lamp@4x.sprite"]
+
+# a log bench
+[animations."meeting_sofa@4x"]
+frames = ["camp_meeting_sofa@4x.sprite"]
+
+# the north-facing log bench
+[animations."meeting_sofa_north@4x"]
+frames = ["camp_meeting_sofa_north@4x.sprite"]
+
+# a canvas tent, a raven perched on its ridge pole
+[animations."phone_booth@4x"]
+frames = ["camp_phone_booth@4x.sprite"]
+
+# the palisade gate: shut, opening, open on the trail
+[animations."door@4x"]
+frames = ["camp_door@4x.sprite"]
+
+# The skyline: pines, mountains and a ruined watchtower, key for key.
+
+[buildings.curtain]
+sprite = "camp_building_curtain.sprite"
+
+[buildings."curtain@4x"]
+sprite = "camp_building_curtain@4x.sprite"
+
+[buildings.dome]
+sprite = "camp_building_dome.sprite"
+
+[buildings."dome@4x"]
+sprite = "camp_building_dome@4x.sprite"
+
+[buildings.low]
+sprite = "camp_building_low.sprite"
+
+[buildings."low@4x"]
+sprite = "camp_building_low@4x.sprite"
+
+[buildings.setback]
+sprite = "camp_building_setback.sprite"
+
+[buildings."setback@4x"]
+sprite = "camp_building_setback@4x.sprite"
+
+[buildings.sign]
+sprite = "camp_building_sign.sprite"
+
+[buildings."sign@4x"]
+sprite = "camp_building_sign@4x.sprite"
+
+[buildings.slab]
+sprite = "camp_building_slab.sprite"
+
+[buildings."slab@4x"]
+sprite = "camp_building_slab@4x.sprite"
+
+[buildings.spire]
+sprite = "camp_building_spire.sprite"
+
+[buildings."spire@4x"]
+sprite = "camp_building_spire@4x.sprite"
+
+[buildings.twin]
+sprite = "camp_building_twin.sprite"
+
+[buildings."twin@4x"]
+sprite = "camp_building_twin@4x.sprite"
+
+[buildings.walkup]
+sprite = "camp_building_walkup.sprite"
+
+[buildings."walkup@4x"]
+sprite = "camp_building_walkup@4x.sprite"

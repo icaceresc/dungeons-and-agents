@@ -606,7 +606,13 @@ pub(crate) fn resolve_pets(
     use pixtuoid_scene::pet::{Pet, PetKind};
 
     match &config.pets {
-        None => PetKind::ALL.iter().map(|&k| Pet::defaulted(k)).collect(),
+        // Floor 0 gets the first pet, and the campaign's floor 0 is its camp,
+        // where the owlbear (drawn in the dog's slot) belongs.
+        None => {
+            let mut kinds = PetKind::ALL.to_vec();
+            kinds.sort_by_key(|&k| k != PetKind::Dog);
+            kinds.into_iter().map(Pet::defaulted).collect()
+        }
         Some(entries) => {
             let mut out = Vec::with_capacity(entries.len());
             for entry in entries {

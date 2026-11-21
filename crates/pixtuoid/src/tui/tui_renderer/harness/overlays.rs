@@ -487,7 +487,7 @@ fn pet_tooltip_shows_custom_name() {
         "hovering the cat shows its custom name; got:\n{text}"
     );
     assert!(
-        !text.contains("Office Cat"),
+        !text.contains(PetKind::Cat.default_name()),
         "custom name replaces the default, not appended"
     );
 }
@@ -501,7 +501,7 @@ fn pet_tooltip_falls_back_to_default_name_when_not_configured() {
     r.render(&scene, now).unwrap();
     let text = frame_text(r.frame_buffer());
     assert!(
-        text.contains("Office Cat"),
+        text.contains(PetKind::Cat.default_name()),
         "an unconfigured cat falls back to the default name; got:\n{text}"
     );
 }

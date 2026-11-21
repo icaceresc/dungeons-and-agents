@@ -530,6 +530,14 @@ fn pets_absent_returns_all_with_default_names() {
     }
 }
 
+/// Floor 0 gets the first pet, and the campaign's floor 0 is its camp, where
+/// the owlbear (drawn in the dog's slot) rests.
+#[test]
+fn pets_absent_puts_the_owlbear_first() {
+    let pets = resolve_pets(&AppConfig::default(), &mut Vec::new());
+    assert_eq!(pets[0].kind, pixtuoid_scene::pet::PetKind::Dog);
+}
+
 #[test]
 fn pets_empty_vec_returns_none() {
     let cfg = AppConfig {
@@ -548,7 +556,10 @@ fn pets_entry_absent_name_falls_back_to_default() {
         }]),
         ..AppConfig::default()
     };
-    assert_eq!(resolve_pets(&cfg, &mut Vec::new())[0].name, "Office Dog");
+    assert_eq!(
+        resolve_pets(&cfg, &mut Vec::new())[0].name,
+        pixtuoid_scene::pet::PetKind::Dog.default_name()
+    );
 }
 
 #[test]
@@ -569,7 +580,10 @@ fn pets_entry_name_trimmed_empty_falls_back() {
     let pets = resolve_pets(&cfg, &mut Vec::new());
     let name = |k| pets.iter().find(|p| p.kind == k).map(|p| p.name.as_str());
     assert_eq!(name(pixtuoid_scene::pet::PetKind::Cat), Some("Mittens"));
-    assert_eq!(name(pixtuoid_scene::pet::PetKind::Dog), Some("Office Dog"));
+    assert_eq!(
+        name(pixtuoid_scene::pet::PetKind::Dog),
+        Some(pixtuoid_scene::pet::PetKind::Dog.default_name())
+    );
 }
 
 #[test]
@@ -601,7 +615,10 @@ fn pets_full_toml_resolves_names() {
     assert_eq!(pets.len(), 2);
     let name = |k| pets.iter().find(|p| p.kind == k).map(|p| p.name.as_str());
     assert_eq!(name(pixtuoid_scene::pet::PetKind::Cat), Some("Luna"));
-    assert_eq!(name(pixtuoid_scene::pet::PetKind::Dog), Some("Office Dog"));
+    assert_eq!(
+        name(pixtuoid_scene::pet::PetKind::Dog),
+        Some(pixtuoid_scene::pet::PetKind::Dog.default_name())
+    );
 }
 
 #[test]
