@@ -5836,6 +5836,498 @@ CREATURES = {
 }
 
 
+# ---- the camp: a campaign's floor 0, drawn on the office's own canvases --------
+# Each piece stands in for the office piece of the same name and size, so the
+# layout, footprints and reachability never see the camp: `camp.toml` lays each
+# `camp_<piece>` over its office piece for floor 0 alone.
+
+# The office canvases, in 1x cells, that the camp's stand-ins keep.
+CAMP_CANVAS = {
+    "desk": (DESK_ART_W, 9),
+    "desk_north": (DESK_ART_W, 11),
+    "desk_front": (DESK_ART_W, 9),
+    "desk_chair": (8, 5),
+    "seated_sleeping": (8, 10),
+    "side_table": (SIDE_TABLE_W, SIDE_TABLE_H),
+    "floor_lamp": (LAMP_W, LAMP_H),
+    "meeting_sofa": (20, 7),
+    "phone_booth": (7, 15),
+    "door": (16, 14),
+}
+# The fire's keys, hottest first: its core glows of its own, as a bulb does.
+FLAME_CORE, FLAME, FLAME_ROOT = BULB, VERMILION, DARK_RED
+TENT, TENT_SH, TENT_DK = OFFWHITE_SH, PRINT, GREY
+STONE, STONE_LT, STONE_SH = GREY, LAMP_HI, SLATE
+
+
+def camp_canvas(piece):
+    """The office piece's own `@Nx` canvas."""
+    w, h = CAMP_CANVAS[piece]
+    return canvas(w * S, h * S)
+
+
+def oval(g, cx, cy, rx, ry, k, only=None):
+    """An ellipse of `k`, painted over the `only` keys when given."""
+    for y in range(len(g)):
+        for x in range(len(g[0])):
+            if ((x + 0.5 - cx) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2 <= 1 and (
+                only is None or g[y][x] in only
+            ):
+                g[y][x] = k
+
+
+def stroke(g, x0, y0, x1, y1, k):
+    """A one-pixel line from `(x0, y0)` to `(x1, y1)`."""
+    n = max(abs(x1 - x0), abs(y1 - y0), 1)
+    for i in range(n + 1):
+        put(g, round(x0 + (x1 - x0) * i / n), round(y0 + (y1 - y0) * i / n), k)
+
+
+def flame(g, cx, base, h, half):
+    """A tongue of flame up `h` rows from its root row `base`, `half` wide at
+    the root: an ember root, a vermilion body round a glowing core."""
+    for i in range(h):
+        t = i / h
+        w = half * (1 - t) ** 0.7
+        for x in range(round(cx - w) - 1, round(cx + w) + 2):
+            d = abs(x + 0.5 - cx)
+            if d > w + 0.2:
+                continue
+            core = d < w * 0.5 and t < 0.75
+            put(g, x, base - i, FLAME_CORE if core else FLAME_ROOT if i == 0 else FLAME)
+
+
+def lantern(g, x, y):
+    """A small iron lantern, its flame in the bulb key: `(x, y)` is the left
+    end of its four-pixel flame row, where the desk's bulb is read."""
+    rect(g, x, y - 2, x + 4, y, IRON_DK)
+    rect(g, x + 1, y - 3, x + 3, y - 2, IRON)
+    rect(g, x, y, x + 4, y + 2, BULB)
+    rect(g, x, y + 2, x + 4, y + 3, IRON_DK)
+
+
+def lantern_stake(g, x, y, ground):
+    """A stake driven in the ground, its lantern hung with its flame row at
+    `(x, y)`."""
+    rect(g, x + 1, y + 3, x + 3, ground, WOOD)
+    rect(g, x + 1, y + 3, x + 2, ground, WOOD_LT)
+    lantern(g, x, y)
+
+
+def bedroll(g, x0, y0, x1, y1, pillow_west=True):
+    """A bedroll laid out on the ground, seen from above: a quilted mat, its
+    red wool blanket turned down, the rolled end a pillow; a desk is not
+    recoloured per sitter, so the blanket is the camp's own colour."""
+    rect(g, x0, y0, x1, y1, TAN)
+    rect(g, x0, y1 - 2, x1, y1, BROWN)
+    for x in range(x0 + 5, x1 - 2, 6):  # the quilting
+        rect(g, x, y0 + 1, x + 1, y1 - 2, BROWN)
+    third = (x1 - x0) // 3
+    bx0, bx1 = (x0 + third, x1) if pillow_west else (x0, x1 - third)
+    rect(g, bx0, y0 - 1, bx1, y1, RED)
+    rect(g, bx0, y0 - 1, bx1, y0 + 1, VERMILION)
+    rect(g, bx0, y1 - 2, bx1, y1, DARK_RED)
+    fold = bx0 if pillow_west else bx1 - 4  # the turned-down edge
+    rect(g, fold, y0 - 1, fold + 4, y1, VERMILION)
+    edge = fold + 3 if pillow_west else fold
+    rect(g, edge, y0 - 1, edge + 1, y1, WOOD_DK)
+    px = x0 if pillow_west else x1 - 7
+    rect(g, px, y0 - 2, px + 7, y1 + 1, OFFWHITE_SH)
+    rect(g, px, y0 - 2, px + 7, y0, OFFWHITE)
+    rect(g, px + 3, y0, px + 4, y1, PRINT)
+    rect(g, px, y1 - 1, px + 7, y1 + 1, PRINT)
+
+
+def pack_bag(g, x0, y0):
+    """A leather pack standing on its base: its flap buckled, a rolled cloak
+    strapped over the top, lit on its west."""
+    w, h = 12, 15
+    rect(g, x0 + 1, y0, x0 + w - 1, y0 + h, LEATHER)
+    rect(g, x0, y0 + 2, x0 + w, y0 + h, LEATHER)
+    rect(g, x0, y0 + 2, x0 + 1, y0 + h, WOOD_LT)
+    rect(g, x0 + w - 2, y0 + 2, x0 + w, y0 + h, LEATHER_SH)
+    rect(g, x0 + 1, y0, x0 + w - 1, y0 + 6, WOOD)
+    rect(g, x0 + 1, y0 + 6, x0 + w - 1, y0 + 7, LEATHER_SH)
+    rect(g, x0 + 5, y0 + 5, x0 + 7, y0 + 8, GOLD)
+    rect(g, x0 - 1, y0 - 3, x0 + w + 1, y0, FABRIC_SH)
+    rect(g, x0 - 1, y0 - 3, x0 + w + 1, y0 - 2, FABRIC)
+    for x in (x0 + 2, x0 + w - 3):
+        rect(g, x, y0 - 3, x + 1, y0 + 4, LEATHER_SH)
+
+
+def camp_desk():
+    """The camp's sleeping spot, where the viewer-facing desk stands: a
+    bedroll on the ground under a red wool blanket, a pack at its
+    east end and a lantern on a stake west, where the desk lamp glows; the cup
+    and the tower stand where the desk's arrangement marks them."""
+    g = camp_canvas("desk")
+    bedroll(g, 10, 20, 52, 34)
+    pack_bag(g, 38, 19)
+    lantern_stake(g, 5, 6, 34)
+    union_outline(g)
+    return g
+
+
+def camp_desk_north():
+    """The back-turned sleeping spot: the bedroll seen past its sleeper, the
+    pack at its far west end, the lantern on its stake east, where that desk's
+    lamp glows."""
+    g = camp_canvas("desk_north")
+    bedroll(g, 4, 28, 45, 42, pillow_west=False)
+    pack_bag(g, 6, 25)
+    lantern_stake(g, 46, 16, 42)
+    union_outline(g)
+    return g
+
+
+def camp_desk_front():
+    """The sleeping spot's front: the pack, which hides the part of a
+    sleeper's cup behind it."""
+    g = camp_canvas("desk_front")
+    pack_bag(g, 38, 19)
+    union_outline(g)
+    return g
+
+
+def camp_desk_chair():
+    """A log stump for a seat: its sawn top lit and ringed, the bark falling
+    into shade, roots spreading at its foot."""
+    g = camp_canvas("desk_chair")
+    w = len(g[0])
+    rect(g, 7, 6, w - 7, 17, WOOD_SH)
+    rect(g, 7, 6, 9, 17, WOOD)
+    for x in range(11, w - 9, 4):  # the bark's furrows
+        rect(g, x, 9, x + 1, 17, WOOD_DK)
+    rect(g, w - 9, 6, w - 7, 17, WOOD_DK)
+    for x0, x1 in ((3, 9), (w - 9, w - 3), (13, 19)):  # the roots
+        rect(g, x0, 16, x1, 19, WOOD_SH)
+        rect(g, x0, 16, x1, 17, WOOD)
+    oval(g, w / 2, 6, 9.5, 4.6, WOOD_LT)
+    oval(g, w / 2, 6, 7.0, 3.2, WOOD_HI)
+    oval(g, w / 2, 6, 4.6, 2.0, WOOD_LT)
+    oval(g, w / 2, 6, 2.0, 0.9, WOOD)
+    union_outline(g)
+    return g
+
+
+def blanket_sleeper(head_x, head_y):
+    """An adventurer asleep on the ground, seen from above, curled on their
+    side under a blanket in their colour: its folds in shade, the knees drawn
+    up, a hand at its hem; the head at the crown mark, which the pack's
+    hairstyle dresses."""
+    g = camp_canvas("seated_sleeping")
+    cx = len(g[0]) / 2
+    oval(g, cx, 26, 13.5, 12.0, SHIRT)
+    oval(g, cx + 4, 33, 9.0, 6.0, SHIRT)
+    oval(g, cx - 3, 22, 10, 8, SHIRT_LT, only={SHIRT})
+    oval(g, cx + 4, 31, 10, 7, SHIRT_SH, only={SHIRT})
+    for fold in ((9, 25, 15, 32), (18, 22, 21, 31), (12, 35, 20, 37)):
+        stroke(g, *fold, SHIRT_OUT)
+    rect(g, round(cx) + 3, 18, round(cx) + 7, 21, SKIN)
+    put(g, round(cx) + 6, 20, SKIN_SH)
+    disc(g, head_x, head_y, 5.0, SKIN)
+    union_outline(g)
+    return g
+
+
+def camp_sleeper():
+    """An adventurer asleep, curled under a blanket in their colour."""
+    return blanket_sleeper(16, 12)
+
+
+def camp_sleeper_alt():
+    """The other sleeper, curled the other way."""
+    return [list(reversed(row)) for row in blanket_sleeper(15, 13)]
+
+
+def camp_fire():
+    """The campfire: a ring of stones lit along their tops, split logs crossed
+    in it, flames rising from the embers."""
+    g = camp_canvas("side_table")
+    w, h = len(g[0]), len(g)
+    oval(g, w / 2, h - 5, 12, 3.6, SHADOW)
+    for x0, y0, x1, y1 in ((5, h - 4, 22, h - 8), (6, h - 8, 22, h - 4)):
+        stroke(g, x0, y0, x1, y1, WOOD)
+        stroke(g, x0, y0 + 1, x1, y1 + 1, WOOD_DK)
+    for cx, half, hh in ((14, 4.4, 14), (9.5, 2.4, 8), (18.5, 2.6, 9)):
+        flame(g, cx, h - 6, hh, half)
+    for sx in (2, w - 6):  # the ring's back stones
+        rect(g, sx, h - 9, sx + 4, h - 6, STONE)
+        rect(g, sx, h - 9, sx + 4, h - 8, STONE_LT)
+    for i, sx in enumerate(range(1, w - 3, 4)):  # and its front row
+        y = h - 4 + (1 if 0 < i < 5 else 0)
+        rect(g, sx, y - 1, sx + 4, y + 2, STONE)
+        rect(g, sx, y - 1, sx + 4, y, STONE_LT)
+        rect(g, sx + 3, y, sx + 4, y + 2, STONE_SH)
+    union_outline(g)
+    return g
+
+
+def camp_torch():
+    """A torch on a pole driven into the ground: pitch-soaked wrappings, a
+    flame whose glow is the lamp's, stones wedged at its foot."""
+    g = camp_canvas("floor_lamp")
+    h = len(g)
+    rect(g, 7, 15, 9, h - 3, WOOD)
+    rect(g, 7, 15, 8, h - 3, WOOD_LT)
+    rect(g, 4, h - 4, 12, h - 1, STONE)
+    rect(g, 4, h - 4, 12, h - 3, STONE_LT)
+    rect(g, 5, 11, 11, 16, LEATHER)
+    for y in (12, 14):
+        rect(g, 5, y, 11, y + 1, LEATHER_SH)
+    flame(g, 8, 10, 10, 3.4)
+    flame(g, 10.5, 8, 5, 1.4)
+    union_outline(g)
+    return g
+
+
+def log_bench(north):
+    """A felled log for a bench: its bark lit along the top where a sitter
+    sits, furrowed and knotted, a branch stub, both sawn ends showing their
+    rings."""
+    w, h = (c * S for c in CAMP_CANVAS["meeting_sofa"])
+    g = canvas(w, h)
+    top, bot = 9, h - 2
+    rect(g, 6, top, w - 6, bot, WOOD_SH)
+    rect(g, 6, top, w - 6, top + 3, WOOD)
+    rect(g, 6, top, w - 6, top + 1, WOOD_LT)
+    rect(g, 6, bot - 3, w - 6, bot, WOOD_DK)
+    for x in range(10, w - 10, 7):  # the bark's furrows
+        off = (x // 7) % 3
+        rect(g, x, top + 5 + off, x + 4, top + 6 + off, WOOD_DK)
+    kx, ky = (24, top + 8) if north else (52, top + 7)
+    oval(g, kx, ky, 3, 2, WOOD_DK)
+    oval(g, kx, ky, 1.4, 0.8, WOOD)
+    stub = 60 if north else 18
+    rect(g, stub, top - 5, stub + 4, top + 1, WOOD)
+    rect(g, stub, top - 5, stub + 1, top + 1, WOOD_LT)
+    for cx in (6, w - 6):  # the sawn ends
+        oval(g, cx, (top + bot) / 2, 4.5, (bot - top) / 2, WOOD_LT)
+        oval(g, cx, (top + bot) / 2, 3.0, (bot - top) / 2 - 2.5, WOOD_HI)
+        oval(g, cx, (top + bot) / 2, 1.4, 2.0, WOOD)
+    union_outline(g)
+    return g
+
+
+def camp_log():
+    """The log bench a south-facing seat sits on."""
+    return log_bench(north=False)
+
+
+def camp_log_north():
+    """The log bench a north-facing seat sits on, its knot and stub turned."""
+    return log_bench(north=True)
+
+
+# A raven perched facing west, by its pixels from the foot of its perch.
+RAVEN_PERCHED = (
+    (0, -1, RAVEN_BEAK),
+    (2, -1, RAVEN_BEAK),
+    *((x, -2, RAVEN) for x in range(-1, 4)),
+    (4, -2, RAVEN_SH),
+    *((x, -3, RAVEN) for x in range(-1, 5)),
+    (1, -3, RAVEN_SHEEN),
+    (5, -3, RAVEN_SH),
+    (6, -4, RAVEN_SH),
+    *((x, -4, RAVEN) for x in range(-1, 3)),
+    *((x, -5, RAVEN) for x in range(-2, 1)),
+    (-1, -5, RAVEN_SHEEN),
+    (-1, -6, RAVEN),
+    (0, -6, RAVEN),
+    (-3, -5, RAVEN_BEAK),
+    (-4, -5, RAVEN_BEAK),
+)
+
+
+def camp_tent():
+    """A pointed canvas tent seen from its front: its west panel lit, its east
+    in shade, the flaps tied back on the dark inside, the ridge pole standing
+    proud with a raven perched on it, stakes at its corners."""
+    g = camp_canvas("phone_booth")
+    w, h = len(g[0]), len(g)
+    apex, base = 12, h - 2
+    for y in range(apex, base):
+        t = (y - apex) / (base - apex)
+        half = 2 + t * (w / 2 - 2)
+        x0, x1 = round(w / 2 - half), round(w / 2 + half)
+        rect(g, x0, y, x1, y + 1, TENT)
+        rect(g, w // 2, y, x1, y + 1, TENT_SH)
+        put(g, x0, y, OFFWHITE)
+        if y > apex + 14:  # the door's dark inside, opening downward
+            d = (y - apex - 14) / (base - apex - 14) * half * 0.55
+            rect(g, round(w / 2 - d), y, round(w / 2 + d), y + 1, SHADOW)
+            for side in (-1, 1):  # the flaps folded back
+                put(g, round(w / 2 + side * d) - (side < 0), y, TENT_DK)
+    rect(g, w // 2 - 1, apex - 6, w // 2 + 1, apex + 2, WOOD)
+    for x in (2, w - 5):
+        rect(g, x, base - 1, x + 3, base + 1, WOOD_DK)
+    union_outline(g)
+    for dx, dy, k in RAVEN_PERCHED:
+        put(g, w // 2 + dx, apex - 6 + dy, k)
+    outline(g, {RAVEN, RAVEN_SH, RAVEN_SHEEN, RAVEN_BEAK}, SILHOUETTE)
+    return g
+
+
+def camp_gate():
+    """The camp's gate in a palisade of pointed stakes: shut, swinging open,
+    and open on the trail into the dark woods."""
+    w, h = (c * S for c in CAMP_CANVAS["door"])
+    inner0, inner1 = 16, w - 16
+    leaf_w = (inner1 - inner0) // 2
+    frames = []
+    for shown in (leaf_w, leaf_w // 2, 4):
+        g = canvas(w, h)
+        for x in [*range(0, 12, 4), *range(w - 12, w, 4)]:  # the palisade
+            rect(g, x, 8, x + 4, h, WOOD_SH)
+            rect(g, x, 8, x + 1, h, WOOD)
+            rect(g, x + 1, 6, x + 3, 8, WOOD_SH)
+        rect(g, inner0, 9, inner1, h, SHADOW)  # beyond: the trail at night
+        for y in range(9, h):
+            half = 2 + (y - 9) / (h - 9) * 9
+            rect(g, round(w / 2 - half), y, round(w / 2 + half), y + 1, SLATE)
+        for x0 in (inner0 + 1, inner1 - 8):
+            for y in range(12, 34):
+                half = (y - 12) / 22 * 3.5
+                rect(
+                    g,
+                    round(x0 + 3.5 - half),
+                    y,
+                    round(x0 + 3.5 + half) + 1,
+                    y + 1,
+                    LEAF_DK,
+                )
+        for x in (12, w - 16):  # the posts and the beam across them
+            rect(g, x, 2, x + 4, h, WOOD)
+            rect(g, x, 2, x + 1, h, WOOD_LT)
+            rect(g, x + 3, 2, x + 4, h, WOOD_SH)
+        rect(g, 10, 4, w - 10, 9, WOOD)
+        rect(g, 10, 4, w - 10, 5, WOOD_LT)
+        rect(g, 10, 8, w - 10, 9, WOOD_DK)
+        for side in (0, 1):  # the leaves, swinging in toward us
+            x0 = inner0 if side == 0 else inner1 - shown
+            pitch = 4 if shown == leaf_w else 2
+            for x in range(x0, x0 + shown, pitch):
+                rect(g, x, 10, x + pitch, h, WOOD)
+                put(g, x, 10, WOOD_LT)
+                rect(g, x, 11, x + 1, h, WOOD_LT if pitch > 2 else WOOD_SH)
+            rect(g, x0, 18, x0 + shown, 20, WOOD_DK)
+            rect(g, x0, h - 14, x0 + shown, h - 12, WOOD_DK)
+        frames.append(g)
+    return frames
+
+
+# The skyline seen from camp: the office's buildings, key for key and canvas for
+# canvas, redrawn as pines, mountains and a ruined watchtower in the city's
+# materials, which the backdrop colours by depth and sky.
+def pine(g, cx, top, bottom, half):
+    """A pine's silhouette: tiers of boughs widening downward over a trunk."""
+    tiers = 4
+    span = (bottom - top - 3) / tiers
+    for i in range(tiers):
+        y0 = top + i * span
+        for y in range(round(y0), min(bottom - 3, round(y0 + span * 1.6))):
+            t = (y - y0) / (span * 1.6)
+            reach = half * (0.4 + 0.6 * (i + 1) / tiers) * t
+            rect(g, round(cx - reach), y, round(cx + reach) + 1, y + 1, CITY_FACADE)
+    rect(g, round(cx) - 1, bottom - 4, round(cx) + 1, bottom, CITY_SHADE)
+
+
+def mountain(g, peaks):
+    """Mountains: each `(x, height)` peak's slopes down to the canvas's foot,
+    snow along its upper ridges in the roof key."""
+    w, h = len(g[0]), len(g)
+    for px, ph in peaks:
+        for x in range(w):
+            top = h - ph + abs(x + 0.5 - px) * 1.3
+            if top >= h:
+                continue
+            for y in range(max(0, round(top)), h):
+                g[y][x] = CITY_FACADE
+            if top < h - ph + 8:
+                put(g, x, max(0, round(top)), CITY_ROOF)
+
+
+def watchtower(cw, ch):
+    """A ruined watchtower: a tapering stone shaft, its crenellations broken,
+    two arrow slits lit by a fire within."""
+    g = canvas(cw, ch)
+    tw = min(cw - 2, 22)
+    x0 = (cw - tw) // 2
+    for y in range(10, ch):
+        half = tw / 2 * (0.75 + 0.25 * (y - 10) / (ch - 10))
+        rect(g, round(cw / 2 - half), y, round(cw / 2 + half), y + 1, CITY_FACADE)
+    for dx, top in ((0, 5), (5, 5), (10, 8)):
+        rect(g, x0 + dx, top, x0 + dx + 3, 11, CITY_FACADE)
+    rect(g, x0, 10, x0 + tw, 12, CITY_ROOF)
+    for y0 in (17, 27):
+        rect(g, cw // 2 - 1, y0, cw // 2 + 1, y0 + 5, CITY_GLASS)
+    shade_east(g)
+    return g
+
+
+def camp_skyline():
+    """Each office building's key redrawn for the camp, on its own canvas."""
+    out = {}
+    for name, (cw, ch) in CAMP_BUILDING_SIZE.items():
+        g = canvas(cw, ch)
+        if name in ("slab", "setback"):
+            mountain(g, ((cw * 0.35, ch * 0.95), (cw * 0.8, ch * 0.7)))
+        elif name == "dome":
+            mountain(g, ((cw * 0.5, ch * 0.9),))
+        elif name == "sign":
+            g = watchtower(cw, ch)
+        else:
+            n = max(1, cw // 12)
+            for i in range(n):
+                pine(g, (i + 0.5) * cw / n, (i % 2) * ch // 6 + 1, ch, cw / n / 2)
+        if name != "sign":
+            shade_east(g)
+        out[name] = g
+    return out
+
+
+# The office skyline's `@Nx` canvases, which `camp_skyline` keeps key for key.
+CAMP_BUILDING_SIZE = {
+    "curtain": (24, 60),
+    "dome": (28, 44),
+    "low": (24, 24),
+    "setback": (24, 64),
+    "sign": (28, 36),
+    "slab": (32, 60),
+    "spire": (16, 72),
+    "twin": (24, 68),
+    "walkup": (20, 40),
+}
+
+# Where each camp desk stands the sitter's cup and tower: on the bedroll, by
+# its pillow and by its pack.
+CAMP_DESK_MARKS = {
+    "desk": (("cup", 20, 31), ("tower", 32, 31)),
+    "desk_north": (("cup", 36, 40), ("tower", 24, 40)),
+}
+# Each sleeper's crown mark, where the head is drawn and the hairstyle dresses.
+CAMP_HEADS = {
+    "seated_sleeping": ("crown", 16, 12),
+    "seated_sleeping_alt": ("crown", 17, 13),
+}
+# The office piece each camp drawing stands in for: its drawing, and whether
+# that draws every frame (else one).
+CAMP = {
+    "desk": (camp_desk, False),
+    "desk_north": (camp_desk_north, False),
+    "desk_front": (camp_desk_front, False),
+    "desk_chair": (camp_desk_chair, False),
+    "seated_sleeping": (camp_sleeper, False),
+    "seated_sleeping_alt": (camp_sleeper_alt, False),
+    "side_table": (camp_fire, False),
+    "floor_lamp": (camp_torch, False),
+    "meeting_sofa": (camp_log, False),
+    "meeting_sofa_north": (camp_log_north, False),
+    "phone_booth": (camp_tent, False),
+    "door": (camp_gate, True),
+}
+
+
 # ---- output -----------------------------------------------------------------
 PROVENANCE = "Generated by scripts/gen-art.py: edit the generator, not this file."
 ENCODING = (
@@ -6119,6 +6611,27 @@ def main():
                 header + "\n\nIts base: the master read at 1x.",
                 [creature_base(f"{anim}_{i}", g)],
             )
+    for piece, (draw, animated) in CAMP.items():
+        frames = draw() if animated else [draw()]
+        # a front layer keeps its desk's canvas, so it is not grounded
+        if piece != "desk_front":
+            frames = grounded(frames)
+        head = CAMP_HEADS.get(piece)
+        sprites[f"camp_{piece}@{S}x.sprite"] = render_sprite(
+            doc(draw),
+            frames,
+            heads=[head] if head else (),
+            marks=CAMP_DESK_MARKS.get(piece, ()),
+        )
+    require(grounded([camp_desk()]) == [camp_desk()], "camp_desk moves when grounded")
+    for name, art in camp_skyline().items():
+        sprites[f"camp_building_{name}@{S}x.sprite"] = render_sprite(
+            doc(camp_skyline), [art]
+        )
+        sprites[f"camp_building_{name}.sprite"] = render_sprite(
+            doc(camp_skyline) + "\n\nIts base: the drawing read at 1x.",
+            [city_base(art)],
+        )
     for name, draw in BUILDINGS.items():
         art = draw()
         sprites[f"building_{name}@{S}x.sprite"] = render_sprite(doc(draw), [art])
