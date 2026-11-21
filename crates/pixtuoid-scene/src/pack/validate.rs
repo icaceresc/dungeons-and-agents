@@ -29,7 +29,9 @@ impl Piece {
         match self {
             Seated | Typing | Standing | Walking | WalkingBack | SeatedSleeping
             | SeatedSleepingAlt | HoldingCoffee | BackCouch | WalkingCoffee | SideSeated
-            | SeatedBack | TypingBack => PieceKind::Character,
+            | SeatedBack | TypingBack | AttackMage | AttackMageBack | AttackKnight
+            | AttackKnightBack | AttackRanger | AttackRangerBack | AttackBerserker
+            | AttackBerserkerBack => PieceKind::Character,
             CatWalk | CatSit | CatSleep | DogWalk | DogSit | DogSleep | LobsterWalk
             | LobsterRest => PieceKind::Creature,
             _ => PieceKind::Furniture,
@@ -314,8 +316,9 @@ fn overhangs(layer: &Sprite, body: &Frame, head: HeadMark) -> bool {
 }
 /// Every piece the painters loop on the beat, each with the frame its loop
 /// starts at: the looping fixtures, the appliances' busy loops
-/// ([`appliance_frame_index`](super::lookup::appliance_frame_index)), the typists (`pose::typing_frame`), every
-/// creature pose that is not a walk, and every holiday stand-in.
+/// ([`appliance_frame_index`](super::lookup::appliance_frame_index)), the typists and every class's
+/// attack (`pose::typing_frame`), every creature pose that is not a walk, and
+/// every holiday stand-in.
 fn looped_animations() -> Vec<(Piece, usize)> {
     let appliances =
         [Piece::VendingMachine, Piece::Printer].map(|p| (p, lookup::APPLIANCE_IDLE_FRAMES));
@@ -329,6 +332,14 @@ fn looped_animations() -> Vec<(Piece, usize)> {
         Piece::WaterCooler,
         Piece::Typing,
         Piece::TypingBack,
+        Piece::AttackMage,
+        Piece::AttackMageBack,
+        Piece::AttackKnight,
+        Piece::AttackKnightBack,
+        Piece::AttackRanger,
+        Piece::AttackRangerBack,
+        Piece::AttackBerserker,
+        Piece::AttackBerserkerBack,
     ]
     .into_iter()
     .chain(creatures)

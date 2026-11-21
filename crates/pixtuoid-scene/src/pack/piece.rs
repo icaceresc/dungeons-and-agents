@@ -39,6 +39,14 @@ pub enum Piece {
     SideSeated,
     SeatedBack,
     TypingBack,
+    AttackMage,
+    AttackMageBack,
+    AttackKnight,
+    AttackKnightBack,
+    AttackRanger,
+    AttackRangerBack,
+    AttackBerserker,
+    AttackBerserkerBack,
     Desk,
     DeskNorth,
     DeskFront,
@@ -115,6 +123,14 @@ impl Piece {
         match self {
             Piece::Door => 3,
             Piece::Typing
+            | Piece::AttackMage
+            | Piece::AttackMageBack
+            | Piece::AttackKnight
+            | Piece::AttackKnightBack
+            | Piece::AttackRanger
+            | Piece::AttackRangerBack
+            | Piece::AttackBerserker
+            | Piece::AttackBerserkerBack
             | Piece::Walking
             | Piece::WalkingBack
             | Piece::CatWalk
@@ -207,6 +223,14 @@ mod tests {
                 ("typing", 2),
                 ("walking", 2),
                 ("walking_back", 2),
+                ("attack_mage", 2),
+                ("attack_mage_back", 2),
+                ("attack_knight", 2),
+                ("attack_knight_back", 2),
+                ("attack_ranger", 2),
+                ("attack_ranger_back", 2),
+                ("attack_berserker", 2),
+                ("attack_berserker_back", 2),
                 ("christmas_tree", 2),
                 ("christmas_tree_short", 2),
                 ("door", 3),

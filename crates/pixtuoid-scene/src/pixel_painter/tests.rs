@@ -380,6 +380,10 @@ fn a_back_turned_desk_shows_the_pose_s_own_back_view() {
     for (base, want) in [
         (Piece::Seated, Piece::SeatedBack),
         (Piece::Typing, Piece::TypingBack),
+        (Piece::AttackMage, Piece::AttackMageBack),
+        (Piece::AttackKnight, Piece::AttackKnightBack),
+        (Piece::AttackRanger, Piece::AttackRangerBack),
+        (Piece::AttackBerserker, Piece::AttackBerserkerBack),
         // A pose with no back view of its own falls back to the still one
         // rather than showing a face at the window.
         (Piece::SeatedSleeping, Piece::SeatedBack),
@@ -5433,16 +5437,17 @@ fn a_breathing_sitter_s_badge_holds_still() {
     assert_eq!(badges.len(), 1, "the badge bobbed with it: {badges:?}");
 }
 
-/// A typist keys on the art its seat resolves to: a back-turned desk plays
-/// `typing_back`'s own loop, which a pack may time apart from `typing`'s.
+/// A fighter keys on the art its seat resolves to: a back-turned desk plays
+/// its class attack's back view, on that view's own loop, which a pack may
+/// time apart from the front's.
 #[test]
-fn a_typist_keys_on_the_art_its_seat_resolves_to() {
+fn a_fighter_keys_on_the_art_its_seat_resolves_to() {
     use crate::layout::Facing;
     use crate::pose::Pose;
     let (mut scene, layout, id, now0, _) = sim_rig();
     let pack = OfficeArt::parse(crate::pack::test_pack_declaring(
-        "[animations.typing_back]\nframes   = [\"typing_back_0.sprite\", \"typing_back_1.sprite\"]\nframe_ms = 125",
-        "[animations.typing_back]\nframes   = [\"typing_back_0.sprite\", \"typing_back_1.sprite\"]\nframe_ms = 250",
+        "[animations.attack_knight_back]\nframes   = [\"attack_knight_back_0.sprite\", \"attack_knight_back_1.sprite\"]\nframe_ms = 125",
+        "[animations.attack_knight_back]\nframes   = [\"attack_knight_back_0.sprite\", \"attack_knight_back_1.sprite\"]\nframe_ms = 250",
     ))
     .expect("the test pack parses");
     let back = layout
@@ -5452,12 +5457,12 @@ fn a_typist_keys_on_the_art_its_seat_resolves_to() {
         .expect("a back-turned desk");
     scene.agents.get_mut(&id).expect("the agent").desk = Some(FloorDesk::new(0, back));
     let agents: Vec<AgentSlot> = scene.agents.values().cloned().collect();
-    let art = pack.piece(Piece::TypingBack);
+    let art = pack.piece(Piece::AttackKnightBack);
     let ms = u64::from(art.frame_ms());
-    let typing = pack.piece(Piece::Typing);
+    let front = pack.piece(Piece::AttackKnight);
     assert_ne!(
         ms,
-        u64::from(typing.frame_ms()),
+        u64::from(front.frame_ms()),
         "premise: the two views keep their own time"
     );
     let frames = art.frames().len() as u64;
@@ -5475,9 +5480,46 @@ fn a_typist_keys_on_the_art_its_seat_resolves_to() {
             timing.beat,
         );
         let [p] = <[_; 1]>::try_from(placements).expect("one agent, one placement");
-        assert_eq!(p.anim_name, Piece::TypingBack);
+        assert_eq!(p.anim_name, Piece::AttackKnightBack, "the knight_helm's");
         let want = ((timing.beat.ms() / ms + phase) % frames) as usize;
         assert_eq!(p.frame_idx, want, "at {} ms", step * tick);
+    }
+}
+
+/// An agent at work plays the attack of the class its style names, where an
+/// office worker types: a style that names no class, the prototype's
+/// `knight_helm` among them, is a knight's.
+#[test]
+fn an_agent_at_work_plays_its_class_attack() {
+    use crate::layout::Facing;
+    use crate::pose::Pose;
+    let (mut scene, layout, id, now0, _) = sim_rig();
+    let front = layout
+        .home_desks
+        .iter()
+        .position(|d| d.facing == Facing::South)
+        .expect("a desk facing the camera");
+    scene.agents.get_mut(&id).expect("the agent").desk = Some(FloorDesk::new(0, front));
+    let agents: Vec<AgentSlot> = scene.agents.values().cloned().collect();
+    for (style, attack) in [
+        ("mage", Piece::AttackMage),
+        ("knight", Piece::AttackKnight),
+        ("ranger", Piece::AttackRanger),
+        ("berserker", Piece::AttackBerserker),
+        ("knight_helm", Piece::AttackKnight),
+        ("mop", Piece::AttackKnight),
+    ] {
+        let pack = OfficeArt::parse(crate::pack::test_pack_declaring(
+            "[hairstyles.\"knight_helm@4x\"]",
+            &format!("[hairstyles.\"{style}@4x\"]"),
+        ))
+        .expect("the test pack parses");
+        let poses = HashMap::from([(id, Some(Pose::SeatedTyping))]);
+        let beat = Motion::Full.timing(now0).beat;
+        let (placements, ..) =
+            crate::sim::resolve_characters(&agents, &poses, &layout, &pack, &HashMap::new(), beat);
+        let [p] = <[_; 1]>::try_from(placements).expect("one agent, one placement");
+        assert_eq!(p.anim_name, attack, "one dressed as {style}");
     }
 }
 

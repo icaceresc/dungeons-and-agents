@@ -1,10 +1,11 @@
-//! Per-agent hairstyles: which of the pack's `[hairstyles]` an agent wears, and
-//! a character frame dressed in it, its layers laid mark on mark over the
-//! frame's head. A frame is dressed only at a density of 2 and up
-//! ([`dress_for`]), so the classic 1x art never is.
+//! Per-agent hairstyles: which of the pack's `[hairstyles]` an agent wears, the
+//! class that style makes it, and a character frame dressed in it, its layers
+//! laid mark on mark over the frame's head. A frame is dressed only at a
+//! density of 2 and up ([`dress_for`]), so the classic 1x art never is.
 
 use crate::pack::Hairstyle;
 use crate::pack::OfficeArt;
+use crate::pack::Piece;
 use crate::sprite::format::Density;
 use crate::sprite::{Frame, HeadMark, Pixel, Rgb, Sprite};
 use pixtuoid_core::AgentId;
@@ -25,6 +26,45 @@ fn pick(pack: &OfficeArt, agent: AgentId) -> Option<&str> {
         .hairstyles()
         .map(Hairstyle::name)
         .max_by_key(|name| splitmix64(seed ^ fnv1a(name.bytes().map(u64::from))))
+}
+
+/// An adventurer's class. The style an agent wears names it, so the class an
+/// agent fights as is the one it is seen dressed as.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, strum::VariantArray)]
+pub(crate) enum Class {
+    Mage,
+    Knight,
+    Ranger,
+    Berserker,
+}
+
+impl Class {
+    /// The class the style `name` marks. Any other style is a knight's, and so
+    /// is none: the prototype dresses every agent in `knight_helm`.
+    fn of_style(name: Option<&str>) -> Self {
+        match name {
+            Some("mage") => Self::Mage,
+            Some("ranger") => Self::Ranger,
+            Some("berserker") => Self::Berserker,
+            _ => Self::Knight,
+        }
+    }
+
+    /// The class `agent` is in `pack`: the one its style names.
+    pub(crate) fn of(pack: &OfficeArt, agent: AgentId) -> Self {
+        Self::of_style(pick(pack, agent))
+    }
+
+    /// The attack it plays at work, where an office worker types, seen from
+    /// the front; a seat facing away turns it to its back view.
+    pub(crate) fn attack(self) -> Piece {
+        match self {
+            Self::Mage => Piece::AttackMage,
+            Self::Knight => Piece::AttackKnight,
+            Self::Ranger => Piece::AttackRanger,
+            Self::Berserker => Piece::AttackBerserker,
+        }
+    }
 }
 
 /// How a character frame is dressed: its head, the style its agent wears at
@@ -314,6 +354,57 @@ mod tests {
             (20..=80).contains(&moved),
             "about a quarter move to the new style: {moved}"
         );
+    }
+
+    /// Each class's style names it; any other style, and none, is a knight's.
+    #[test]
+    fn a_style_names_its_class_and_any_other_is_a_knight() {
+        for (style, class) in [
+            (Some("mage"), Class::Mage),
+            (Some("knight"), Class::Knight),
+            (Some("ranger"), Class::Ranger),
+            (Some("berserker"), Class::Berserker),
+            (Some("knight_helm"), Class::Knight),
+            (Some("mop"), Class::Knight),
+            (None, Class::Knight),
+        ] {
+            assert_eq!(Class::of_style(style), class, "{style:?}");
+        }
+    }
+
+    /// An agent's class is the one its own style names, so a pack of the four
+    /// classes' styles fields every class, each agent always the same one.
+    #[test]
+    fn an_agent_is_the_class_its_style_names() {
+        let pack = pack_of(BODY, (1, 0), &["mage", "knight", "ranger", "berserker"]);
+        let mut seen = Vec::new();
+        for i in 0..64u64 {
+            let id = AgentId::from_parts("claude-code", &i.to_string());
+            let class = Class::of(&pack, id);
+            assert_eq!(class, Class::of_style(pick(&pack, id)));
+            assert_eq!(Class::of(&pack, id), class, "stable");
+            if !seen.contains(&class) {
+                seen.push(class);
+            }
+        }
+        assert_eq!(
+            seen.len(),
+            Class::VARIANTS.len(),
+            "every class takes the field"
+        );
+    }
+
+    /// Each class attacks in a pose of its own, a character's, which loops on
+    /// the beat as the typist's does.
+    #[test]
+    fn each_class_attacks_in_a_looping_character_pose_of_its_own() {
+        let attacks: std::collections::HashSet<Piece> =
+            Class::VARIANTS.iter().map(|c| c.attack()).collect();
+        assert_eq!(attacks.len(), Class::VARIANTS.len());
+        for attack in attacks {
+            assert_eq!(attack.kind(), PieceKind::Character, "{}", attack.name());
+            assert_eq!(attack.min_frames(), Piece::Typing.min_frames());
+        }
     }
 
     #[test]
