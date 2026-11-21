@@ -2,9 +2,9 @@ use crate::sprite::Rgb;
 
 use super::*;
 
-/// The `dark_fantasy` dark theme: a torchlit stone keep under a night sky.
+/// The `dark-fantasy` dark theme: a torchlit stone keep under a night sky.
 pub static DARK_FANTASY: Theme = Theme {
-    name: "dark_fantasy",
+    name: "dark-fantasy",
     display_name: "Dark Fantasy",
     kind: ThemeKind::Dark,
     surface: SurfaceColors {

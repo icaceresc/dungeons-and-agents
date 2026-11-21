@@ -275,7 +275,7 @@ fn resolve_theme_collects_unknown_config_theme_warning() {
     };
     let mut w = Vec::new();
     let theme = resolve_theme(&cfg, None, &mut w).unwrap();
-    assert_eq!(theme.name, "dark_fantasy", "falls back");
+    assert_eq!(theme.name, "dark-fantasy", "falls back");
     assert_eq!(w.len(), 1);
     assert!(w[0].contains("unknown theme \"not-a-theme\""), "got: {w:?}");
 }
@@ -417,7 +417,7 @@ fn resolve_config_wins_over_default() {
 fn resolve_all_none_uses_default() {
     let cfg = AppConfig::default();
     let theme = resolve_theme(&cfg, None, &mut Vec::new()).unwrap();
-    assert_eq!(theme.name, "dark_fantasy");
+    assert_eq!(theme.name, "dark-fantasy");
 }
 
 #[test]
