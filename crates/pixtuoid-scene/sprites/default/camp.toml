@@ -2,8 +2,8 @@
 # pack.toml: a table merges key by key and any other value replaces the
 # office's whole, so name only what the camp redraws, under the office's own
 # names. Its sprites are `camp_*.sprite` beside the office's, drawn by
-# scripts/gen-art.py on each office piece's own canvas; the camp redraws only
-# the @4x furniture, so the classic (1x) office keeps its own.
+# scripts/gen-art.py on each office piece's own canvas; the camp redraws the
+# @4x furniture, so the classic (1x) office keeps its own but for the campfire.
 
 # the bedroll, its pack and its lantern (scripts/gen-art.py's camp_desk)
 [animations."desk@4x"]
@@ -29,9 +29,15 @@ frames = ["camp_seated_sleeping@4x.sprite"]
 [animations."seated_sleeping_alt@4x"]
 frames = ["camp_seated_sleeping_alt@4x.sprite"]
 
-# the campfire
+# the campfire, flickering: both densities redrawn, since a variant keeps its
+# base's frame count and pace
+[animations.side_table]
+frames = ["camp_side_table.sprite"]
+frame_ms = 200
+
 [animations."side_table@4x"]
 frames = ["camp_side_table@4x.sprite"]
+frame_ms = 200
 
 # a torch on a pole, its glow the lamp's
 [animations."floor_lamp@4x"]
@@ -52,6 +58,122 @@ frames = ["camp_phone_booth@4x.sprite"]
 # the palisade gate: shut, opening, open on the trail
 [animations."door@4x"]
 frames = ["camp_door@4x.sprite"]
+
+# supply crates, one stacked on the other
+[animations."filing_cabinet@4x"]
+frames = ["camp_filing_cabinet@4x.sprite"]
+
+# a quest board on two posts
+[animations."whiteboard@4x"]
+frames = ["camp_whiteboard@4x.sprite"]
+
+# a hide map lashed to a frame
+[animations."bulletin_board@4x"]
+frames = ["camp_bulletin_board@4x.sprite"]
+
+# notices nailed to a board
+[animations."notice_board@4x"]
+frames = ["camp_notice_board@4x.sprite"]
+
+# the company's standard between two poles
+[animations."meeting_screen@4x"]
+frames = ["camp_meeting_screen@4x.sprite"]
+
+# a banner on a single pole
+[animations."tv_stand@4x"]
+frames = ["camp_tv_stand@4x.sprite"]
+
+# the camp kitchen: a pot on a tripod over its fire, a block, a crate, sacks
+[animations."pantry@4x"]
+frames = ["camp_pantry@4x.sprite"]
+
+# a small cooking fire with its pot
+[animations."pantry_small@4x"]
+frames = ["camp_pantry_small@4x.sprite"]
+
+# a covered supply cart
+[animations."kitchen_island@4x"]
+frames = ["camp_kitchen_island@4x.sprite"]
+
+# stores stacked by the fire: the top barrel's lid lifts while it is used
+[animations."vending_machine@4x"]
+frames = ["camp_vending_machine@4x.sprite"]
+
+# an anvil on its stump: at work, a bar glows on it and sparks fly
+[animations."printer@4x"]
+frames = ["camp_printer@4x.sprite"]
+
+# a water barrel and its ladle
+[animations."water_cooler@4x"]
+frames = ["camp_water_cooler@4x.sprite"]
+
+# an armour stand
+[animations."coat_rack@4x"]
+frames = ["camp_coat_rack@4x.sprite"]
+
+# a weapon rack
+[animations."bookshelf@4x"]
+frames = ["camp_bookshelf@4x.sprite"]
+
+# sacks of grain heaped on a crate
+[animations."snack_shelf@4x"]
+frames = ["camp_snack_shelf@4x.sprite"]
+
+# a wild bush
+[animations."plant@4x"]
+frames = ["camp_plant@4x.sprite"]
+
+# a young pine
+[animations."plant_tall@4x"]
+frames = ["camp_plant_tall@4x.sprite"]
+
+# a fern
+[animations."plant_flower@4x"]
+frames = ["camp_plant_flower@4x.sprite"]
+
+# a cluster of mossy rocks
+[animations."plant_succulent@4x"]
+frames = ["camp_plant_succulent@4x.sprite"]
+
+# a lantern on an iron bracket
+[animations."exit_sign@4x"]
+frames = ["camp_exit_sign@4x.sprite"]
+
+# a big lantern hung in the palisade
+[animations."wall_clock@4x"]
+frames = ["camp_wall_clock@4x.sprite"]
+
+# a wooden bucket
+[animations."pantry_bin@4x"]
+frames = ["camp_pantry_bin@4x.sprite"]
+
+# a woodpile and a chopping block
+[animations."fish_tank@4x"]
+frames = ["camp_fish_tank@4x.sprite"]
+
+# a plank table on trestles
+[animations."meeting_table@4x"]
+frames = ["camp_meeting_table@4x.sprite"]
+
+# a short log for a seat
+[animations."meeting_chair@4x"]
+frames = ["camp_meeting_chair@4x.sprite"]
+
+# a tin cup
+[animations."desk_cup@4x"]
+frames = ["camp_desk_cup@4x.sprite"]
+
+# a heap of coins, growing by tier
+[animations."token_tower@4x"]
+frames = ["camp_token_tower@4x.sprite"]
+
+# a falling coin
+[animations."token_sheet@4x"]
+frames = ["camp_token_sheet@4x.sprite"]
+
+# a scout's map table on crossed legs
+[animations."standing_desk@4x"]
+frames = ["camp_standing_desk@4x.sprite"]
 
 # The skyline: pines, mountains and a ruined watchtower, key for key.
 

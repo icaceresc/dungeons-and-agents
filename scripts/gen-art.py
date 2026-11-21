@@ -1663,8 +1663,7 @@ def robe(top, bottom, x0, x1, flare):
     """A robe's skirt from pose row `top` to `bottom`, columns `x0`..`x1` at its
     top, widening a column each side every `flare` rows."""
     return lambda x, y: (
-        top <= y < bottom
-        and x0 - (y - top) / flare <= x < x1 + (y - top) / flare
+        top <= y < bottom and x0 - (y - top) / flare <= x < x1 + (y - top) / flare
     )
 
 
@@ -1799,7 +1798,9 @@ def style_berserker():
     sb = [row[:] for row in mane["side"][0]]
     so = [row[:] for row in mane["side"][1]]
     side_beard = layer()
-    region(side_beard, lambda x, y: in_oval(21.0, 21.5, 5.4, 5.4)(x, y) and y > 22.5, HAIR)
+    region(
+        side_beard, lambda x, y: in_oval(21.0, 21.5, 5.4, 5.4)(x, y) and y > 22.5, HAIR
+    )
     rim_light(side_beard, lit_top=False)
     paste(so, side_beard)
     fur(so, box(5, 24, 17, 30))
@@ -6451,16 +6452,45 @@ def camp_sleeper_alt():
     return [list(reversed(row)) for row in blanket_sleeper(15, 13)]
 
 
+# The campfire's flicker: per frame, each tongue's height.
+CAMP_FIRE_FLICKER = ((14, 8, 9), (12, 9, 7), (13, 7, 10), (11, 8, 8))
+
+
 def camp_fire():
     """The campfire: a ring of stones lit along their tops, split logs crossed
-    in it, flames rising from the embers."""
+    in it, flames rising from the embers and flickering."""
+    return [camp_fire_frame(heights) for heights in CAMP_FIRE_FLICKER]
+
+
+def camp_fire_1x():
+    """The campfire at 1x: its ring of stones, embers, and flames flickering
+    as the cutaway's do; the 1x is its own drawing, so the two densities keep
+    one frame count."""
+    frames = []
+    for heights in CAMP_FIRE_FLICKER:
+        g = canvas(SIDE_TABLE_W, SIDE_TABLE_H)
+        for x in range(SIDE_TABLE_W):
+            put(g, x, 3, STONE_LT if x % 2 else STONE)
+        for x, k in ((0, STONE), (1, FLAME_ROOT), (5, FLAME_ROOT), (6, STONE)):
+            put(g, x, 2, k)
+        # the tongues as CAMP_FIRE_FLICKER lists them: centre, west, east
+        for x, (hh, tall) in zip((3, 2, 4), zip(heights, (13, 8, 9))):
+            rows = 2 + (hh >= tall) if x == 3 else 1 + (hh >= tall)
+            for i in range(rows):
+                put(g, x, 2 - i, FLAME_CORE if i == 0 and x == 3 else FLAME)
+        frames.append(g)
+    return frames
+
+
+def camp_fire_frame(heights):
+    """The campfire with its three tongues of flame `heights` tall."""
     g = camp_canvas("side_table")
     w, h = len(g[0]), len(g)
     oval(g, w / 2, h - 5, 12, 3.6, SHADOW)
     for x0, y0, x1, y1 in ((5, h - 4, 22, h - 8), (6, h - 8, 22, h - 4)):
         stroke(g, x0, y0, x1, y1, WOOD)
         stroke(g, x0, y0 + 1, x1, y1 + 1, WOOD_DK)
-    for cx, half, hh in ((14, 4.4, 14), (9.5, 2.4, 8), (18.5, 2.6, 9)):
+    for (cx, half), hh in zip(((14, 4.4), (9.5, 2.4), (18.5, 2.6)), heights):
         flame(g, cx, h - 6, hh, half)
     for sx in (2, w - 6):  # the ring's back stones
         rect(g, sx, h - 9, sx + 4, h - 6, STONE)
@@ -6710,6 +6740,718 @@ CAMP_BUILDING_SIZE = {
     "walkup": (20, 40),
 }
 
+# The rest of the camp: every office piece the lounge floor still shows, redrawn
+# on its own @Nx canvas, in `S` pixels.
+PROP_CANVAS = {
+    "filing_cabinet": (16, 24),
+    "whiteboard": (56, 44),
+    "bulletin_board": (40, 24),
+    "notice_board": (32, 20),
+    "meeting_screen": (56, 48),
+    "tv_stand": (40, 40),
+    "pantry": (128, 40),
+    "pantry_small": (80, 32),
+    "kitchen_island": (80, 28),
+    "vending_machine": (28, 52),
+    "printer": (28, 32),
+    "water_cooler": (16, 36),
+    "coat_rack": (20, 48),
+    "bookshelf": (32, 48),
+    "snack_shelf": (28, 40),
+    "plant": (24, 28),
+    "plant_tall": (24, 40),
+    "plant_flower": (24, 24),
+    "plant_succulent": (20, 16),
+    "exit_sign": (20, 12),
+    "wall_clock": (28, 28),
+    "pantry_bin": (16, 20),
+    "fish_tank": (56, 44),
+    "meeting_table": (44, 20),
+    "meeting_chair": (28, 28),
+    "desk_cup": (8, 8),
+    "token_tower": (16, 16),
+    "token_sheet": (12, 4),
+    "standing_desk": (32, 32),
+}
+PARCHMENT, PARCHMENT_SH, PARCHMENT_INK = OFFWHITE_SH, PRINT, INK
+BARREL_WATER, BARREL_WATER_LT = BLUE, CYAN
+COIN, COIN_SH = GOLD, BROWN
+
+
+def prop_canvas(piece):
+    """The office piece's own `@Nx` canvas, in pixels."""
+    return canvas(*PROP_CANVAS[piece])
+
+
+def plank_box(g, x0, y0, x1, y1, lid=3):
+    """A wooden crate seen from the front and a little above: its lid lit, its
+    planks seamed, a frame of darker boards with a cross brace."""
+    rect(g, x0, y0, x1, y0 + lid, WOOD_LT)
+    rect(g, x0, y0, x1, y0 + 1, WOOD_HI)
+    rect(g, x0, y0 + lid, x1, y1, WOOD)
+    for y in range(y0 + lid + 3, y1 - 1, 3):
+        rect(g, x0 + 1, y, x1 - 1, y + 1, WOOD_SH)
+    for x in (x0, x1 - 2):
+        rect(g, x, y0 + lid, x + 2, y1, WOOD_SH)
+    rect(g, x0, y1 - 2, x1, y1, WOOD_DK)
+    stroke(g, x0 + 2, y0 + lid + 1, x1 - 3, y1 - 3, WOOD_SH)
+
+
+def barrel(g, x0, y0, x1, y1):
+    """A barrel standing: its lid an ellipse, staves lit west and shaded east,
+    two iron hoops."""
+    w = x1 - x0
+    rect(g, x0, y0 + 2, x1, y1, WOOD)
+    rect(g, x0, y0 + 2, x0 + 2, y1, WOOD_LT)
+    rect(g, x1 - 3, y0 + 2, x1, y1, WOOD_SH)
+    for x in range(x0 + 4, x1 - 3, 4):
+        rect(g, x, y0 + 4, x + 1, y1 - 1, WOOD_SH)
+    for y in (y0 + 5, y1 - 5):
+        rect(g, x0, y, x1, y + 2, IRON_SH)
+        rect(g, x0, y, x1, y + 1, IRON)
+    oval(g, x0 + w / 2, y0 + 2.5, w / 2, 2.5, WOOD_LT)
+    oval(g, x0 + w / 2, y0 + 2.5, w / 2 - 2, 1.4, WOOD)
+
+
+def parchment(g, x0, y0, x1, y1, lines=3, seal=False):
+    """A pinned sheet of parchment with lines of writing, its foot curling."""
+    rect(g, x0, y0, x1, y1, PARCHMENT)
+    rect(g, x0, y1 - 1, x1, y1, PARCHMENT_SH)
+    for i in range(lines):
+        y = y0 + 2 + 2 * i
+        if y < y1 - 2:
+            rect(g, x0 + 1, y, x1 - 1 - (i % 2) * 2, y + 1, PARCHMENT_SH)
+    put(g, (x0 + x1) // 2, y0, IRON_DK)
+    if seal:
+        rect(g, x1 - 3, y1 - 4, x1 - 1, y1 - 2, DARK_RED)
+
+
+def camp_crates():
+    """Supply crates, one stacked on the other."""
+    g = prop_canvas("filing_cabinet")
+    w, h = len(g[0]), len(g)
+    plank_box(g, 1, h - 12, w - 1, h - 1)
+    plank_box(g, 2, 2, w - 2, h - 12)
+    union_outline(g)
+    return g
+
+
+def camp_quest_board():
+    """A quest board on two posts under a little plank roof: notices, a bounty
+    sealed in red, a wanted sketch."""
+    g = prop_canvas("whiteboard")
+    w, h = len(g[0]), len(g)
+    for x in (5, w - 9):
+        rect(g, x, 3, x + 4, h - 1, WOOD_SH)
+        rect(g, x, 3, x + 1, h - 1, WOOD)
+    rect(g, 2, 1, w - 2, 5, WOOD_DK)
+    rect(g, 2, 1, w - 2, 2, WOOD)
+    rect(g, 4, 7, w - 4, 31, WOOD)
+    for y in range(10, 31, 4):
+        rect(g, 4, y, w - 4, y + 1, WOOD_SH)
+    rect(g, 4, 30, w - 4, 32, WOOD_DK)
+    parchment(g, 8, 9, 20, 22, lines=5)
+    parchment(g, 23, 11, 33, 28, lines=6, seal=True)
+    parchment(g, 36, 9, 48, 20, lines=1)
+    oval(g, 42, 14.5, 3, 3, PARCHMENT_SH)  # the wanted sketch's face
+    put(g, 41, 14, PARCHMENT_INK)
+    put(g, 43, 14, PARCHMENT_INK)
+    union_outline(g)
+    return g
+
+
+def camp_hide_map():
+    """A map inked on a stretched hide, lashed to a frame of sticks: a trail
+    dashed across it to a red cross."""
+    g = prop_canvas("bulletin_board")
+    w, h = len(g[0]), len(g)
+    rect(g, 1, 1, w - 1, 3, WOOD)
+    rect(g, 1, h - 3, w - 1, h - 1, WOOD)
+    rect(g, 1, 1, 3, h - 1, WOOD_SH)
+    rect(g, w - 3, 1, w - 1, h - 1, WOOD_SH)
+    oval(g, w / 2, h / 2, w / 2 - 4, h / 2 - 3.5, TAN)
+    oval(g, w / 2 - 2, h / 2 - 1.5, w / 2 - 9, h / 2 - 6, OFFWHITE_SH, only={TAN})
+    for x, y in ((8, 15), (11, 13), (14, 12), (17, 13), (20, 11), (23, 9), (26, 10)):
+        put(g, x, y, PARCHMENT_INK)
+    stroke(g, 28, 7, 31, 10, RED)
+    stroke(g, 31, 7, 28, 10, RED)
+    for x, y in ((6, 8), (9, 7), (12, 8)):  # mountains, inked
+        put(g, x, y, BROWN)
+        put(g, x - 1, y + 1, BROWN)
+        put(g, x + 1, y + 1, BROWN)
+    for x, y in ((4, 4), (w - 5, 4), (4, h - 5), (w - 5, h - 5)):  # the lashings
+        put(g, x, y, LEATHER)
+        put(g, x + 1, y + 1, LEATHER)
+    union_outline(g)
+    return g
+
+
+def camp_notices():
+    """A small board of notices nailed to the palisade."""
+    g = prop_canvas("notice_board")
+    w, h = len(g[0]), len(g)
+    rect(g, 1, 1, w - 1, h - 1, WOOD)
+    for y in range(4, h - 1, 4):
+        rect(g, 1, y, w - 1, y + 1, WOOD_SH)
+    rect(g, 1, h - 2, w - 1, h - 1, WOOD_DK)
+    parchment(g, 4, 3, 14, 16, lines=5)
+    parchment(g, 17, 4, 28, 14, lines=4, seal=True)
+    union_outline(g)
+    return g
+
+
+def banner(g, x0, x1, top, drop, cloth, cloth_sh, trim):
+    """A cloth banner hung from a pole at `top`, `drop` long, its foot cut in
+    a swallowtail, a gold device of three rising chevrons."""
+    rect(g, x0 - 2, top - 2, x1 + 2, top, WOOD_DK)
+    rect(g, x0, top, x1, top + drop, cloth)
+    rect(g, x1 - 2, top, x1, top + drop, cloth_sh)
+    rect(g, x0, top, x0 + 1, top + drop, trim)
+    rect(g, x1 - 1, top, x1, top + drop, trim)
+    mid = (x0 + x1) / 2
+    for y in range(top + drop - 5, top + drop):
+        cut = (y - (top + drop - 5)) * 0.9
+        rect(g, round(mid - cut), y, round(mid + cut) + 1, y + 1, T)
+    for i in range(3):
+        y = top + 6 + 4 * i
+        half = (x1 - x0) / 2 - 3
+        stroke(g, round(mid - half), y + 3, round(mid), y, trim)
+        stroke(g, round(mid), y, round(mid + half), y + 3, trim)
+
+
+def camp_standard():
+    """The company's standard between two poles: a red banner with a gold
+    device of rising chevrons, the poles wedged in stones."""
+    g = prop_canvas("meeting_screen")
+    w, h = len(g[0]), len(g)
+    for x in (8, w - 11):
+        rect(g, x, 2, x + 3, h - 3, WOOD)
+        rect(g, x, 2, x + 1, h - 3, WOOD_LT)
+        rect(g, x - 3, h - 5, x + 6, h - 1, STONE)
+        rect(g, x - 3, h - 5, x + 6, h - 4, STONE_LT)
+    banner(g, 13, w - 13, 5, 30, RED, DARK_RED, GOLD)
+    union_outline(g)
+    return g
+
+
+def camp_pennant():
+    """A banner on a single pole with a crossbar: slate cloth, a gold device,
+    the pole's foot in a ring of stones."""
+    g = prop_canvas("tv_stand")
+    w, h = len(g[0]), len(g)
+    rect(g, w // 2 - 1, 1, w // 2 + 2, h - 3, WOOD)
+    rect(g, w // 2 - 1, 1, w // 2, h - 3, WOOD_LT)
+    banner(g, 10, w - 10, 4, 24, FABRIC, FABRIC_SH, GOLD)
+    rect(g, w // 2 - 6, h - 5, w // 2 + 7, h - 1, STONE)
+    rect(g, w // 2 - 6, h - 5, w // 2 + 7, h - 4, STONE_LT)
+    union_outline(g)
+    return g
+
+
+def cook_fire(g, cx, ground):
+    """A cooking fire: a tripod of poles over it, a pot hung on its chain,
+    steam rising."""
+    oval(g, cx, ground - 2, 9, 2.5, SHADOW)
+    for dx in (-6, -2, 2, 6):
+        rect(g, round(cx + dx - 1), ground - 3, round(cx + dx + 2), ground, STONE)
+        put(g, round(cx + dx), ground - 3, STONE_LT)
+    flame(g, cx - 2.5, ground - 3, 6, 2.0)
+    flame(g, cx + 2.5, ground - 3, 7, 2.2)
+    top = ground - 26
+    stroke(g, round(cx), top, round(cx - 10), ground, WOOD_SH)
+    stroke(g, round(cx), top, round(cx + 10), ground, WOOD)
+    stroke(g, round(cx), top, round(cx + 1), ground - 1, WOOD_DK)
+    for y in range(top + 1, ground - 15):
+        put(g, round(cx), y, IRON_DK)
+    oval(g, cx, ground - 11, 6, 4.5, IRON_SH)
+    oval(g, cx - 1, ground - 12, 4, 3, IRON, only={IRON_SH})
+    rect(g, round(cx) - 6, ground - 15, round(cx) + 7, ground - 13, IRON_DK)
+    rect(g, round(cx) - 5, ground - 15, round(cx) + 6, ground - 14, BROWN)  # the stew
+    for x, y in ((cx - 2, top + 3), (cx + 1, top + 1), (cx + 3, top + 4)):
+        put(g, round(x), y, OFFWHITE_SH)
+
+
+def sack(g, x0, y0, w, h):
+    """A grain sack, tied at its neck, slumped on the ground."""
+    oval(g, x0 + w / 2, y0 + h * 0.6, w / 2, h * 0.42, TAN)
+    oval(g, x0 + w / 2 + 1, y0 + h * 0.66, w / 2 - 2, h * 0.3, BROWN, only={TAN})
+    oval(g, x0 + w / 2 - 1, y0 + h * 0.55, w / 2 - 3, h * 0.28, TAN)
+    rect(g, round(x0 + w / 2) - 2, y0, round(x0 + w / 2) + 2, y0 + 3, TAN)
+    rect(g, round(x0 + w / 2) - 2, y0 + 3, round(x0 + w / 2) + 2, y0 + 4, LEATHER)
+
+
+def chopping_block(g, x0, y0):
+    """A chopping block, a cleaver bitten into its top."""
+    rect(g, x0, y0 + 3, x0 + 12, y0 + 12, WOOD_SH)
+    rect(g, x0, y0 + 3, x0 + 2, y0 + 12, WOOD)
+    oval(g, x0 + 6, y0 + 3, 6, 2.5, WOOD_LT)
+    rect(g, x0 + 5, y0 - 5, x0 + 10, y0 + 2, IRON)
+    rect(g, x0 + 5, y0 - 5, x0 + 10, y0 - 4, IRON_LT)
+    rect(g, x0 + 9, y0 - 9, x0 + 11, y0 - 4, WOOD_DK)
+
+
+def camp_kitchen():
+    """The camp kitchen: a pot on a tripod over its fire, a chopping block, a
+    crate of turnips and sacks of grain."""
+    g = prop_canvas("pantry")
+    h = len(g)
+    cook_fire(g, 30, h - 2)
+    chopping_block(g, 52, h - 14)
+    plank_box(g, 72, h - 18, 92, h - 2)
+    for x in (75, 80, 85):
+        oval(g, x + 1.5, h - 18, 2.2, 1.6, PINK)
+        put(g, x + 1, h - 20, LEAF)
+    sack(g, 96, h - 22, 13, 20)
+    sack(g, 108, h - 18, 12, 16)
+    union_outline(g)
+    return g
+
+
+def camp_kitchen_small():
+    """A small cooking fire: a pot on its tripod and a sack beside it."""
+    g = prop_canvas("pantry_small")
+    h = len(g)
+    cook_fire(g, 28, h - 2)
+    sack(g, 48, h - 18, 12, 16)
+    chopping_block(g, 62, h - 13)
+    union_outline(g)
+    return g
+
+
+def wheel(g, cx, cy, r):
+    """A spoked cart wheel: its iron tyre, wooden felloe, spokes and hub."""
+    oval(g, cx, cy, r, r, IRON_DK)
+    oval(g, cx, cy, r - 1, r - 1, WOOD)
+    oval(g, cx, cy, r - 2.5, r - 2.5, T)
+    for ang in range(0, 360, 45):
+        stroke(
+            g,
+            round(cx),
+            round(cy),
+            round(cx + (r - 1.5) * math.cos(math.radians(ang))),
+            round(cy + (r - 1.5) * math.sin(math.radians(ang))),
+            WOOD_SH,
+        )
+    oval(g, cx, cy, 1.6, 1.6, IRON)
+
+
+def camp_cart():
+    """A supply cart: its load lashed under a canvas cover, side boards,
+    spoked wheels, the shafts resting on a stone."""
+    g = prop_canvas("kitchen_island")
+    w, h = len(g[0]), len(g)
+    rect(g, 2, h - 10, 12, h - 8, WOOD_SH)  # the shafts, west
+    rect(g, 1, h - 6, 6, h - 2, STONE)
+    rect(g, 10, h - 16, w - 4, h - 8, WOOD)
+    rect(g, 10, h - 16, w - 4, h - 15, WOOD_LT)
+    for x in range(14, w - 4, 8):
+        rect(g, x, h - 15, x + 1, h - 8, WOOD_SH)
+    rect(g, 10, h - 9, w - 4, h - 8, WOOD_DK)
+    oval(g, (w + 6) / 2, h - 16, (w - 18) / 2, 9, TENT)  # the covered load
+    oval(g, (w + 6) / 2 + 6, h - 14, (w - 18) / 2 - 6, 6, TENT_SH, only={TENT})
+    for x in (26, 44, 62):
+        rect(g, x, h - 25, x + 1, h - 15, LEATHER)
+    wheel(g, 24, h - 7, 6.5)
+    wheel(g, w - 18, h - 7, 6.5)
+    union_outline(g)
+    return g
+
+
+# The frame counts of the office's animated pieces, which a camp stand-in must
+# match: the pack loader holds a density variant to its base's count.
+OFFICE_FRAMES = {
+    "vending_machine": 25,
+    "printer": 9,
+    "water_cooler": 5,
+    "fish_tank": 18,
+}
+
+
+def busy_loop(piece, idle, busy):
+    """An appliance's frames at the office's count: `idle` first, then `busy`
+    round and round."""
+    n = OFFICE_FRAMES[piece]
+    return [idle] + [busy[i % len(busy)] for i in range(n - 1)]
+
+
+def camp_stores():
+    """Stores stacked by the fire: a barrel on a crate beside a second barrel;
+    when someone helps themselves, the top barrel's lid lifts."""
+    frames = []
+    for lid in (0, 1, 2):
+        g = prop_canvas("vending_machine")
+        w, h = len(g[0]), len(g)
+        plank_box(g, 1, h - 18, 17, h - 1)
+        barrel(g, 17, h - 20, w - 1, h - 1)
+        barrel(g, 3, h - 38 - lid, 16, h - 18)
+        if lid:
+            rect(g, 4, h - 37, 15, h - 36, SHADOW)
+        plank_box(g, 16, h - 32, w - 2, h - 20)
+        union_outline(g)
+        frames.append(g)
+    idle, ajar, open_ = frames
+    return busy_loop("vending_machine", idle, [ajar, open_, open_, ajar])
+
+
+def camp_anvil():
+    """An anvil on its stump; at work, a bar glows on it and sparks fly."""
+    sparks = (
+        (),
+        ((6, 8), (21, 6)),
+        ((4, 5), (23, 9), (12, 3)),
+        ((8, 2), (19, 4)),
+        ((24, 6), (5, 9)),
+    )
+    frames = []
+    for i, flying in enumerate(sparks):
+        g = prop_canvas("printer")
+        w, h = len(g[0]), len(g)
+        rect(g, 7, h - 12, w - 7, h - 1, WOOD_SH)
+        rect(g, 7, h - 12, 9, h - 1, WOOD)
+        oval(g, w / 2, h - 12, 7, 2, WOOD_LT)
+        rect(g, 9, h - 18, w - 9, h - 13, IRON_SH)  # the waist and feet
+        rect(g, 12, h - 21, w - 12, h - 17, IRON_SH)
+        rect(g, 4, h - 25, w - 6, h - 21, IRON)  # the face, its horn west
+        rect(g, 4, h - 25, w - 6, h - 24, IRON_LT)
+        rect(g, 1, h - 24, 5, h - 22, IRON)
+        put(g, 0, h - 23, IRON_SH)
+        rect(g, w - 6, h - 25, w - 4, h - 22, IRON_SH)
+        if i:
+            rect(g, 10, h - 26, 20, h - 25, VERMILION)
+            rect(g, 12, h - 26, 17, h - 25, BULB)
+        union_outline(g)
+        for x, y in flying:
+            put(g, x, y, BULB)
+            put(g, x + 1, y + 1, GOLD)
+        frames.append(g)
+    return busy_loop("printer", frames[0], frames[1:])
+
+
+# Where the light glints on the water barrel's surface, frame by frame.
+CAMP_WATER_GLINTS = (4, 6, 8, 7, 5)
+
+
+def camp_water_barrel():
+    """A water barrel, its lid off, a ladle hung on its rim, light glinting on
+    the water as it stirs."""
+    require(
+        len(CAMP_WATER_GLINTS) == OFFICE_FRAMES["water_cooler"],
+        "the water barrel loops as many frames as the water cooler",
+    )
+    frames = []
+    for glint in CAMP_WATER_GLINTS:
+        g = prop_canvas("water_cooler")
+        w, h = len(g[0]), len(g)
+        barrel(g, 1, h - 22, w - 1, h - 1)
+        oval(g, w / 2, h - 19.5, w / 2 - 2, 1.4, BARREL_WATER)
+        put(g, glint, h - 20, BARREL_WATER_LT)
+        rect(g, w - 5, h - 26, w - 4, h - 19, WOOD_DK)
+        oval(g, w - 4, h - 26, 1.8, 1.4, IRON)
+        union_outline(g)
+        frames.append(g)
+    return frames
+
+
+def camp_armour_stand():
+    """An armour stand: a cross of poles wearing a mail shirt under a
+    breastplate, an open helm on top, a round shield leant at its foot."""
+    g = prop_canvas("coat_rack")
+    w, h = len(g[0]), len(g)
+    rect(g, w // 2 - 1, 10, w // 2 + 1, h - 3, WOOD)
+    rect(g, 4, h - 3, w - 4, h - 1, WOOD_SH)
+    rect(g, 2, 15, w - 2, 17, WOOD_SH)
+    rect(g, 4, 16, w - 4, 34, IRON_SH)  # the mail
+    for y in range(18, 34, 2):
+        for x in range(5 + (y // 2) % 2, w - 4, 2):
+            put(g, x, y, IRON_DK)
+    rect(g, 5, 16, w - 5, 27, IRON)  # the breastplate
+    rect(g, 5, 16, 7, 27, IRON_LT)
+    rect(g, w // 2, 17, w // 2 + 1, 26, IRON_SH)
+    disc(g, w / 2, 7.5, 5, IRON)
+    rect(g, w // 2 - 5, 9, w // 2 + 5, 11, IRON_DK)
+    rect(g, w // 2 - 3, 8, w // 2 + 3, 9, SHADOW)
+    put(g, w // 2 - 3, 4, IRON_LT)
+    oval(g, w - 6, h - 10, 5, 7, WOOD)  # the shield
+    oval(g, w - 6, h - 10, 2, 2, IRON)
+    union_outline(g)
+    return g
+
+
+def camp_weapon_rack():
+    """A weapon rack: two uprights and rails holding a spear, a sword, an axe
+    and a bow."""
+    g = prop_canvas("bookshelf")
+    w, h = len(g[0]), len(g)
+    for x in (2, w - 4):
+        rect(g, x, 6, x + 2, h - 1, WOOD_SH)
+        rect(g, x, 6, x + 1, h - 1, WOOD)
+    rect(g, 1, 12, w - 1, 14, WOOD)
+    rect(g, 1, h - 9, w - 1, h - 7, WOOD)
+    rect(g, 7, 2, 9, h - 3, WOOD_DK)  # the spear
+    rect(g, 6, 1, 10, 5, IRON_LT)
+    put(g, 8, 0, IRON_LT)
+    rect(g, 13, 6, 15, h - 10, IRON)  # the sword
+    rect(g, 13, 6, 14, h - 10, IRON_LT)
+    rect(g, 11, h - 10, 17, h - 9, GOLD)
+    rect(g, 13, h - 9, 15, h - 3, LEATHER)
+    rect(g, 20, 6, 22, h - 3, WOOD)  # the axe
+    rect(g, 22, 6, 26, 14, IRON)
+    rect(g, 25, 5, 27, 15, IRON_LT)
+    stroke(g, 27, 18, 29, 26, WOOD_LT)  # the bow
+    stroke(g, 29, 26, 27, 36, WOOD_LT)
+    stroke(g, 27, 18, 27, 36, OFFWHITE_SH)
+    union_outline(g)
+    return g
+
+
+def camp_provisions():
+    """Provisions: sacks of grain heaped on a crate."""
+    g = prop_canvas("snack_shelf")
+    w, h = len(g[0]), len(g)
+    plank_box(g, 1, h - 14, w - 1, h - 1)
+    sack(g, 1, h - 30, 14, 18)
+    sack(g, 12, h - 32, 14, 20)
+    sack(g, 6, h - 40, 13, 14)
+    union_outline(g)
+    return g
+
+
+def bush(g, clumps):
+    """A bush: round clumps of leaves, each lit on its upper west."""
+    for cx, cy, r in clumps:
+        disc(g, cx, cy, r, LEAF_SH)
+        disc(g, cx - r * 0.25, cy - r * 0.25, r * 0.7, LEAF)
+        disc(g, cx - r * 0.45, cy - r * 0.45, r * 0.3, LEAF_HI)
+
+
+def camp_bush():
+    """A wild bush, a few red berries in it."""
+    g = prop_canvas("plant")
+    h = len(g)
+    bush(g, ((8, h - 9, 6.5), (16, h - 10, 7), (12, h - 15, 6.5)))
+    for x, y in ((7, h - 10), (15, h - 14), (18, h - 7)):
+        put(g, x, y, RED)
+    union_outline(g)
+    return g
+
+
+def camp_sapling():
+    """A young pine: tiers of needles over a slim trunk."""
+    g = prop_canvas("plant_tall")
+    w, h = len(g[0]), len(g)
+    rect(g, w // 2 - 1, h - 8, w // 2 + 1, h - 1, WOOD_SH)
+    for top, reach in ((2, 5), (9, 7), (17, 9), (24, 10)):
+        for y in range(top, top + 10):
+            half = reach * (y - top) / 10
+            rect(g, round(w / 2 - half), y, round(w / 2 + half) + 1, y + 1, LEAF_SH)
+            if half > 1:
+                rect(g, round(w / 2 - half), y, round(w / 2 - half / 3), y + 1, LEAF)
+    union_outline(g)
+    return g
+
+
+def camp_fern():
+    """A fern: fronds arching out from its root."""
+    g = prop_canvas("plant_flower")
+    w, h = len(g[0]), len(g)
+    for tip, k in (
+        ((2, 10), LEAF_SH),
+        ((21, 9), LEAF_SH),
+        ((7, 3), LEAF),
+        ((16, 2), LEAF),
+        ((12, 5), LEAF_HI),
+    ):
+        stroke(g, w // 2, h - 2, tip[0], tip[1], k)
+        stroke(g, w // 2 + 1, h - 2, tip[0] + 1, tip[1], k)
+        for i in range(1, 6):  # its leaflets
+            x = round(w / 2 + (tip[0] - w / 2) * i / 6)
+            y = round(h - 2 + (tip[1] - h + 2) * i / 6)
+            put(g, x - 1, y, k)
+            put(g, x + 2, y, k)
+    union_outline(g)
+    return g
+
+
+def camp_rocks():
+    """A cluster of rocks, moss on their tops."""
+    g = prop_canvas("plant_succulent")
+    h = len(g)
+    for cx, cy, rx, ry in (
+        (6, h - 5, 5.5, 4.5),
+        (14, h - 4, 5, 3.5),
+        (10, h - 9, 4, 3.5),
+    ):
+        oval(g, cx, cy, rx, ry, STONE)
+        oval(g, cx - 1, cy - 1, rx - 1.5, ry - 1.5, STONE_LT, only={STONE})
+        oval(g, cx + 1.5, cy + 1, rx - 1.5, ry - 1.8, STONE_SH, only={STONE, STONE_LT})
+    for x in (8, 9, 10, 11):
+        put(g, x, h - 12, LEAF)
+    union_outline(g)
+    return g
+
+
+def camp_sconce():
+    """A lantern hung from an iron bracket on the palisade."""
+    g = prop_canvas("exit_sign")
+    rect(g, 2, 2, 14, 3, IRON_DK)
+    rect(g, 2, 2, 3, 6, IRON_DK)
+    put(g, 13, 4, IRON_DK)
+    rect(g, 11, 5, 17, 6, IRON_DK)
+    rect(g, 11, 6, 17, 10, BULB)
+    rect(g, 11, 6, 12, 10, IRON_SH)
+    rect(g, 16, 6, 17, 10, IRON_SH)
+    rect(g, 11, 10, 17, 11, IRON_DK)
+    union_outline(g)
+    return g
+
+
+def camp_hanging_lantern():
+    """A big lantern hung on a hook in the palisade, its glass glowing.
+    The engine draws a clock's hands as long as the face key reaches out from
+    the centre along the middle row; a lone face-key pixel at the centre gives
+    them no length, so none are drawn."""
+    g = prop_canvas("wall_clock")
+    w, h = len(g[0]), len(g)
+    put(g, w // 2, 0, IRON_DK)
+    rect(g, w // 2 - 1, 1, w // 2 + 1, 4, IRON_DK)
+    rect(g, 8, 4, w - 8, 7, IRON)
+    rect(g, 6, 7, w - 6, 9, IRON_DK)
+    rect(g, 7, 9, w - 7, h - 5, BULB)
+    for x in (7, w // 2 - 1, w - 9):
+        rect(g, x, 9, x + 2, h - 5, IRON_SH)
+    rect(g, 6, h - 5, w - 6, h - 2, IRON_DK)
+    rect(g, 9, h - 2, w - 9, h, IRON)
+    put(g, w // 2, h // 2, CLOCK_FACE)
+    union_outline(g)
+    return g
+
+
+def camp_bucket():
+    """A wooden bucket bound in iron, its rope handle up."""
+    g = prop_canvas("pantry_bin")
+    w, h = len(g[0]), len(g)
+    barrel(g, 2, h - 13, w - 2, h - 1)
+    oval(g, w / 2, h - 10.5, w / 2 - 4, 1.2, BARREL_WATER)
+    stroke(g, 3, h - 11, 6, h - 18, LEATHER)
+    stroke(g, 6, h - 18, 10, h - 18, LEATHER)
+    stroke(g, 10, h - 18, 13, h - 11, LEATHER)
+    union_outline(g)
+    return g
+
+
+def camp_woodpile():
+    """A woodpile: split logs stacked with their sawn ends out, an axe in
+    the chopping block beside it."""
+    g = prop_canvas("fish_tank")
+    h = len(g)
+    rect(g, 4, h - 22, 38, h - 2, WOOD_DK)
+    for row in range(4):
+        for i in range(5 - (row % 2)):
+            cx = 7.5 + i * 7 + (row % 2) * 3.5
+            cy = h - 5.5 - row * 6
+            oval(g, cx, cy, 3.4, 3.0, WOOD_LT)
+            oval(g, cx, cy, 1.8, 1.5, WOOD_HI)
+            put(g, round(cx), round(cy), WOOD)
+    chopping_block(g, 42, h - 14)
+    union_outline(g)
+    # the office's tank loops its frames; the pile holds still through them
+    return [g] * OFFICE_FRAMES["fish_tank"]
+
+
+def camp_trestle():
+    """A plank table on trestles, a candle stub and a bowl on it."""
+    g = prop_canvas("meeting_table")
+    w, h = len(g[0]), len(g)
+    rect(g, 2, 3, w - 2, 11, WOOD_LT)
+    for y in (5, 8):
+        rect(g, 2, y, w - 2, y + 1, WOOD)
+    rect(g, 2, 11, w - 2, 13, WOOD_SH)
+    for x in (6, w - 9):
+        stroke(g, x, 13, x - 2, h - 1, WOOD_DK)
+        stroke(g, x + 2, 13, x + 4, h - 1, WOOD_DK)
+    rect(g, 10, 2, 12, 5, OFFWHITE)
+    put(g, 11, 1, BULB)
+    oval(g, 30, 6, 3.5, 1.8, WOOD_DK)
+    oval(g, 30, 5.6, 2.5, 1.0, BROWN)
+    union_outline(g)
+    return g
+
+
+def camp_map_table():
+    """A scout's map table on crossed legs: a map unrolled across it, weighted
+    by a stone, a candle burning at its corner."""
+    g = prop_canvas("standing_desk")
+    w, h = len(g[0]), len(g)
+    for x in (6, w - 9):
+        stroke(g, x, 14, x + 4, h - 1, WOOD_DK)
+        stroke(g, x + 4, 14, x, h - 1, WOOD_SH)
+    rect(g, 2, 7, w - 2, 13, WOOD_LT)
+    rect(g, 2, 12, w - 2, 15, WOOD_SH)
+    rect(g, 5, 6, w - 8, 12, PARCHMENT)
+    rect(g, 5, 11, w - 8, 12, PARCHMENT_SH)
+    for x, y in ((8, 9), (11, 8), (14, 9), (17, 8)):
+        put(g, x, y, PARCHMENT_INK)
+    put(g, 19, 9, RED)
+    rect(g, 6, 5, 9, 7, STONE)
+    rect(g, w - 6, 4, w - 4, 8, OFFWHITE)
+    put(g, w - 5, 3, BULB)
+    union_outline(g)
+    return g
+
+
+def camp_stool():
+    """A short log for a seat, its sawn top lit and ringed."""
+    g = prop_canvas("meeting_chair")
+    w, h = len(g[0]), len(g)
+    rect(g, 6, 10, w - 6, h - 3, WOOD_SH)
+    rect(g, 6, 10, 8, h - 3, WOOD)
+    rect(g, w - 8, 10, w - 6, h - 3, WOOD_DK)
+    oval(g, w / 2, 10, 8, 4, WOOD_LT)
+    oval(g, w / 2, 10, 5, 2.4, WOOD_HI)
+    oval(g, w / 2, 10, 2, 1, WOOD)
+    union_outline(g)
+    return g
+
+
+def camp_tin_cup():
+    """A dented tin cup."""
+    g = prop_canvas("desk_cup")
+    rect(g, 1, 2, 6, 7, IRON)
+    rect(g, 1, 2, 6, 3, IRON_LT)
+    rect(g, 4, 3, 6, 7, IRON_SH)
+    rect(g, 6, 3, 7, 6, IRON_SH)
+    union_outline(g)
+    return g
+
+
+def camp_loot():
+    """A sitter's takings: a heap of coins, a frame per tier of the office's
+    tower and on its canvas, taller with each."""
+    frames = []
+    for tier in range(1, TOKEN_MAX_TIER + 1):
+        h = tier * TOKEN_REAM_ROWS
+        g = canvas((TOKEN_W_1X + 1) * S, h)
+        w = len(g[0])
+        layers = (h - 2) // 2
+        for i in range(layers):
+            y = h - 3 - 2 * i
+            half = round(6 - 4 * i / max(1, layers - 1))
+            rect(g, w // 2 - half, y, w // 2 + half, y + 2, COIN)
+            rect(g, w // 2 - half, y + 1, w // 2 + half, y + 2, COIN_SH)
+        put(g, w // 2 - 1, h - 2 * layers - 1, WHITE)
+        union_outline(g)
+        frames.append(g)
+    return frames
+
+
+def camp_coin():
+    """A coin, falling."""
+    g = prop_canvas("token_sheet")
+    rect(g, 4, 0, 8, 4, COIN)
+    rect(g, 5, 1, 7, 3, COIN_SH)
+    return g
+
+
 # Where each camp desk stands the sitter's cup and tower: on the bedroll, by
 # its pillow and by its pack.
 CAMP_DESK_MARKS = {
@@ -6730,12 +7472,41 @@ CAMP = {
     "desk_chair": (camp_desk_chair, False),
     "seated_sleeping": (camp_sleeper, False),
     "seated_sleeping_alt": (camp_sleeper_alt, False),
-    "side_table": (camp_fire, False),
+    "side_table": (camp_fire, True),
     "floor_lamp": (camp_torch, False),
     "meeting_sofa": (camp_log, False),
     "meeting_sofa_north": (camp_log_north, False),
     "phone_booth": (camp_tent, False),
     "door": (camp_gate, True),
+    "filing_cabinet": (camp_crates, False),
+    "whiteboard": (camp_quest_board, False),
+    "bulletin_board": (camp_hide_map, False),
+    "notice_board": (camp_notices, False),
+    "meeting_screen": (camp_standard, False),
+    "tv_stand": (camp_pennant, False),
+    "pantry": (camp_kitchen, False),
+    "pantry_small": (camp_kitchen_small, False),
+    "kitchen_island": (camp_cart, False),
+    "vending_machine": (camp_stores, True),
+    "printer": (camp_anvil, True),
+    "water_cooler": (camp_water_barrel, True),
+    "coat_rack": (camp_armour_stand, False),
+    "bookshelf": (camp_weapon_rack, False),
+    "snack_shelf": (camp_provisions, False),
+    "plant": (camp_bush, False),
+    "plant_tall": (camp_sapling, False),
+    "plant_flower": (camp_fern, False),
+    "plant_succulent": (camp_rocks, False),
+    "exit_sign": (camp_sconce, False),
+    "wall_clock": (camp_hanging_lantern, False),
+    "pantry_bin": (camp_bucket, False),
+    "fish_tank": (camp_woodpile, True),
+    "meeting_table": (camp_trestle, False),
+    "meeting_chair": (camp_stool, False),
+    "desk_cup": (camp_tin_cup, False),
+    "token_tower": (camp_loot, True),
+    "token_sheet": (camp_coin, False),
+    "standing_desk": (camp_map_table, False),
 }
 
 
@@ -7050,6 +7821,9 @@ def main():
             marks=CAMP_DESK_MARKS.get(piece, ()),
         )
     require(grounded([camp_desk()]) == [camp_desk()], "camp_desk moves when grounded")
+    sprites["camp_side_table.sprite"] = render_sprite(
+        doc(camp_fire_1x), grounded(camp_fire_1x())
+    )
     for name, art in camp_skyline().items():
         sprites[f"camp_building_{name}@{S}x.sprite"] = render_sprite(
             doc(camp_skyline), [art]
