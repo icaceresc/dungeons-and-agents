@@ -60,9 +60,10 @@ impl Skill {
             return Skill::Exploracion;
         }
         match tool.as_str() {
+            // `orca`: what the Orca adapter names an Orca CLI call.
             "bash" | "bashoutput" | "killshell" | "killbash" | "powershell" | "shell"
             | "local_shell" | "exec" | "exec_command" | "write_stdin" | "run_command"
-            | "send_command_input" | "command_status" => Skill::Hechizo,
+            | "send_command_input" | "command_status" | "orca" => Skill::Hechizo,
             "edit"
             | "write"
             | "multiedit"
@@ -142,6 +143,7 @@ mod tests {
                     "bash",
                     "run_command",
                     "PowerShell",
+                    "Orca",
                 ],
             ),
             (
@@ -223,6 +225,7 @@ mod tests {
     fn a_tool_reads_as_its_skill_with_the_tool_beside_it() {
         assert_eq!(label("Bash", ToolKind::Bash), "Hechizo (Bash)");
         assert_eq!(label("Edit", ToolKind::Edit), "Golpe (Edit)");
+        assert_eq!(label("Orca", ToolKind::Other), "Hechizo (Orca)");
         assert_eq!(
             skilled("Bash: cargo test", ToolKind::Bash),
             "Hechizo (Bash): cargo test"
