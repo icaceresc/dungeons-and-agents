@@ -1708,3 +1708,27 @@ fn a_surface_fits_an_office_exactly_where_its_layout_does() {
     );
 }
 
+/// The floor indicator names an office's floors by number and a campaign's
+/// by role: its camp, then each dungeon by its depth below the camp.
+#[test]
+fn the_floor_indicator_names_a_campaigns_floors_by_role() {
+    use crate::display::{Content, Icon};
+    use crate::floor::FloorPlace;
+    let said = |place: FloorPlace, name: &str, (up, down)| {
+        assert_eq!(
+            floor_indicator(place),
+            [
+                Content::Icon(up),
+                Content::Text(name.into()),
+                Content::Icon(down)
+            ],
+            "{place:?}"
+        );
+    };
+    let office = |i| FloorPlace::at(i, 3);
+    said(office(0), " F1 ", (Icon::Up, Icon::NoDown));
+    said(office(2), " F3 ", (Icon::NoUp, Icon::Down));
+    said(office(0).in_campaign(), " Camp ", (Icon::Up, Icon::NoDown));
+    said(office(1).in_campaign(), " D1 ", (Icon::Up, Icon::Down));
+    said(office(2).in_campaign(), " D2 ", (Icon::NoUp, Icon::Down));
+}

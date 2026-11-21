@@ -284,7 +284,8 @@ mod tests {
     use crate::display::text::{advance, width};
 
     /// Every character the wall board and the floor indicator write as text:
-    /// each mood over two flap cycles, each gateway state, many floors.
+    /// each mood over two flap cycles, each gateway state, many floors of an
+    /// office and of a campaign.
     #[cfg(feature = "pixel-font")]
     fn signs() -> std::collections::BTreeSet<char> {
         use crate::anim::Motion;
@@ -295,9 +296,11 @@ mod tests {
             crate::display::Content::Text(text) => text.clone(),
             crate::display::Content::Icon(_) => String::new(),
         };
-        let mut text: String = crate::layout::floor_indicator(crate::floor::FloorPlace::at(11, 12))
-            .iter()
-            .map(written)
+        let place = |floor| crate::floor::FloorPlace::at(floor, 12);
+        let mut text: String = [place(11), place(0).in_campaign(), place(11).in_campaign()]
+            .into_iter()
+            .flat_map(crate::layout::floor_indicator)
+            .map(|content| written(&content))
             .collect();
         let moods = [
             StateCounts::default(),
