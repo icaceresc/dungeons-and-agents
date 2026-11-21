@@ -50,6 +50,8 @@ SHOE, SHOE_HI = ";", ":"
 # their [ramps].
 IRON, IRON_LT, IRON_SH, IRON_DK, IRON_HI = "Σ", "μ", "υ", "ϑ", "ϖ"
 LEATHER, LEATHER_SH = "г", "ғ"
+# A berserker's pelt: one base in [palette], its shades in [ramps].
+FUR, FUR_LT, FUR_SH, FUR_DK = "ϝ", "ϛ", "ϟ", "ϡ"
 WOOD, WOOD_SH, WOOD_LT, WOOD_HI, WOOD_DK, POOL = "D", "d", "O", "σ", "ψ", "ω"
 BEZEL, SLATE, SHADOW = "M", "3", "4"
 # The desk monitor's screen: the cutaway relights these keys, so only desk art
@@ -1503,6 +1505,315 @@ def style_knight_helm():
     }
 
 
+# ---- the adventurers' classes ---------------------------------------------------
+# Each class is a hairstyle whose layers reach past the head: its headgear, and
+# the mantle, cape, robe or pelt it lays over the one shared body (the knight's
+# tabard and mail). A view's layer is laid on every pose of that view, so a
+# front layer leaves to the body what some front pose animates: the torso's
+# middle, where a mug is held, and each hand's swing.
+# The front poses' animated zones, on the pose grid as (x0, y0, x1, y1),
+# half-open: the mug and the hands holding it (both hands, or carried east
+# while walking), then each hanging hand's swing. A weapon would be held in
+# a hand zone, on a per-pose hand mark no frame carries yet.
+MUG_ZONE = (10, 29, 25, 36)
+HAND_ZONES = ((3, 33, 9, 41), (23, 33, 29, 41))
+
+
+def region(g, inside, key):
+    """Every layer pixel whose centre, on the pose grid, `inside(x, y)` holds,
+    in `key`."""
+    for y in range(LAYER_H):
+        for x in range(1, FIG_W - 1):
+            if inside(x + 0.5, y - LIFT + 0.5):
+                g[y][x] = key
+
+
+def oval(cx, cy, rx, ry):
+    return lambda x, y: ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 <= 1
+
+
+def box(x0, y0, x1, y1):
+    return lambda x, y: x0 <= x < x1 and y0 <= y < y1
+
+
+def clear(g, zones):
+    """Leave `zones` (pose-grid boxes, half-open) to the body."""
+    for x0, y0, x1, y1 in zones:
+        region(g, box(x0, y0, x1, y1), T)
+
+
+CLOTH_KEYS = (SHIRT, SHIRT_LT, SHIRT_SH, SHIRT_OUT)
+
+
+def cloth(g, east=20.0):
+    """The cloth (`B`) lit as the tabard is: its west edge catches the light,
+    past column `east` it turns away, and its foot is hemmed dark."""
+    drawn = {(x, y) for y in range(LAYER_H) for x in range(FIG_W) if g[y][x] == SHIRT}
+    for x, y in drawn:
+        if x + 0.5 > east:
+            g[y][x] = SHIRT_SH
+        elif (x - 1, y) not in drawn:
+            g[y][x] = SHIRT_LT
+    for x, y in drawn:
+        if (x, y + 1) not in drawn:
+            g[y][x] = SHIRT_OUT
+
+
+def hood_shadow(g, opening, rows):
+    """The hood's shade on the brow: inside `opening` over pose rows `rows`
+    (half-open), above the eyes, the hood's own darkest cloth fading through
+    the darkest skin into the face."""
+    region(g, lambda x, y: opening(x, y) and rows[0] <= y < rows[1] - 1, SHIRT_OUT)
+    region(g, lambda x, y: opening(x, y) and rows[1] - 1 <= y < rows[1], SKIN_DK)
+
+
+def lining(g, opening, key=HAIR):
+    """The hood's lining, a line in `key` round the inside of its `opening`."""
+    edge = [
+        (x, y)
+        for y in range(LAYER_H)
+        for x in range(1, FIG_W - 1)
+        if g[y][x] in CLOTH_KEYS
+        and any(
+            opening(x + dx + 0.5, y + dy - LIFT + 0.5)
+            for dx, dy in ((1, 0), (-1, 0), (0, 1))
+        )
+    ]
+    for x, y in edge:
+        g[y][x] = key
+
+
+def fur(g, inside, ragged=3):
+    """A pelt where `inside` holds, its lower edge torn into tufts up to
+    `ragged` rows long, lit along its top, dappled with darker locks."""
+    region(g, inside, FUR)
+    pelt = {(x, y) for y in range(LAYER_H) for x in range(FIG_W) if g[y][x] == FUR}
+    for x, y in sorted(pelt):
+        if (x, y + 1) not in pelt:
+            for d in range(1, 1 + (x * 7 + 3) % (ragged + 1)):
+                put(g, x, y + d, FUR_SH)
+    pelt = {
+        (x, y) for y in range(LAYER_H) for x in range(FIG_W) if g[y][x] in (FUR, FUR_SH)
+    }
+    for x, y in pelt:
+        if (x, y - 1) not in pelt:
+            g[y][x] = FUR_LT
+        elif (x, y + 1) not in pelt or (x * 3 + y * 5) % 11 == 0:
+            g[y][x] = FUR_DK
+
+
+def shoulders(top, bottom):
+    """A pelt's lie over the shoulders: from pose row `top` at the neck to
+    `bottom`, both falling a few rows toward each arm."""
+
+    def inside(x, y):
+        drop = 3.0 * ((x - FIG_CX) / 14.0) ** 2
+        return 2 <= x < 30 and top + drop <= y < bottom + drop
+
+    return inside
+
+
+def bare_arms(g, zones, wraps):
+    """Bare arms over the body's sleeves in `zones`, each shaded down its east
+    side, bandaged across the pose rows in `wraps`."""
+    for x0, y0, x1, y1 in zones:
+        region(g, box(x0, y0, x1, y1), SKIN)
+        region(g, box(x1 - 1, y0, x1, y1), SKIN_SH)
+        for wy in wraps:
+            region(g, box(x0, wy, x1, wy + 1), OFFWHITE)
+            region(g, box(x0, wy + 1, x1, wy + 2), OFFWHITE_SH)
+
+
+def quiver(g, top, bottom, width=4.0):
+    """A leather quiver from `top` to `bottom` (pose grid), shaded down its
+    east side, its arrows' fletching, in the agent's hair colour, standing out
+    of its mouth."""
+    (tx, ty), (bx, by) = top, bottom
+    length = math.hypot(bx - tx, by - ty)
+    ux, uy = (bx - tx) / length, (by - ty) / length
+    for y in range(LAYER_H):
+        for x in range(1, FIG_W - 1):
+            px, py = x + 0.5 - tx, y - LIFT + 0.5 - ty
+            u, v = px * ux + py * uy, -px * uy + py * ux
+            if -3.5 <= u < 0 and abs(v) <= width / 2 - 0.5:
+                g[y][x] = HAIR_LT if (x + y) % 3 else HAIR
+            elif 0 <= u < 1.2 and abs(v) <= width / 2:
+                g[y][x] = LEATHER_SH
+            elif 0 <= u <= length and abs(v) <= width / 2:
+                g[y][x] = LEATHER_SH if v < -(width / 2 - 1.2) else LEATHER
+
+
+def strap(g, a, b, key=LEATHER_SH):
+    """A strap two pixels wide from `a` to `b` on the pose grid."""
+    (x0, y0), (x1, y1) = a, b
+    n = int(max(abs(x1 - x0), abs(y1 - y0))) * 2 + 1
+    for i in range(n + 1):
+        x = round(x0 + (x1 - x0) * i / n)
+        y = round(y0 + (y1 - y0) * i / n)
+        put(g, x, y + LIFT, key)
+        put(g, x + 1, y + LIFT, key)
+
+
+def hood(g, crown, opening):
+    """A hood: the cloth inside `crown` but its face `opening`."""
+    region(g, lambda x, y: crown(x, y) and not opening(x, y), SHIRT)
+
+
+def robe(top, bottom, x0, x1, flare):
+    """A robe's skirt from pose row `top` to `bottom`, columns `x0`..`x1` at its
+    top, widening a column each side every `flare` rows."""
+    return lambda x, y: (
+        top <= y < bottom
+        and x0 - (y - top) / flare <= x < x1 + (y - top) / flare
+    )
+
+
+def style_mage():
+    """A mage: a deep hood lined and trimmed in the agent's hair colour, its
+    shade on the brow, a mantle with wide sleeves over the shoulders, the robe
+    falling to the ankles, its stole in the hair colour too; seen from behind,
+    the robe whole."""
+    b = layer()
+    region(b, oval(FIG_CX, 12.5, 12.6, 13.4), SHIRT)
+    cloth(b)
+    opening = oval(FIG_CX, 18.4, 8.4, 8.8)
+    f = layer()
+    hood(f, oval(FIG_CX, 13.5, 12.2, 13.6), opening)
+    region(f, box(3, 25, 29, 29), SHIRT)  # the mantle over the shoulders
+    region(f, box(3, 29, 9, 33), SHIRT)  # its sleeves
+    region(f, box(23, 29, 29, 33), SHIRT)
+    region(f, robe(38, 45, 8, 24, 3), SHIRT)
+    clear(f, (MUG_ZONE, *HAND_ZONES))
+    cloth(f)
+    lining(f, opening)
+    hood_shadow(f, opening, (9, 16))
+    region(f, box(15, 27, 17, 29), GOLD)  # the mantle's clasp
+    region(f, box(15, 38, 17, 44), HAIR)  # the robe's stole, in the accent
+
+    back = layer()
+    region(back, oval(FIG_CX, 12.5, 12.0, 13.4), SHIRT)
+    region(back, box(4, 24, 28, 34), SHIRT)
+    region(back, robe(34, 45, 8, 24, 4), SHIRT)
+    cloth(back)
+    for x, y0 in ((11, 27), (16, 30), (21, 27)):  # the robe's folds
+        region(back, box(x, y0, x + 1, 44), SHIRT_SH)
+    region(back, box(7, 24, 25, 25), HAIR)  # the hood's trim
+
+    sb = layer()
+    region(sb, oval(11.5, 14.0, 11.0, 12.0), SHIRT)
+    cloth(sb, east=99)
+    side_opening = oval(23.5, 18.0, 5.4, 8.6)
+    so = layer()
+    hood(so, oval(13.5, 13.5, 12.0, 12.4), side_opening)
+    region(so, box(5, 24, 18, 37), SHIRT)  # the mantle down the back
+    region(so, box(15, 29, 24, 34), SHIRT)  # the near sleeve, reaching
+    region(so, box(8, 36, 28, 40), SHIRT)  # the robe over the lap
+    cloth(so, east=99)
+    lining(so, side_opening)
+    hood_shadow(so, side_opening, (9, 15))
+
+    c = layer()
+    region(c, box(3, 18, 29, 31), SHIRT)  # mantle and sleeves, across the back
+    region(c, oval(CROWN_CX, CROWN_CY, CROWN_R + 1.2, CROWN_R + 1.2), SHIRT)
+    region(c, box(1, 20, 6, 24), T)  # the hands stay the body's
+    region(c, box(27, 20, 31, 24), T)
+    cloth(c)
+    hooded = oval(CROWN_CX, CROWN_CY, CROWN_R + 1.2, CROWN_R + 1.2)
+    for x in (13, 19):  # the hood's seams, crown to brow
+        region(c, box(x, 9, x + 1, 18), SHIRT_SH)
+    region(c, lambda x, y: box(4, 18, 28, 19)(x, y) and not hooded(x, y), HAIR)
+    return {"front": (b, f), "back": back, "side": (sb, so), "crown": c, "ears": False}
+
+
+def style_ranger():
+    """A ranger: a close hood over a fringe of the agent's hair, a short cape,
+    leather bracers, a quiver strapped across the chest, its fletching over
+    the shoulder; seen from behind, the quiver on the cape."""
+    b = layer()
+    quiver(b, (26.5, 4.0), (22.0, 27.0))
+    region(b, oval(FIG_CX, 13.5, 11.8, 11.6), SHIRT)
+    cloth(b)
+    opening = oval(FIG_CX, 17.8, 8.8, 9.0)
+    f = layer()
+    hood(f, oval(FIG_CX, 14.0, 11.6, 11.8), opening)
+    region(f, box(4, 25, 28, 29), SHIRT)  # the cape's collar over the shoulders
+    cloth(f)
+    region(f, box(3, 29, 9, 33), LEATHER)  # the bracers
+    region(f, box(23, 29, 29, 33), LEATHER)
+    region(f, box(3, 31, 9, 32), LEATHER_SH)
+    region(f, box(23, 31, 29, 32), LEATHER_SH)
+    strap(f, (22, 25), (8, 30))  # above the mug a front pose may hold
+    clear(f, HAND_ZONES)
+    locks = [(10.5, 13.5, 2.2), (13.5, 14.5, 2.2), (17.0, 13.5, 2.4), (20.5, 14.0, 2.0)]
+    fringe_locks(f, locks, 9, LIFT)
+    rim_light(f, lit_top=False)
+
+    back = layer()
+    region(back, oval(FIG_CX, 13.5, 11.4, 11.6), SHIRT)
+    region(back, robe(24, 37, 5, 27, 6), SHIRT)
+    cloth(back)
+    quiver(back, (22.0, 4.5), (12.0, 31.0), 5.0)
+
+    sb = layer()
+    quiver(sb, (5.0, 6.0), (9.0, 30.0))
+    region(sb, oval(12.0, 13.5, 10.6, 11.4), SHIRT)
+    cloth(sb, east=99)
+    side_opening = oval(23.0, 17.8, 5.6, 8.4)
+    so = layer()
+    hood(so, oval(13.5, 13.0, 11.4, 11.8), side_opening)
+    region(so, box(5, 23, 13, 35), SHIRT)  # the cape down the back
+    cloth(so, east=99)
+    region(so, box(16, 30, 23, 34), LEATHER)  # the near bracer
+    strap(so, (18, 27), (12, 35))
+    fringe_locks(so, [(19.5, 13.5, 2.0), (22.5, 13.0, 2.0)], 9, LIFT)
+    rim_light(so, lit_top=False)
+
+    c = layer()
+    region(c, box(4, 18, 28, 29), SHIRT)  # the cape across the shoulders
+    cloth(c)
+    quiver(c, (25.0, 9.0), (7.0, 30.0), 5.0)
+    region(c, oval(CROWN_CX, CROWN_CY, CROWN_R + 0.8, CROWN_R + 0.8), SHIRT)
+    cloth(c)
+    return {"front": (b, f), "back": back, "side": (sb, so), "crown": c, "ears": False}
+
+
+def style_berserker():
+    """A berserker: a wild mane and a beard in the agent's hair colour, a pelt
+    over the shoulders, bare arms bound in bandages."""
+    mane = style_messy()
+    b = [row[:] for row in mane["front"][0]]
+    f = [row[:] for row in mane["front"][1]]
+    bare_arms(f, ((3, 28, 9, 33), (23, 28, 29, 33)), (31,))
+    fur(f, shoulders(23, 27))
+    clear(f, HAND_ZONES)
+    beard = layer()
+    region(beard, lambda x, y: oval(FIG_CX, 21.0, 8.4, 7.0)(x, y) and y > 22.5, HAIR)
+    region(beard, box(14, 22, 18, 24), T)  # the mouth stays clear
+    rim_light(beard, lit_top=False)
+    paste(f, beard)
+
+    back = [row[:] for row in mane["back"]]
+    bare_arms(back, ((3, 28, 8, 35), (24, 28, 29, 35)), (32,))
+    fur(back, shoulders(22, 29))
+
+    sb = [row[:] for row in mane["side"][0]]
+    so = [row[:] for row in mane["side"][1]]
+    side_beard = layer()
+    region(side_beard, lambda x, y: oval(21.0, 21.5, 5.4, 5.4)(x, y) and y > 22.5, HAIR)
+    rim_light(side_beard, lit_top=False)
+    paste(so, side_beard)
+    fur(so, box(5, 24, 17, 30))
+    bare_arms(so, ((17, 30, 24, 34),), (31,))
+
+    c = layer()
+    fur(c, box(3, 18, 29, 25))
+    bare_arms(c, ((1, 24, 10, 31), (22, 24, 30, 31), (10, 26, 22, 31)), (27,))
+    region(c, box(1, 20, 6, 24), T)  # the hands stay the body's
+    region(c, box(27, 20, 31, 24), T)
+    paste(c, mane["crown"])
+    return {"front": (b, f), "back": back, "side": (sb, so), "crown": c, "ears": False}
+
+
 def tail(x0, y0, x1, y1, tie_y):
     """A ponytail's tail, lit on its own, with its tie."""
     t = layer()
@@ -1520,13 +1831,16 @@ def tail(x0, y0, x1, y1, tie_y):
     return t
 
 
-# Per-agent hairstyles, by the name a pack registers them under: the knight
-# prototype wears its helm alone.
+# Per-agent hairstyles, by the name a pack registers them under: each an
+# adventurer's class, so every agent is one of the four.
 HAIRSTYLES = {
-    "knight_helm": style_knight_helm,
+    "knight": style_knight_helm,
+    "mage": style_mage,
+    "ranger": style_ranger,
+    "berserker": style_berserker,
 }
-# The modern styles, written to no sprite while the knights wear only the helm:
-# kept to be redrawn as hoods and other helmets.
+# The modern styles, written to no sprite: kept as parts for the classes (the
+# berserker's mane is `style_messy`'s) and for classes to come.
 UNWORN_HAIRSTYLES = {
     "mop": style_mop,
     "messy": style_messy,

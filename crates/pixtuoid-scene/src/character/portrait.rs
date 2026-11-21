@@ -254,8 +254,8 @@ mod tests {
             .map(|s| s.name().to_owned())
             .collect();
         assert!(
-            !styles.is_empty(),
-            "premise: the pack draws a style at its densest variant"
+            styles.len() > 1,
+            "premise: the pack draws styles to tell apart"
         );
         let mut worn = std::collections::BTreeSet::new();
         let mut sizes = std::collections::BTreeSet::new();

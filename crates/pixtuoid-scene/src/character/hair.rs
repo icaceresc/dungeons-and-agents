@@ -40,7 +40,7 @@ pub(crate) enum Class {
 
 impl Class {
     /// The class the style `name` marks. Any other style is a knight's, and so
-    /// is none: the prototype dresses every agent in `knight_helm`.
+    /// is none.
     fn of_style(name: Option<&str>) -> Self {
         match name {
             Some("mage") => Self::Mage,

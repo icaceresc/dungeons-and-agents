@@ -5445,7 +5445,8 @@ fn a_fighter_keys_on_the_art_its_seat_resolves_to() {
     use crate::layout::Facing;
     use crate::pose::Pose;
     let (mut scene, layout, id, now0, _) = sim_rig();
-    let pack = OfficeArt::parse(crate::pack::test_pack_declaring(
+    let pack = OfficeArt::parse(crate::pack::test_pack_wearing(
+        "knight",
         "[animations.attack_knight_back]\nframes   = [\"attack_knight_back_0.sprite\", \"attack_knight_back_1.sprite\"]\nframe_ms = 125",
         "[animations.attack_knight_back]\nframes   = [\"attack_knight_back_0.sprite\", \"attack_knight_back_1.sprite\"]\nframe_ms = 250",
     ))
@@ -5480,7 +5481,7 @@ fn a_fighter_keys_on_the_art_its_seat_resolves_to() {
             timing.beat,
         );
         let [p] = <[_; 1]>::try_from(placements).expect("one agent, one placement");
-        assert_eq!(p.anim_name, Piece::AttackKnightBack, "the knight_helm's");
+        assert_eq!(p.anim_name, Piece::AttackKnightBack, "the knight's");
         let want = ((timing.beat.ms() / ms + phase) % frames) as usize;
         assert_eq!(p.frame_idx, want, "at {} ms", step * tick);
     }
@@ -5509,11 +5510,8 @@ fn an_agent_at_work_plays_its_class_attack() {
         ("knight_helm", Piece::AttackKnight),
         ("mop", Piece::AttackKnight),
     ] {
-        let pack = OfficeArt::parse(crate::pack::test_pack_declaring(
-            "[hairstyles.\"knight_helm@4x\"]",
-            &format!("[hairstyles.\"{style}@4x\"]"),
-        ))
-        .expect("the test pack parses");
+        let pack = OfficeArt::parse(crate::pack::test_pack_wearing(style, "", ""))
+            .expect("the test pack parses");
         let poses = HashMap::from([(id, Some(Pose::SeatedTyping))]);
         let beat = Motion::Full.timing(now0).beat;
         let (placements, ..) =

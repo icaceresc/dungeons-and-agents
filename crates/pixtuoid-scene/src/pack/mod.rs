@@ -826,6 +826,31 @@ pub(crate) fn test_pack_declaring(old: &str, new: &str) -> Pack {
     .expect("the test pack loads")
 }
 
+/// [`test_pack_declaring`]'s pack dressing every agent in one style, named
+/// `style` and drawn as the knight's: a test of what a style's name selects,
+/// with no agent's pick among the bundled classes left to chance.
+#[cfg(test)]
+pub(crate) fn test_pack_wearing(style: &str, old: &str, new: &str) -> Pack {
+    assert!(
+        BUNDLED_PACK_TOML.contains(old),
+        "the bundled manifest says {old:?}"
+    );
+    let mut manifest: toml_edit::DocumentMut = BUNDLED_PACK_TOML
+        .replacen(old, new, 1)
+        .parse()
+        .expect("the bundled manifest parses");
+    let styles = manifest["hairstyles"]
+        .as_table_mut()
+        .expect("the bundled manifest has hairstyles");
+    let knight = styles
+        .remove("knight@4x")
+        .expect("the bundled pack draws the knight");
+    styles.clear();
+    styles.insert(&format!("{style}@4x"), knight);
+    load_pack_from_strings(&manifest.to_string(), &bundled_sprite_srcs())
+        .expect("the test pack loads")
+}
+
 #[cfg(test)]
 mod density_art;
 

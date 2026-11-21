@@ -127,6 +127,7 @@
 # agent's iron is one metal and their colour shows on the tabard and the crest.
 "Σ" = "#7e838c"   # iron: a helm's bowl, mail's lit rings
 "г" = "#4a3020"   # dark leather: the belt
+"ϝ" = "#6e5c48"   # a berserker's pelt (scripts/gen-art.py's FUR)
 
 # Shades of a recolor key, derived from it: `level` steps along the key's ramp
 # (`Rgb::ramp`). They carry no colour of their own, so a per-agent recolor
@@ -176,6 +177,9 @@
 "ϑ" = { of = "Σ", level = -5 }   # iron, darkest: between the rings, a helm's rim
 "ϖ" = { of = "Σ", level = 5 }    # iron, a glint
 "ғ" = { of = "г", level = -2 }   # leather, shaded: the belt's lower edge
+"ϛ" = { of = "ϝ", level = 2 }    # pelt, lit: its upper edge
+"ϟ" = { of = "ϝ", level = -2 }   # pelt, shaded: its torn tufts
+"ϡ" = { of = "ϝ", level = -4 }   # pelt, darkest: its locks and lower edge
 
 [animations.seated]
 frames   = ["seated.sprite"]
@@ -826,11 +830,29 @@ check       = "icon_check.sprite"
 [characters]
 outline = "κ"
 
-[hairstyles."knight_helm@4x"]
-front = { behind = "hair_knight_helm_front_behind@4x.sprite", over = "hair_knight_helm_front_over@4x.sprite" }
-back = { over = "hair_knight_helm_back_over@4x.sprite" }
-side = { behind = "hair_knight_helm_side_behind@4x.sprite", over = "hair_knight_helm_side_over@4x.sprite" }
-crown = { over = "hair_knight_helm_crown_over@4x.sprite" }
+[hairstyles."knight@4x"]
+front = { behind = "hair_knight_front_behind@4x.sprite", over = "hair_knight_front_over@4x.sprite" }
+back = { over = "hair_knight_back_over@4x.sprite" }
+side = { behind = "hair_knight_side_behind@4x.sprite", over = "hair_knight_side_over@4x.sprite" }
+crown = { over = "hair_knight_crown_over@4x.sprite" }
+
+[hairstyles."mage@4x"]
+front = { behind = "hair_mage_front_behind@4x.sprite", over = "hair_mage_front_over@4x.sprite" }
+back = { over = "hair_mage_back_over@4x.sprite" }
+side = { behind = "hair_mage_side_behind@4x.sprite", over = "hair_mage_side_over@4x.sprite" }
+crown = { over = "hair_mage_crown_over@4x.sprite" }
+
+[hairstyles."ranger@4x"]
+front = { behind = "hair_ranger_front_behind@4x.sprite", over = "hair_ranger_front_over@4x.sprite" }
+back = { over = "hair_ranger_back_over@4x.sprite" }
+side = { behind = "hair_ranger_side_behind@4x.sprite", over = "hair_ranger_side_over@4x.sprite" }
+crown = { over = "hair_ranger_crown_over@4x.sprite" }
+
+[hairstyles."berserker@4x"]
+front = { behind = "hair_berserker_front_behind@4x.sprite", over = "hair_berserker_front_over@4x.sprite" }
+back = { over = "hair_berserker_back_over@4x.sprite" }
+side = { behind = "hair_berserker_side_behind@4x.sprite", over = "hair_berserker_side_over@4x.sprite" }
+crown = { over = "hair_berserker_crown_over@4x.sprite" }
 
 # The city behind the windows: scripts/gen-art.py's BUILDINGS, registered here
 # by hand (`every_bundled_sprite_is_a_frame_the_pack_loads` fails on one left
