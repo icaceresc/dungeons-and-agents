@@ -1,9 +1,12 @@
 //! Bundle the default pack: the sprite list is generated from `sprites/default/`
-//! itself, so a sprite committed there is bundled by construction. Every
-//! bundled file goes in without its comments ([`comments::strip_comments`]).
+//! itself, so a sprite committed there is bundled by construction, and so is
+//! each floor role's manifest, laid over `pack.toml` ([`overlay::overlay`]).
+//! Every bundled file goes in without its comments ([`comments::strip_comments`]).
 
 #[path = "build_support/comments.rs"]
 mod comments;
+#[path = "build_support/overlay.rs"]
+mod overlay;
 
 use std::fmt::Write as _;
 use std::path::Path;
@@ -30,6 +33,42 @@ fn main() {
     std::fs::write(out_dir.join("bundled_pack.json"), pack_json.to_string())
         .expect("write bundled_pack.json");
     std::fs::write(out_dir.join("bundled_pack.toml"), pack_toml).expect("write bundled_pack.toml");
+
+    // Every other manifest there is a floor role's, named by its stem, so one
+    // committed there is bundled by construction, as a sprite is.
+    let mut roles: Vec<_> = std::fs::read_dir(&asset_dir)
+        .expect("read sprites/default")
+        .map(|entry| entry.expect("read a sprites/default entry").path())
+        .filter(|path| {
+            path.extension().is_some_and(|e| e == "toml")
+                && path.file_name().is_some_and(|n| n != "pack.toml")
+        })
+        .collect();
+    roles.sort();
+    let mut overlaid = String::from("&[\n");
+    for path in &roles {
+        let role = path
+            .file_stem()
+            .and_then(|n| n.to_str())
+            .expect("a role manifest's name is UTF-8");
+        let over: serde_json::Value = toml::from_str(&comments::strip_comments(
+            &std::fs::read_to_string(path).expect("read a role manifest"),
+        ))
+        .expect("a role manifest is TOML");
+        let mut merged = pack_json.clone();
+        overlay::overlay(&mut merged, over);
+        let bundled = out_dir.join(format!("bundled_pack_{role}.json"));
+        std::fs::write(&bundled, merged.to_string()).expect("write a role's pack");
+        writeln!(
+            overlaid,
+            "    ({role:?}, include_str!({:?})),",
+            bundled.display().to_string()
+        )
+        .expect("writing to a String");
+    }
+    overlaid.push_str("]\n");
+    std::fs::write(out_dir.join("bundled_roles.rs"), overlaid).expect("write bundled_roles.rs");
+
     let stripped = out_dir.join("sprites");
     std::fs::create_dir_all(&stripped).expect("create the stripped sprite dir");
 

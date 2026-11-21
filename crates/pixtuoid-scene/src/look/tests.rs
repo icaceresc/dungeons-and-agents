@@ -751,11 +751,25 @@ fn the_cutaways_figures_leave_with_their_agents() {
     )
     .expect("lays out");
     assert!(
-        office.raster.cutaway.figures_len() > 0,
+        office
+            .raster
+            .latest()
+            .expect("served")
+            .cutaway
+            .figures_len()
+            > 0,
         "premise: the frame drew its agents"
     );
     office.evict_missing(&SceneState::new([8; pixtuoid_core::state::MAX_FLOORS]));
-    assert_eq!(office.raster.cutaway.figures_len(), 0);
+    assert_eq!(
+        office
+            .raster
+            .latest()
+            .expect("served")
+            .cutaway
+            .figures_len(),
+        0
+    );
 }
 
 /// A classic frame hands its badges, its bubbles and its signs over apart,
@@ -797,10 +811,11 @@ fn a_classic_frame_hands_over_its_badges_and_signs_apart() {
     assert!(text.badges.is_empty() && text.bubbles.is_empty() && text.signs.is_empty());
 }
 
-/// A frame of another pack or theme empties the office's caches first, and
-/// one of the same keeps them.
+/// Each pack drawn in each theme has its own office caches: a frame of the
+/// same keeps them, the two a slide alternates between keep theirs, and a
+/// third takes the place of the one drawn longest ago.
 #[test]
-fn a_new_pack_or_theme_empties_the_office_caches() {
+fn each_pack_and_theme_keeps_its_own_office_caches() {
     use crate::outside::{OutsideCache, Wall};
     let normal = &crate::theme::NORMAL;
     let cyberpunk = crate::theme::theme_by_name("cyberpunk").expect("a registry theme");
@@ -838,20 +853,30 @@ fn a_new_pack_or_theme_empties_the_office_caches() {
         .clone()
     };
     let mut raster = OfficeRaster::default();
-    raster.serve(&one, normal);
-    let first = views(&mut raster.outside, &one, normal);
-    raster.serve(&one, normal);
-    let kept = views(&mut raster.outside, &one, normal);
+    let mut served = |pack: &Arc<OfficeArt>, theme| {
+        let outside = &mut raster.serve(pack, theme).outside;
+        views(outside, pack, theme)
+    };
+    let first = served(&one, normal);
+    let kept = served(&one, normal);
     assert!(
         Arc::ptr_eq(&first, &kept),
         "one pack in one theme lost its views"
     );
-    raster.serve(&one, cyberpunk);
-    let themed = views(&mut raster.outside, &one, cyberpunk);
+    let themed = served(&one, cyberpunk);
     assert!(!Arc::ptr_eq(&kept, &themed), "a new theme kept the views");
-    raster.serve(&other, cyberpunk);
-    let packed = views(&mut raster.outside, &other, cyberpunk);
+    let back = served(&one, normal);
+    assert!(
+        Arc::ptr_eq(&kept, &back),
+        "the slide's other floor lost its views"
+    );
+    let packed = served(&other, cyberpunk);
     assert!(!Arc::ptr_eq(&themed, &packed), "a new pack kept the views");
+    let again = served(&one, cyberpunk);
+    assert!(
+        !Arc::ptr_eq(&themed, &again),
+        "a third serving kept the views of the one drawn longest ago"
+    );
 }
 
 /// [`Dim::NONE`] leaves a frame as drawn; a dim darkens each pixel a frame
@@ -1379,4 +1404,40 @@ fn a_frame_hovers_its_plants_as_the_occasion_draws_them() {
         stood_in += usize::from(label != f.kind.hover_label(Default::default()).expect("a plant"));
     }
     assert!(stood_in > 0, "no plant hovered as a stand-in");
+}
+
+/// The classic paints a wall that shows no windows (`[walls] windows =
+/// false`) without its windows' frames and the posts between them: its band
+/// is wall where the office's frames its sky.
+#[test]
+fn the_classic_paints_a_wall_without_windows_solid() {
+    let t0 = crate::localclock::at_hour(12);
+    let scene = crate::floor::project_floor_scene(&office(t0), 0);
+    let framed = |pack: OfficeArt| {
+        let (mut floor, mut office) = (PerFloor::new(Arc::new(pack)), PerOffice::new());
+        let rendered = render(
+            &mut floor,
+            office.stores(),
+            Look::HALF_BLOCKS,
+            inputs(&scene, t0),
+        )
+        .expect("lays out");
+        let band = rendered.layout().wall_band_h();
+        let px = floor.raster.pixels().expect("drawn");
+        (0..band)
+            .flat_map(|y| (0..px.width()).map(move |x| (x, y)))
+            .filter(|&(x, y)| px.get(x, y) == theme().surface.window_frame)
+            .count()
+    };
+    assert!(
+        framed(crate::pack::test_office()) > 0,
+        "premise: the office frames its windows"
+    );
+    assert_eq!(
+        framed(crate::pack::test_office_with(
+            "[walls]\nwindows = false\n",
+            &[]
+        )),
+        0
+    );
 }

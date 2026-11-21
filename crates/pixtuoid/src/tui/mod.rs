@@ -359,7 +359,8 @@ pub(crate) fn teardown_terminal(term: &mut Term, out: Option<&FrameOut>) -> Resu
 
 pub(crate) struct TuiSession {
     pub scene_rx: SceneRx,
-    pub pack: Arc<pixtuoid_scene::pack::OfficeArt>,
+    /// Each floor's art: the TUI draws a campaign.
+    pub packs: pixtuoid_scene::pack::RolePacks,
     /// What `boot_tui` planned to paint.
     pub plan: crate::graphics::Plan,
     /// How the office moves in each look, which `boot_tui` resolved beside
@@ -484,7 +485,7 @@ fn paint_plan<B: ratatui::backend::Backend<Error: Send + Sync + 'static>>(
 pub(crate) async fn run_tui(session: TuiSession) -> Result<Option<QuitSignal>> {
     let TuiSession {
         mut scene_rx,
-        pack,
+        packs,
         plan,
         motions,
         floor_caps,
@@ -510,7 +511,7 @@ pub(crate) async fn run_tui(session: TuiSession) -> Result<Option<QuitSignal>> {
     let term = setup_terminal(out.clone(), &arms)?;
     let quit = arms.signalled();
     tokio::pin!(quit);
-    let mut renderer = TuiRenderer::new(term, theme, pets, pack);
+    let mut renderer = TuiRenderer::new(term, theme, pets, packs);
     paint_plan(&mut renderer, (plan, motions), &out);
     renderer.present_through(out);
     // A LOCAL so EVERY exit (q / Ctrl-C / terminate / error) drops it and joins

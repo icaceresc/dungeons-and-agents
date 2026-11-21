@@ -22,8 +22,8 @@ use pixtuoid_scene::floor::{Conditions, FloorInputs, PetInputs};
 use pixtuoid_scene::theme::theme_by_name;
 
 /// The two `cc` labels are a DELIBERATE collision, so the snapshot exercises the
-/// `·xxxx` suffix as well as every label tone.
-fn populate_demo_agents(scene: &mut SceneState, now: SystemTime, n: usize) {
+/// `·xxxx` suffix as well as every label tone. Each sits on `floor`.
+fn populate_demo_agents(scene: &mut SceneState, now: SystemTime, n: usize, floor: usize) {
     let archetypes: [(&str, ActivityState); 6] = [
         (
             "claude-code",
@@ -87,7 +87,7 @@ fn populate_demo_agents(scene: &mut SceneState, now: SystemTime, n: usize) {
                 arrived_at: Some(seated_since),
                 last_event_at: recent,
                 exiting_at: None,
-                desk: Some(FloorDesk::new(0, i)),
+                desk: Some(FloorDesk::new(floor, i)),
                 tool_call_count: 0,
                 running_ms: 0,
                 unknown_cwd: false,
@@ -114,6 +114,10 @@ struct FloatingArgs {
     theme: String,
     #[arg(long, default_value_t = 0)]
     agents: usize,
+    /// Seat the agents on floor N and show it: the campaign's camp is 0, its
+    /// dungeons the floors below.
+    #[arg(long, value_name = "N", default_value_t = 0)]
+    floor: usize,
     #[arg(long, value_name = "X,Y", value_parser = parse_point)]
     hover: Option<Point>,
     #[arg(long, value_name = "KIND", value_parser = pixtuoid::dev::pet_parser())]
@@ -156,6 +160,7 @@ fn main() -> Result<()> {
         size,
         theme: theme_name,
         agents: n_agents,
+        floor,
         hover,
         pet,
         drag,
@@ -175,22 +180,22 @@ fn main() -> Result<()> {
 
     let theme =
         theme_by_name(&theme_name).ok_or_else(|| anyhow!("unknown --theme {theme_name:?}"))?;
-    let pack = std::sync::Arc::new(pixtuoid_scene::pack::load_bundled_pack()?);
+    let packs = pixtuoid_scene::pack::load_bundled_role_packs()?;
     let now = std::time::UNIX_EPOCH + Duration::from_secs(1_700_000_000);
 
     let (win_w, win_h) = (u32::from(size.0), u32::from(size.1));
     let at = window_geometry(
         winit::dpi::PhysicalSize::new(win_w, win_h),
-        pack.max_density_variant(),
+        packs.max_density_variant(),
         zoom,
     );
     let office = at.logical();
     let desks = pixtuoid::dev::floor_caps_for_buffer(office.w, office.h);
     let mut scene = SceneState::new(desks);
-    populate_demo_agents(&mut scene, now, n_agents);
+    populate_demo_agents(&mut scene, now, n_agents, floor);
     // As the app takes a layout: an agent it has no desk for moves to a free one.
     scene.set_capacities(desks, now);
-    let mut renderer = OfficeRenderer::new(std::sync::Arc::clone(&pack));
+    let mut renderer = OfficeRenderer::new(packs.clone());
     renderer.set_pets(
         pet.map(pixtuoid_scene::pet::Pet::defaulted)
             .into_iter()
@@ -219,6 +224,13 @@ fn main() -> Result<()> {
     };
     render(&mut renderer, now);
     let mut now = now;
+    if floor > 0 {
+        // The slide there, landed.
+        renderer.navigate(floor, now);
+        let slide = renderer.nav().transition().map_or(0, |tr| tr.duration_ms);
+        now += Duration::from_millis(slide);
+        render(&mut renderer, now);
+    }
     if let Some((from, to)) = drag {
         let window = (win_w, win_h);
         renderer.press_at(
@@ -271,7 +283,11 @@ fn main() -> Result<()> {
         }),
     };
     let mut overlays = pixtuoid::dev::OverlayLayers::default();
-    overlays.update(next, at, (theme, &pack));
+    overlays.update(
+        next,
+        at,
+        (theme, packs.of(pixtuoid_scene::floor::FloorRole::Camp)),
+    );
     let (ww, wh) = (win_w as usize, win_h as usize);
     let mut sb: Vec<u32> = vec![0; ww * wh];
     pixtuoid::dev::composite(

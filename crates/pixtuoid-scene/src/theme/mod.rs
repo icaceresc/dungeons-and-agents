@@ -37,6 +37,9 @@ pub struct Theme {
     pub display_name: &'static str,
     /// Light vs dark classification.
     pub(crate) kind: ThemeKind,
+    /// The theme a campaign's camp is drawn in, where it has its own: the
+    /// same office under the open sky ([`Self::for_role`]).
+    pub(crate) camp: Option<&'static Theme>,
     /// Room-shell colors (walls, carpet, window frame).
     pub surface: SurfaceColors,
     /// Office-fixture colors (cubicles, runner, skyline, clock, shadow).
@@ -58,6 +61,15 @@ pub struct Theme {
 }
 
 impl Theme {
+    /// The theme a campaign floor of `role` is drawn in: its camp's where it
+    /// has one, else itself.
+    pub fn for_role(&'static self, role: crate::floor::FloorRole) -> &'static Theme {
+        match role {
+            crate::floor::FloorRole::Camp => self.camp.unwrap_or(self),
+            crate::floor::FloorRole::Dungeon => self,
+        }
+    }
+
     /// A source's hue by its 2-char label prefix, the idle label's for an
     /// unknown one.
     pub fn source_hue(&self, prefix: &str) -> Rgb {
@@ -418,6 +430,32 @@ pub fn theme_by_name(name: &str) -> Option<&'static Theme> {
 mod tests {
     use super::*;
 
+    /// Every theme a frame is drawn in: each one a person picks, and the camp
+    /// it draws a campaign's camp in.
+    fn every_drawn_theme() -> impl Iterator<Item = &'static Theme> {
+        ALL_THEMES
+            .iter()
+            .flat_map(|&theme| std::iter::once(theme).chain(theme.camp))
+    }
+
+    /// A campaign draws its camp in its theme's camp where it has one, and
+    /// its dungeons in the theme itself; a camp is the same kind of theme,
+    /// and has no camp of its own.
+    #[test]
+    fn a_campaign_draws_its_camp_in_its_themes_camp() {
+        use crate::floor::FloorRole;
+        assert!(std::ptr::eq(
+            DARK_FANTASY.for_role(FloorRole::Camp),
+            &dark_fantasy::DARK_FANTASY_CAMP
+        ));
+        for &theme in ALL_THEMES {
+            assert!(std::ptr::eq(theme.for_role(FloorRole::Dungeon), theme));
+            let camp = theme.for_role(FloorRole::Camp);
+            assert_eq!(camp.kind, theme.kind, "{}", theme.name);
+            assert!(camp.camp.is_none(), "{}'s camp has a camp", theme.name);
+        }
+    }
+
     #[test]
     fn a_source_hue_falls_back_to_the_idle_label() {
         assert_eq!(NORMAL.source_hue("cc"), NORMAL.source.claude_code);
@@ -434,7 +472,7 @@ mod tests {
     /// `monitor_idle` (R over B) because only the lamp half was ever stated.
     #[test]
     fn the_desk_lamp_reads_warm_and_the_standby_screen_cold_in_every_theme() {
-        for t in ALL_THEMES {
+        for t in every_drawn_theme() {
             let (lamp, screen) = (t.lighting.desk_lamp, t.effects.monitor_idle);
             assert!(
                 lamp.r > lamp.b,
@@ -493,7 +531,7 @@ mod tests {
 
     #[test]
     fn sun_and_moon_read_warm_and_cool_for_every_theme() {
-        for t in ALL_THEMES {
+        for t in every_drawn_theme() {
             let l = &t.lighting;
             assert!(
                 l.sun_core.r > l.sun_core.b,
@@ -515,7 +553,7 @@ mod tests {
         // The tower is 3px wide, so it needs real contrast, but themes like
         // gruvbox run warm and low.
         const MIN_PAPER_MARGIN: f32 = 0.15;
-        for t in ALL_THEMES {
+        for t in every_drawn_theme() {
             let f = &t.furniture;
             assert!(
                 f.paper.lightness() >= f.wood_top.lightness() + MIN_PAPER_MARGIN,
@@ -547,7 +585,7 @@ mod tests {
         /// Deliberately looser than `MIN_SOURCE_HUE_DIST`: six glow roles share
         /// ONE palette's accent range, so the legitimate pairs run tight.
         const MIN_TOOL_GLOW_DIST: u32 = 30;
-        for t in ALL_THEMES {
+        for t in every_drawn_theme() {
             // Destructured with NO `..`: a seventh glow role must join the guard
             // or this stops compiling.
             let ToolGlowColors {
@@ -585,7 +623,7 @@ mod tests {
     fn the_neon_alert_hue_is_a_different_light_in_every_theme() {
         /// Below this the sign's alert and brand light read as one color at a glance.
         const MIN_NEON_ALERT_DIST: u32 = 100;
-        for t in ALL_THEMES {
+        for t in every_drawn_theme() {
             let d = manhattan(t.ui.neon_alert, t.ui.neon_brand);
             assert!(
                 d >= MIN_NEON_ALERT_DIST,
@@ -597,7 +635,7 @@ mod tests {
 
     #[test]
     fn appliance_palette_is_legible_for_every_theme() {
-        for t in ALL_THEMES {
+        for t in every_drawn_theme() {
             let a = &t.appliance;
             assert!(
                 a.printer_paper.lightness() > a.printer_body.lightness()
@@ -666,7 +704,7 @@ mod tests {
         const MIN_SOURCE_HUE_DIST: u32 = 60;
         // A 2-char badge on the tooltip must stand out by lightness alone.
         const MIN_BADGE_LIGHTNESS_GAP: f32 = 0.1;
-        for t in ALL_THEMES {
+        for t in every_drawn_theme() {
             let s = &t.source;
             let bg = t.ui.tooltip_bg;
             let hues = s.all();

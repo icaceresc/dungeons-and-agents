@@ -94,6 +94,20 @@ impl Covering {
 }
 
 impl Backdrop {
+    /// This backdrop with the posts between its windows only where its wall
+    /// shows `windows`.
+    #[must_use]
+    pub(crate) fn with_windows(self, windows: bool) -> Self {
+        if windows {
+            self
+        } else {
+            Self {
+                posts: Vec::new(),
+                ..self
+            }
+        }
+    }
+
     /// `layout`'s backdrop in `theme`'s tones.
     pub(crate) fn of(layout: &SceneLayout, theme: &Theme) -> Self {
         let band_h = layout.wall_band_h();

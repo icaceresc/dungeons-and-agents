@@ -116,6 +116,19 @@ short window shows the tops of the towers and a tall one shows them whole. Every
 looks out on one city, the pack's buildings standing in front of plain blocks
 on the horizon.
 
+A campaign (`floor::Building::Campaign`) draws each floor in its
+`floor::FloorRole`'s pack: `pack.toml` with that role's manifest beside it,
+`camp.toml` (floor 0) or `dungeon.toml` (every floor below), laid over it.
+A role's manifest has `pack.toml`'s schema and names only what the role
+redraws, under the office's own names (`[animations."desk@4x"]`,
+`[buildings.<name>]`, `[icons]`, a new `[palette]` key): a table merges key
+by key, and any other value, a `frames` list included, replaces the office's
+whole, so a redrawn animation keeps its `frame_ms`. Its sprites sit beside the
+office's, prefixed with its role (`camp_desk@4x.sprite`); one no manifest
+registers fails the bundled-sprite test, and each role's pack passes the
+same validation as the office's. `[walls] windows = false` draws the north
+wall solid: no windows, no posts between them.
+
 ## When refactoring
 
 Changes to `derive_with_routing`, `WalkState`, or the pixel passes add or

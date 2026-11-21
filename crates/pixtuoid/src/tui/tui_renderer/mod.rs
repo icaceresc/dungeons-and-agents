@@ -1,14 +1,12 @@
 //! `TuiRenderer` — the half-block terminal painter; its inherent `render` is
 //! the production flush entry point.
 
-use std::sync::Arc;
 use std::time::SystemTime;
 
 use anyhow::Result;
 #[cfg(test)]
 use pixtuoid_core::AgentId;
 use pixtuoid_core::state::SceneState;
-use pixtuoid_scene::pack::OfficeArt;
 use pixtuoid_scene::sprite::RgbBuffer;
 
 use ratatui::Terminal;
@@ -164,11 +162,11 @@ impl<B: Backend<Error: Send + Sync + 'static>> TuiRenderer<B> {
         terminal: Terminal<B>,
         theme: &'static pixtuoid_scene::theme::Theme,
         pets: Vec<pixtuoid_scene::pet::Pet>,
-        pack: Arc<OfficeArt>,
+        building: impl Into<pixtuoid_scene::floor::Building>,
     ) -> Self {
         Self {
             terminal,
-            session: OfficeSession::new(pack),
+            session: OfficeSession::new(building),
             jank: crate::jank::Jank::new(),
             frame_out: None,
             last_extent: None,
