@@ -19,6 +19,10 @@ const SEATED_BACK: Piece = Piece::SeatedBack;
 const SEATED_BACK_VIEWS: &[(Piece, Piece)] = &[
     (Piece::Seated, SEATED_BACK),
     (Piece::Typing, Piece::TypingBack),
+    (Piece::AttackMage, Piece::AttackMageBack),
+    (Piece::AttackKnight, Piece::AttackKnightBack),
+    (Piece::AttackRanger, Piece::AttackRangerBack),
+    (Piece::AttackBerserker, Piece::AttackBerserkerBack),
 ];
 
 /// Which VIEW of a character a seat shows. ONLY the look: what they sit ON

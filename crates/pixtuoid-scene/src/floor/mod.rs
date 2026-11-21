@@ -339,8 +339,25 @@ impl FloorCtx {
     /// id would find its previous life's entry/exit legs (they gate on
     /// `is_none()`) and teleport in instead of walking.
     pub(crate) fn evict_missing(&mut self, scene: &SceneState) {
-        self.history.evict_missing(scene);
-        self.walks.retain(|id, _| scene.agents.contains_key(id));
+        self.keep(|id| scene.agents.contains_key(id));
+    }
+
+    /// Drop per-agent render state for agents `scene` (the FULL live scene)
+    /// seats on a floor other than `floor`, or on none: one that moves to
+    /// another floor and back returns to this one as a recurring id does, and
+    /// walks in again.
+    pub(crate) fn evict_off_floor(&mut self, scene: &SceneState, floor: usize) {
+        let here: std::collections::HashSet<AgentId> = floor_agents(scene, floor)
+            .map(|slot| slot.agent_id)
+            .collect();
+        self.keep(|id| here.contains(id));
+    }
+
+    /// Keep only the pose history and walks of agents `keeps` answers for;
+    /// without a sweep every id ever drawn leaks an entry for the process's life.
+    fn keep(&mut self, keeps: impl Fn(&AgentId) -> bool) {
+        self.history.retain(&keeps);
+        self.walks.retain(|id, _| keeps(id));
     }
 
     /// Recompute `door_anim_max_ms`: the max `duration_ms + pause_ms` over the
@@ -1277,6 +1294,26 @@ pub fn num_floors(scene: &SceneState) -> usize {
         .max()
         .unwrap_or(1)
         .min(MAX_FLOORS)
+}
+
+/// The floor the work is on: the lowest dungeon floor holding an agent at
+/// work, else the camp ([`CAMP_FLOOR`](pixtuoid_core::state::CAMP_FLOOR)),
+/// where a [campaign](pixtuoid_core::state::SeatPolicy::Campaign) rests the
+/// rest.
+pub(crate) fn action_floor(scene: &SceneState) -> usize {
+    use pixtuoid_core::state::{ActivityState, CAMP_FLOOR};
+    (scene.agents.values())
+        .filter(|slot| slot.exiting_at.is_none())
+        .filter(|slot| {
+            matches!(
+                slot.state,
+                ActivityState::Running { .. } | ActivityState::RequiresAction { .. }
+            )
+        })
+        .filter_map(|slot| slot.desk.map(|desk| desk.floor))
+        .filter(|&floor| floor != CAMP_FLOOR)
+        .min()
+        .unwrap_or(CAMP_FLOOR)
 }
 
 /// The agents floor `floor_idx` draws: those holding a desk on it.

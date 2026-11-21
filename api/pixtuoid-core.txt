@@ -342,6 +342,7 @@ pub fn pixtuoid_core::remote::RemoteOffice::machine(&self) -> core::option::Opti
 pub fn pixtuoid_core::remote::RemoteOffice::new([usize; 10]) -> Self
 pub fn pixtuoid_core::remote::RemoteOffice::scene(&self) -> &pixtuoid_core::state::SceneState
 pub fn pixtuoid_core::remote::RemoteOffice::set_capacities(&mut self, [usize; 10], std::time::SystemTime)
+pub fn pixtuoid_core::remote::RemoteOffice::with_seat_policy(self, pixtuoid_core::state::SeatPolicy) -> Self
 impl core::fmt::Debug for pixtuoid_core::remote::RemoteOffice
 pub fn pixtuoid_core::remote::RemoteOffice::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
 impl core::marker::Freeze for pixtuoid_core::remote::RemoteOffice
@@ -1380,6 +1381,27 @@ impl core::marker::Unpin for pixtuoid_core::state::DaemonState
 impl core::marker::UnsafeUnpin for pixtuoid_core::state::DaemonState
 impl core::panic::unwind_safe::RefUnwindSafe for pixtuoid_core::state::DaemonState
 impl core::panic::unwind_safe::UnwindSafe for pixtuoid_core::state::DaemonState
+pub enum pixtuoid_core::state::SeatPolicy
+pub pixtuoid_core::state::SeatPolicy::Campaign
+pub pixtuoid_core::state::SeatPolicy::FloorFirst
+impl core::clone::Clone for pixtuoid_core::state::SeatPolicy
+pub fn pixtuoid_core::state::SeatPolicy::clone(&self) -> Self
+impl core::cmp::Eq for pixtuoid_core::state::SeatPolicy
+impl core::cmp::PartialEq for pixtuoid_core::state::SeatPolicy
+pub fn pixtuoid_core::state::SeatPolicy::eq(&self, &Self) -> bool
+impl core::default::Default for pixtuoid_core::state::SeatPolicy
+pub fn pixtuoid_core::state::SeatPolicy::default() -> Self
+impl core::fmt::Debug for pixtuoid_core::state::SeatPolicy
+pub fn pixtuoid_core::state::SeatPolicy::fmt(&self, &mut core::fmt::Formatter<'_>) -> core::fmt::Result
+impl core::marker::Copy for pixtuoid_core::state::SeatPolicy
+impl core::marker::StructuralPartialEq for pixtuoid_core::state::SeatPolicy
+impl core::marker::Freeze for pixtuoid_core::state::SeatPolicy
+impl core::marker::Send for pixtuoid_core::state::SeatPolicy
+impl core::marker::Sync for pixtuoid_core::state::SeatPolicy
+impl core::marker::Unpin for pixtuoid_core::state::SeatPolicy
+impl core::marker::UnsafeUnpin for pixtuoid_core::state::SeatPolicy
+impl core::panic::unwind_safe::RefUnwindSafe for pixtuoid_core::state::SeatPolicy
+impl core::panic::unwind_safe::UnwindSafe for pixtuoid_core::state::SeatPolicy
 pub enum pixtuoid_core::state::ToolKind
 pub pixtuoid_core::state::ToolKind::Bash
 pub pixtuoid_core::state::ToolKind::Edit
@@ -1632,6 +1654,7 @@ pub fn pixtuoid_core::state::SceneState::new([usize; 10]) -> Self
 pub fn pixtuoid_core::state::SceneState::set_capacities(&mut self, [usize; 10], std::time::SystemTime)
 pub fn pixtuoid_core::state::SceneState::total_capacity(&self) -> usize
 pub fn pixtuoid_core::state::SceneState::uniform(usize) -> Self
+pub fn pixtuoid_core::state::SceneState::with_seat_policy(self, pixtuoid_core::state::SeatPolicy) -> Self
 impl core::clone::Clone for pixtuoid_core::state::SceneState
 pub fn pixtuoid_core::state::SceneState::clone(&self) -> Self
 impl core::cmp::PartialEq for pixtuoid_core::state::SceneState
@@ -1773,6 +1796,7 @@ impl core::marker::Unpin for pixtuoid_core::state::UsageObservation
 impl core::marker::UnsafeUnpin for pixtuoid_core::state::UsageObservation
 impl core::panic::unwind_safe::RefUnwindSafe for pixtuoid_core::state::UsageObservation
 impl core::panic::unwind_safe::UnwindSafe for pixtuoid_core::state::UsageObservation
+pub const pixtuoid_core::state::CAMP_FLOOR: usize
 pub const pixtuoid_core::state::MAX_FLOORS: usize
 pub enum pixtuoid_core::ActivityState
 pub pixtuoid_core::ActivityState::Idle
@@ -2129,6 +2153,7 @@ pub fn pixtuoid_core::state::SceneState::new([usize; 10]) -> Self
 pub fn pixtuoid_core::state::SceneState::set_capacities(&mut self, [usize; 10], std::time::SystemTime)
 pub fn pixtuoid_core::state::SceneState::total_capacity(&self) -> usize
 pub fn pixtuoid_core::state::SceneState::uniform(usize) -> Self
+pub fn pixtuoid_core::state::SceneState::with_seat_policy(self, pixtuoid_core::state::SeatPolicy) -> Self
 impl core::clone::Clone for pixtuoid_core::state::SceneState
 pub fn pixtuoid_core::state::SceneState::clone(&self) -> Self
 impl core::cmp::PartialEq for pixtuoid_core::state::SceneState

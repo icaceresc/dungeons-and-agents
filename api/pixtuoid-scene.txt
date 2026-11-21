@@ -1640,6 +1640,14 @@ impl core::panic::unwind_safe::RefUnwindSafe for pixtuoid_scene::nameplate::Suff
 impl core::panic::unwind_safe::UnwindSafe for pixtuoid_scene::nameplate::Suffix
 pub mod pixtuoid_scene::pack
 pub enum pixtuoid_scene::pack::Piece
+pub pixtuoid_scene::pack::Piece::AttackBerserker
+pub pixtuoid_scene::pack::Piece::AttackBerserkerBack
+pub pixtuoid_scene::pack::Piece::AttackKnight
+pub pixtuoid_scene::pack::Piece::AttackKnightBack
+pub pixtuoid_scene::pack::Piece::AttackMage
+pub pixtuoid_scene::pack::Piece::AttackMageBack
+pub pixtuoid_scene::pack::Piece::AttackRanger
+pub pixtuoid_scene::pack::Piece::AttackRangerBack
 pub pixtuoid_scene::pack::Piece::BackCouch
 pub pixtuoid_scene::pack::Piece::Bookshelf
 pub pixtuoid_scene::pack::Piece::BulletinBoard

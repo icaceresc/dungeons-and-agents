@@ -1990,6 +1990,62 @@ POSES |= {
     for name, (view, mug, title) in WALKS.items()
     for i, step in enumerate(WALK_CYCLE)
 }
+
+# The typing loop's length: the hands swap once a frame.
+TYPING_FRAMES = 2
+
+
+def typing_loop(view):
+    """The typing loop's bodies seen from `view` ("front", or "back" from
+    behind), frame by frame."""
+    if view == "front":
+        return [seated_front(hands_typing(i)) for i in range(TYPING_FRAMES)]
+    return [seated_rear(elbows_typing(i)) for i in range(TYPING_FRAMES)]
+
+
+# Each class's attack: the bodies of its frames seen from a view, a working
+# adventurer's in place of the typist's (`Class::attack` picks it by the style
+# an agent wears). pack.toml registers `attack_<class>` and `attack_<class>_back`
+# by hand, @Sx and 1x, each listing a file per frame.
+def attack_mage(view):
+    """The mage's attack, a spell cast: a placeholder, the typing loop."""
+    return typing_loop(view)
+
+
+def attack_knight(view):
+    """The knight's attack, a sword swing: a placeholder, the typing loop."""
+    return typing_loop(view)
+
+
+def attack_ranger(view):
+    """The ranger's attack, a loosed arrow: a placeholder, the typing loop."""
+    return typing_loop(view)
+
+
+def attack_berserker(view):
+    """The berserker's attack, an axe blow: a placeholder, the typing loop."""
+    return typing_loop(view)
+
+
+ATTACKS = {
+    "mage": attack_mage,
+    "knight": attack_knight,
+    "ranger": attack_ranger,
+    "berserker": attack_berserker,
+}
+# A view's suffix on a sprite's name.
+VIEW_SUFFIX = {"front": "", "back": "_back"}
+POSES |= {
+    f"attack_{cls}{suffix}_{i}": (
+        TYPING_ROWS,
+        view,
+        body,
+        f"The {cls}'s attack, {view} view, frame {i}.",
+    )
+    for cls, attack in ATTACKS.items()
+    for view, suffix in VIEW_SUFFIX.items()
+    for i, body in enumerate(attack(view))
+}
 # How far each pose's body sinks below its canvas top, its head mark with it.
 POSE_BOB = {
     f"{name}_{i}": step.bob for name in WALKS for i, step in enumerate(WALK_CYCLE)
@@ -2034,6 +2090,47 @@ def back_head_1x():
         .HHHHHH.
         .nHHHHn.
     """)
+
+
+def typing_head_1x():
+    """The base art's head at the keys: the face lit full width by the screen."""
+    return master("""
+        .nHHHHn.
+        nHHHHHHn
+        HSSSSSSH
+        HSeSSeSH
+        .SSSmSS.
+        .nSSSSn.
+    """)
+
+
+# The base art's typist under the head, a frame each: the west hand forward,
+# then the east.
+TYPING_HANDS_1X = (
+    """
+    .BBBBBB.
+    BBBBBBBB
+    BBBBBBBB
+    SBBBBBB.
+    ......S.
+    """,
+    """
+    .BBBBBB.
+    BBBBBBBB
+    BBBBBBBB
+    .BBBBBBS
+    .S......
+    """,
+)
+
+
+def typing_1x(view, frame):
+    """The base art's typist seen from `view` at `frame`: the head, hair where
+    the face was from behind, over hands that move as the front's do, so a
+    back-turned typist reads as the same action and not as an idle desk."""
+    require(len(TYPING_HANDS_1X) == TYPING_FRAMES, "a 1x hand pose a typing frame")
+    head = typing_head_1x() if view == "front" else back_head_1x()
+    return head + master(TYPING_HANDS_1X[frame])
 
 
 def walk_1x(view, step, mug_east=False):
@@ -6083,6 +6180,21 @@ def main():
                 [walk_1x(view, step, mug)],
                 [head_mark_1x(view)],
             )
+    for view, suffix in VIEW_SUFFIX.items():
+        for i in range(TYPING_FRAMES):
+            sprites[f"typing{suffix}_{i}.sprite"] = render_sprite(
+                f"Typing, {view} view, frame {i}.\n\n{doc(typing_1x)}",
+                [typing_1x(view, i)],
+                [head_mark_1x(view)],
+            )
+        for cls, attack in ATTACKS.items():
+            for i in range(len(attack(view))):
+                sprites[f"attack_{cls}{suffix}_{i}.sprite"] = render_sprite(
+                    f"The {cls}'s attack, {view} view, frame {i}: the base art's "
+                    "typist, which the classic profile draws for every class.",
+                    [typing_1x(view, i % TYPING_FRAMES)],
+                    [head_mark_1x(view)],
+                )
     classic_marks = {
         "desk": desk_marks_1x("desk"),
         "desk_north": desk_marks_1x("desk_north"),

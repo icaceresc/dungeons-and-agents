@@ -907,8 +907,6 @@ pub(crate) fn team_cap(
 /// The upright seated pose. Each seated pose is a base
 /// [`Seat::sprite_for`](seat::Seat::sprite_for) turns to its seat's view.
 const SEATED: Piece = Piece::Seated;
-/// The typing pose.
-const TYPING: Piece = Piece::Typing;
 /// The sleeping poses, picked by agent id so a row of sleepers isn't one pose.
 const SLEEPING_POSES: [Piece; 2] = [Piece::SeatedSleeping, Piece::SeatedSleepingAlt];
 
@@ -994,7 +992,8 @@ pub(crate) fn resolve_characters(
                 ));
             }
             Pose::SeatedTyping => {
-                let (mut placement, cues) = seated(TYPING, CharacterGlow::Work, None);
+                let attack = crate::character::Class::of(pack, agent.agent_id).attack();
+                let (mut placement, cues) = seated(attack, CharacterGlow::Work, None);
                 // the art the seat resolved to, a back view's own loop included
                 placement.frame_idx =
                     pose::typing_frame(agent, beat, pack.piece(placement.anim_name));

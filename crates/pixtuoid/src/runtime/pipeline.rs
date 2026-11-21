@@ -22,7 +22,7 @@ use std::sync::Arc;
 
 use pixtuoid_core::source::daemon;
 use pixtuoid_core::source::manager::{SourceDeath, SourceManager};
-use pixtuoid_core::state::MAX_FLOORS;
+use pixtuoid_core::state::{MAX_FLOORS, SeatPolicy};
 use pixtuoid_core::{AgentEvent, SceneState, Transport};
 use tokio::sync::{mpsc, watch};
 
@@ -61,6 +61,16 @@ impl SceneSink {
             Self::Transitions(queue.clone(), TransitionLog::default()),
             HeadlessLog { lines, queue },
         )
+    }
+
+    /// How the scene it is fed seats its agents: a painter's, and `serve`'s,
+    /// whose devices seat their own, by the fork's campaign; headless's log
+    /// names each desk, so it keeps every agent at the one it took.
+    pub(super) fn seat_policy(&self) -> SeatPolicy {
+        match self {
+            Self::Latest(_) => SeatPolicy::Campaign,
+            Self::Transitions(..) => SeatPolicy::FloorFirst,
+        }
     }
 
     /// `false` once the reader is gone or stalled.

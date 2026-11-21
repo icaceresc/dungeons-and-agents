@@ -71,6 +71,11 @@ impl OfficeRenderer {
         self.session.navigate(target, now);
     }
 
+    /// [`OfficeSession::follow`] in `scene` at `now`.
+    pub(crate) fn follow(&mut self, scene: &SceneState, now: std::time::SystemTime) {
+        self.session.follow(scene, now);
+    }
+
     /// [`OfficeSession::until_next_paint`].
     pub(crate) fn until_next_paint(
         &self,

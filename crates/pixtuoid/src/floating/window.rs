@@ -473,6 +473,8 @@ impl FloatingApp {
             .map(super::LivePipeline::health)
             .unwrap_or_default();
         let frames = self.ui.build_frames(now, &scene, &health);
+        // A window watched without its keys keeps on the work.
+        self.renderer.follow(&scene, now);
         let live = self.renderer.render_live(
             at,
             WindowFrame {

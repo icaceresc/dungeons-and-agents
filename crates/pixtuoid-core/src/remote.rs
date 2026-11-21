@@ -23,8 +23,8 @@ use crate::AgentId;
 use crate::source::decoder::{cwd_basename_label, display_safe, label_prefix_for};
 use crate::state::{
     ActivityState, AgentSlot, DaemonInstanceId, DaemonLiveness, DaemonPresence, DaemonRoster,
-    DaemonState, EffortObservation, FloorDesk, MAX_FLOORS, SceneState, SlotLabel, Today, ToolKind,
-    ToolUse, TurnKey, UsageObservation,
+    DaemonState, EffortObservation, FloorDesk, MAX_FLOORS, SceneState, SeatPolicy, SlotLabel,
+    Today, ToolKind, ToolUse, TurnKey, UsageObservation,
 };
 
 mod change;
@@ -814,6 +814,16 @@ impl RemoteOffice {
         }
     }
 
+    /// This office handing out its desks by `policy`, as the device's own
+    /// office does.
+    #[must_use]
+    pub fn with_seat_policy(self, policy: SeatPolicy) -> Self {
+        Self {
+            scene: self.scene.with_seat_policy(policy),
+            ..self
+        }
+    }
+
     /// The office to render, its times on the device's clock.
     pub fn scene(&self) -> &SceneState {
         &self.scene
@@ -828,17 +838,19 @@ impl RemoteOffice {
     /// free one, as on a line, or is unseated.
     pub fn set_capacities(&mut self, capacities: [usize; MAX_FLOORS], now: SystemTime) {
         self.scene.take_capacities(capacities);
-        self.seat(|_| Some(now));
+        self.seat(|_| Some(now), now);
     }
 
-    /// Seat the unseated, each walking in from its `arrival`.
-    fn seat(&mut self, arrival: impl Fn(&AgentSlot) -> Option<SystemTime>) {
+    /// Seat whoever the office's policy places at `now`, each walking in from
+    /// its `arrival`.
+    fn seat(&mut self, arrival: impl Fn(&AgentSlot) -> Option<SystemTime>, now: SystemTime) {
         let named = &self.named;
-        self.scene.seat_unseated(
+        self.scene.seat(
             // One the line no longer names is walking out and lends its desk; a
             // named one keeps it, as its server can still take it back in place.
             |slot| named.contains(&slot.agent_id),
             arrival,
+            now,
         );
     }
 
@@ -922,7 +934,10 @@ impl RemoteOffice {
                 .insert(agent.id, inflate_agent(agent, place, &local));
         }
         // One new arrives as above; one seated late walks in now.
-        self.seat(|slot| new.get(&slot.agent_id).copied().unwrap_or(Some(now)));
+        self.seat(
+            |slot| new.get(&slot.agent_id).copied().unwrap_or(Some(now)),
+            now,
+        );
 
         self.scene.daemons = DaemonRoster::default();
         for daemon in daemons {
@@ -1565,6 +1580,34 @@ mod tests {
                 Some(FloorDesk::new(1, 0)),
                 Some(FloorDesk::new(1, 1))
             ]
+        );
+    }
+
+    /// A campaign office seats each agent a line names by what it is doing,
+    /// and moves one a later line shows at work.
+    #[test]
+    fn a_campaign_office_seats_by_activity_and_moves_an_agent_that_starts_work() {
+        let mut office = RemoteOffice::new(caps(2)).with_seat_policy(SeatPolicy::Campaign);
+        fn start_work(scene: &mut SceneState, name: &str) {
+            let slot = (scene
+                .agents
+                .get_mut(&AgentId::from_parts("claude-code", name)))
+            .expect("a slot");
+            slot.state = ActivityState::Running { item: None };
+        }
+        let mut scene = crowd(&["resting", "working"]);
+        start_work(&mut scene, "working");
+        received(&mut office, &scene, AT);
+        assert_eq!(desk_of(&office, "resting"), Some(FloorDesk::new(0, 0)));
+        assert_eq!(desk_of(&office, "working"), Some(FloorDesk::new(1, 0)));
+
+        start_work(&mut scene, "resting");
+        received(&mut office, &scene, AT + 1_000);
+        assert_eq!(desk_of(&office, "resting"), Some(FloorDesk::new(1, 1)));
+        assert_eq!(
+            slot_of(&office, "resting").and_then(|s| s.arrived_at),
+            Some(at(AT + 1_000)),
+            "it walks into the dungeon on the line it starts work on"
         );
     }
 

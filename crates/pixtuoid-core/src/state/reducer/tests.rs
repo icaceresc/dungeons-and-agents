@@ -1360,6 +1360,66 @@ fn a_sweep_seats_only_when_a_slot_leaves() {
     assert_eq!(desk(&scene, unseated), Some(FloorDesk::new(0, 0)));
 }
 
+/// Under the campaign a session rests in the camp while idle, moves to the
+/// dungeon as its turn opens, stays there through the turn's end, and is back
+/// in the camp on the tick that finds it idle long enough.
+#[test]
+fn a_campaign_session_moves_between_the_camp_and_the_dungeon_on_apply_and_tick() {
+    use crate::source::{AgentEvent, Transport};
+    use crate::state::{FloorDesk, REST_AFTER, SeatPolicy, TurnKey};
+    use crate::{AgentId, Reducer, SceneState};
+    use std::time::{Duration, SystemTime};
+
+    let t0 = SystemTime::UNIX_EPOCH + Duration::from_secs(1_000_000);
+    let secs = |n| t0 + Duration::from_secs(n);
+    let mut scene = SceneState::uniform(4).with_seat_policy(SeatPolicy::Campaign);
+    let mut r = Reducer::new();
+    let id = AgentId::from_parts("opencode", "ses_c");
+    let apply = |r: &mut Reducer, scene: &mut SceneState, ev, at| {
+        r.apply(scene, ev, at, Transport::Hook);
+    };
+    apply(
+        &mut r,
+        &mut scene,
+        AgentEvent::SessionStart {
+            agent_id: id,
+            source: "opencode".into(),
+            session_id: "/c".into(),
+            cwd: "/c".into(),
+            parent_id: None,
+        },
+        t0,
+    );
+    let desk = |scene: &SceneState| scene.agents[&id].desk;
+    assert_eq!(
+        desk(&scene),
+        Some(FloorDesk::new(0, 0)),
+        "a new session rests"
+    );
+
+    let turn = TurnKey::Seq(1);
+    let start = AgentEvent::TurnStart {
+        agent_id: id,
+        turn: turn.clone(),
+    };
+    apply(&mut r, &mut scene, start, secs(1));
+    assert_eq!(desk(&scene), Some(FloorDesk::new(1, 0)));
+    assert_eq!(scene.agents[&id].arrived_at, Some(secs(1)));
+
+    let end = AgentEvent::TurnEnd {
+        agent_id: id,
+        turn: Some(turn),
+    };
+    apply(&mut r, &mut scene, end, secs(2));
+    assert_eq!(
+        desk(&scene),
+        Some(FloorDesk::new(1, 0)),
+        "premise: not rested"
+    );
+    r.tick(&mut scene, secs(2) + REST_AFTER);
+    assert_eq!(desk(&scene), Some(FloorDesk::new(0, 0)));
+}
+
 /// An open turn showing no item is the agent between items, alive by its
 /// turn: it is reaped on neither the tool's window alone nor the idle one.
 #[test]
