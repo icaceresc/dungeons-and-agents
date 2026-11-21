@@ -83,6 +83,13 @@ Unzip the release anywhere, then, from that folder:
 .\pixtuoid.exe --help     # every command
 ```
 
+Keys, in the window and the terminal view alike.
+Press <kbd>s</kbd> and connect your agent CLIs from the Sources panel, if
+`setup` missed one.
+<kbd>Tab</kbd> agent dashboard · <kbd>t</kbd> themes · <kbd>m</kbd> sound ·
+click an adventurer to bring its session to the front · <kbd>?</kbd> every other key.
+Press <kbd>t</kbd> to preview every theme live; `dark-fantasy` is the default.
+
 `pixtuoid.exe disconnect <source>` removes a CLI's hooks again. Configuration
 is described in [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
 
