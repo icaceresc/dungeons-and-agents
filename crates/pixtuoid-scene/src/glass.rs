@@ -39,21 +39,39 @@ const POST_LIFT: [u8; 3] = [18, 52, 86];
 /// queued, so a painter reads no theme.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) struct WallTrim {
-    /// What the glass's frame is lifted from.
+    /// What the glass's frame is lifted from; a stone wall's face.
     pub(crate) light: Rgb,
-    /// The jamb posts where a doorway cuts the wall.
+    /// The jamb posts where a doorway cuts the wall; a stone wall's mortar.
     pub(crate) dark: Rgb,
+    /// Whether the wall is stone laid in courses rather than glass
+    /// (`[walls] stone`): nothing shows through it.
+    pub(crate) stone: bool,
 }
 
 impl WallTrim {
-    /// `theme`'s room-wall trim.
+    /// `theme`'s room-wall trim, on glass.
     pub(crate) fn of(theme: &Theme) -> Self {
         Self {
             light: theme.office.room_wall_trim_light,
             dark: theme.office.room_wall_trim_dark,
+            stone: false,
+        }
+    }
+
+    /// This trim on the walls `pack` builds: stone where it says so.
+    #[must_use]
+    pub(crate) fn built_by(self, pack: &crate::pack::OfficeArt) -> Self {
+        Self {
+            stone: pack.stone_walls(),
+            ..self
         }
     }
 }
+
+/// How tall a stone wall's courses are, and how long its blocks, in logical
+/// units: blocks about this size read as masonry at both densities.
+const COURSE_H: u16 = 3;
+const BLOCK_W: u16 = 6;
 
 /// How a partition is seen.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -67,6 +85,8 @@ enum View {
 
 /// One partition's glass on one painter's grid.
 pub(crate) struct Glass {
+    /// The stone's face and its mortar, where the wall is stone.
+    stone: Option<(Rgb, Rgb)>,
     rim: Rgb,
     post: Rgb,
     pane: Stepped,
@@ -93,6 +113,7 @@ impl Glass {
         let posts = (1..panes)
             .map(|k| (clear.start + len * k / panes) * per_unit.get())
             .collect();
+        let stone = trim.stone.then_some((trim.light, trim.dark));
         let trim = trim.light;
         let lift = |[r, g, b]: [u8; 3]| Rgb {
             r: trim.r.saturating_add(r),
@@ -104,6 +125,7 @@ impl Glass {
             View::EdgeOn => 1,
         };
         Self {
+            stone,
             rim: lift(RIM_LIFT),
             post: lift(POST_LIFT),
             pane: Stepped::new(PANE_LIFT + denser),
@@ -117,6 +139,9 @@ impl Glass {
     /// `under` seen through the cell `dx` across and `dy` down the wall's
     /// [`visual`](WallPiece::visual) box.
     pub(crate) fn over(&mut self, under: Rgb, dx: u16, dy: u16) -> Rgb {
+        if let Some((face, mortar)) = self.stone {
+            return self.masonry(face, mortar, dx, dy);
+        }
         let (along, across) = match self.view {
             View::Face => (dx, dy),
             View::EdgeOn => (dy, dx),
@@ -137,6 +162,30 @@ impl Glass {
             self.pane.of(under)
         }
     }
+
+    /// The stone wall's cell `dx` across and `dy` down its box: `face`, or
+    /// `mortar` where [`is_mortar`] lays it.
+    fn masonry(&self, face: Rgb, mortar: Rgb, dx: u16, dy: u16) -> Rgb {
+        if is_mortar(dx, dy, self.per_unit) {
+            mortar
+        } else {
+            face
+        }
+    }
+}
+
+/// Whether the cell `dx` across and `dy` down a stone wall, on a grid of
+/// `per_unit` cells to a logical unit, is mortar: blocks in courses, each
+/// course's joints set half a block on from the one above.
+pub(crate) fn is_mortar(dx: u16, dy: u16, per_unit: Density) -> bool {
+    let unit = per_unit.get();
+    let (course_h, block_w) = (COURSE_H * unit, BLOCK_W * unit);
+    let shift = if (dy / course_h).is_multiple_of(2) {
+        0
+    } else {
+        block_w / 2
+    };
+    dy % course_h == course_h - 1 || (dx + shift) % block_w == block_w - 1
 }
 
 #[cfg(test)]
@@ -158,6 +207,30 @@ mod tests {
             jamb_west: false,
             jamb_east: false,
         }
+    }
+
+    /// A stone wall (`[walls] stone`) shows nothing behind it: its face, with
+    /// mortar between its blocks in courses.
+    #[test]
+    fn a_stone_wall_hides_what_is_behind_it() {
+        let trim = WallTrim {
+            stone: true,
+            ..WallTrim::of(&crate::theme::NORMAL)
+        };
+        let mut wall = Glass::of(trim, run(40), Density::ONE);
+        let depth = WallPiece::visual(run(40)).1.h;
+        let mut mortar = 0;
+        for dy in 0..depth {
+            for dx in 0..40 {
+                let c = wall.over(BEHIND, dx, dy);
+                assert!(
+                    c == trim.light || c == trim.dark,
+                    "({dx}, {dy}) shows {c:?}"
+                );
+                mortar += usize::from(c == trim.dark);
+            }
+        }
+        assert!(mortar > 0, "its blocks are laid in mortar");
     }
 
     #[test]

@@ -5,6 +5,11 @@
 # scripts/gen-art.py on each office piece's own canvas; the camp redraws the
 # @4x furniture, so the classic (1x) office keeps its own but for the campfire.
 
+# Open-air: the north band is the night sky over the palisade's line, one
+# view across the wall with no window frame, mullion or post.
+[walls]
+open = true
+
 # the bedroll, its pack and its lantern (scripts/gen-art.py's camp_desk)
 [animations."desk@4x"]
 frames = ["camp_desk@4x.sprite"]

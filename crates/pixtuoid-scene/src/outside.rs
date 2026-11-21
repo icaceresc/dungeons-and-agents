@@ -44,10 +44,23 @@ pub(crate) struct WindowView {
 impl WindowView {
     /// `bay`'s window over `rows`, on a grid `d` cells to the unit, each glass
     /// cell in `base`.
+    #[cfg(test)]
     pub(crate) fn new(
         bay: WindowBay,
         rows: Range<u16>,
         d: Density,
+        base: impl FnMut(Cell) -> Rgb,
+    ) -> Self {
+        Self::new_in(bay, rows, d, true, base)
+    }
+
+    /// [`Self::new`] framed in its joinery or, unless `framed`, glass to its
+    /// edges.
+    pub(crate) fn new_in(
+        bay: WindowBay,
+        rows: Range<u16>,
+        d: Density,
+        framed: bool,
         mut base: impl FnMut(Cell) -> Rgb,
     ) -> Self {
         let h = rows.end.saturating_sub(rows.start);
@@ -55,7 +68,16 @@ impl WindowView {
             bay,
             top: rows.start,
             h,
-            glass_box: bay.glass_box(rows),
+            glass_box: if framed {
+                bay.glass_box(rows)
+            } else {
+                Bounds {
+                    x: bay.x,
+                    y: rows.start,
+                    width: bay.w,
+                    height: h,
+                }
+            },
             d,
             px: Vec::new(),
         };
@@ -67,7 +89,7 @@ impl WindowView {
             for sy in 0..d {
                 let ay = uy * d + sy;
                 for ux in 0..bay.w {
-                    let joinery = window_frame(ux, uy, size);
+                    let joinery = framed && window_frame(ux, uy, size);
                     for sx in 0..d {
                         let ax = ux * d + sx;
                         px.push((!joinery).then(|| base(origin.cell(ax, ay))));
@@ -235,6 +257,8 @@ pub(crate) struct Wall {
     pub(crate) span: Range<u16>,
     pub(crate) band_h: u16,
     pub(crate) bays: Vec<WindowBay>,
+    /// Whether it is open to the sky: its one bay shows no joinery.
+    pub(crate) open: bool,
 }
 
 impl Wall {
@@ -244,16 +268,51 @@ impl Wall {
             span: layout.wall_span(),
             band_h: layout.wall_band_h(),
             bays: layout.window_bays().collect(),
+            open: false,
+        }
+    }
+
+    /// `layout`'s north band open to the sky (`[walls] open`): one bay over
+    /// the whole run of glass its windows would cut, door slot and all, with
+    /// no frame, mullion, transom or post.
+    pub(crate) fn open_air(layout: &crate::layout::SceneLayout) -> Self {
+        let span = layout.wall_span();
+        let run = window_run(span.clone());
+        Self {
+            band_h: layout.wall_band_h(),
+            bays: vec![WindowBay {
+                x: run.start,
+                w: run.end - run.start,
+                idx: 0,
+            }],
+            span,
+            open: true,
+        }
+    }
+
+    /// `layout`'s north wall as `pack` draws it: open to the sky, or cut
+    /// with windows.
+    pub(crate) fn drawn(layout: &crate::layout::SceneLayout, pack: &OfficeArt) -> Self {
+        if pack.open_air() {
+            Self::open_air(layout)
+        } else {
+            Self::of(layout)
         }
     }
 
     /// The run of glass its windows cut, in units, and the glass's height:
-    /// the run the clouds are drawn across.
+    /// the run the clouds are drawn across. An open wall's glass is its
+    /// windows' whole rows, frame and all.
     pub(crate) fn glass(&self) -> (Range<u16>, u16) {
         let rows = window_rows(self.band_h);
+        let h = rows.end - rows.start;
         (
             window_run(self.span.clone()),
-            crate::layout::glass_rows(rows.end - rows.start),
+            if self.open {
+                h
+            } else {
+                crate::layout::glass_rows(h)
+            },
         )
     }
 
@@ -374,6 +433,8 @@ pub(crate) struct Outside {
     rows: Range<u16>,
     d: Density,
     bays: Vec<WindowBay>,
+    /// Whether its wall is open to the sky ([`Wall::open`]).
+    open: bool,
 }
 
 impl std::fmt::Debug for Outside {
@@ -431,6 +492,7 @@ impl Outside {
             rows,
             d: density,
             bays,
+            open: wall.open,
         }
     }
 
@@ -446,7 +508,9 @@ impl Outside {
     /// the one order every painter draws it in.
     fn through(&self, bay: WindowBay) -> WindowView {
         let front = self.city.front(self.run_x0, self.d);
-        let mut view = self.sky.window(bay, self.rows.clone(), self.d, &front);
+        let mut view = self
+            .sky
+            .window_in(bay, self.rows.clone(), self.d, &front, !self.open);
         self.clouds.paint(&mut view, self.run_x0, &front);
         self.weather.paint(&mut view);
         view
@@ -711,6 +775,7 @@ pub(crate) mod tests {
                         span: 0..f.wall.0,
                         band_h: f.wall.1,
                         bays: slots(f.wall.0),
+                        open: false,
                     },
                     f.d,
                     f.weather,
@@ -860,6 +925,7 @@ pub(crate) mod tests {
                     span: 0..f.wall.0,
                     band_h: f.wall.1,
                     bays: slots(f.wall.0),
+                    open: false,
                 },
                 f.d,
                 f.weather,
@@ -923,6 +989,7 @@ pub(crate) mod tests {
                     span: 0..crate::layout::WINDOW_W * 3,
                     band_h: 32,
                     bays: slots(crate::layout::WINDOW_W * 3),
+                    open: false,
                 },
                 Density::ONE,
                 GlassWeather::of(&moment),
@@ -981,6 +1048,7 @@ pub(crate) mod tests {
                             span: 0..wall.0,
                             band_h: wall.1,
                             bays: bays.clone(),
+                            open: false,
                         },
                         d, // a clear pane's glass: no veil or rain over the bolt
                         GlassWeather::of(&at(Weather::Clear)),

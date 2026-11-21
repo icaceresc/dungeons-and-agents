@@ -127,7 +127,10 @@ whole, so a redrawn animation keeps its `frame_ms`. Its sprites sit beside the
 office's, prefixed with its role (`camp_desk@4x.sprite`); one no manifest
 registers fails the bundled-sprite test, and each role's pack passes the
 same validation as the office's. `[walls] windows = false` draws the north
-wall solid: no windows, no posts between them. A key `pack.toml` lacks (a new
+wall solid: no windows, no posts between them; `[walls] open = true` opens it
+on the sky, one view across the wall's run of glass with no frame, mullion,
+transom or post; `[walls] stone = true` builds the room walls, and a solid
+north wall, of stone laid in courses instead of glass. A key `pack.toml` lacks (a new
 `@4x`) merges into nothing, so it names its own `frame_ms`, the base's.
 
 A desk's foe stands on the desk's own canvas only while its sitter works

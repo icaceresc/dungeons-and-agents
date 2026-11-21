@@ -315,7 +315,9 @@ pub(crate) fn compose_at<'a>(
         flash_phase: crate::screen::FlashPhase::of(&moment.sky, frame),
         hovers: pieces.iter().filter_map(Piece::hover).collect(),
         pieces,
-        backdrop: crate::display::Backdrop::of(office.layout, theme).with_windows(pack.windows()),
+        backdrop: crate::display::Backdrop::of(office.layout, theme)
+            .with_windows(pack.windows() && !pack.open_air())
+            .with_masonry(pack.stone_walls() && !pack.windows()),
         recolours: crate::display::Recolours::of(theme),
         host_text,
         pack,
@@ -704,7 +706,8 @@ fn collect_pieces(
     for fixture in layout.fixtures().filter(|f| inputs.text.hangs(f.kind)) {
         push_fixture(fixture, inputs, &carried, &mut order);
     }
-    wall_segments(layout, crate::glass::WallTrim::of(office.theme), &mut order);
+    let trim = crate::glass::WallTrim::of(office.theme).built_by(office.pack);
+    wall_segments(layout, trim, &mut order);
     (order, host_text)
 }
 
@@ -1537,7 +1540,7 @@ pub(crate) fn push_windows(
         scale,
     } = office;
     let density = Pen::for_pack(scale, pack).density();
-    let wall = crate::outside::Wall::of(layout);
+    let wall = crate::outside::Wall::drawn(layout, pack);
     let views = outside.views(moment, pack, theme, wall, density, *weather);
     let rows = crate::layout::window_rows(layout.wall_band_h());
     // The bolt lights the glass and all it shows, over the weather on it.

@@ -102,11 +102,12 @@ impl BaseFillCache {
 }
 
 /// The ground and the north `wall`'s band, the posts between its windows
-/// included where it shows `windows`, over the whole of `buf`, at `moment`.
+/// included where it frames `windows`, laid in stone courses where
+/// `masonry`, over the whole of `buf`, at `moment`.
 pub(super) fn paint_ground_and_walls(
     base_fill: &mut BaseFillCache,
     buf: &mut RgbBuffer,
-    (wall, windows): (&crate::outside::Wall, bool),
+    (wall, windows, masonry): (&crate::outside::Wall, bool, bool),
     moment: &Moment,
     theme: &Theme,
 ) {
@@ -138,6 +139,15 @@ pub(super) fn paint_ground_and_walls(
     }
 
     let trim_y = wall_trim_row(top_wall_h);
+    if masonry {
+        for y in 0..trim_y.min(buf_h) {
+            for x in 0..buf_w {
+                if crate::glass::is_mortar(x, y, crate::sprite::format::Density::ONE) {
+                    buf.put(x, y, wall_trim_color);
+                }
+            }
+        }
+    }
     if trim_y < buf_h {
         for x in 0..buf_w {
             buf.put(x, trim_y, wall_trim_color);

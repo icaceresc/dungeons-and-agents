@@ -12,6 +12,7 @@ fn bare_wall(w: u16, top_wall_h: u16) -> crate::outside::Wall {
         span: 0..w,
         band_h: top_wall_h,
         bays: window_bays(0..w, 0..0).collect(),
+        open: false,
     }
 }
 
@@ -19,7 +20,13 @@ fn bare_wall(w: u16, top_wall_h: u16) -> crate::outside::Wall {
 /// as `buf` shows, at `moment`.
 fn paint_band(buf: &mut RgbBuffer, top_wall_h: u16, moment: &Moment, theme: &crate::theme::Theme) {
     let wall = bare_wall(buf.width(), top_wall_h);
-    paint_ground_and_walls(&mut BaseFillCache::new(), buf, (&wall, true), moment, theme);
+    paint_ground_and_walls(
+        &mut BaseFillCache::new(),
+        buf,
+        (&wall, true, false),
+        moment,
+        theme,
+    );
     paint_windows(
         buf,
         wall,
@@ -135,7 +142,7 @@ fn a_change_dithers_the_carpet_and_the_veil_on_the_buffer() {
         paint_ground_and_walls(
             &mut BaseFillCache::new(),
             &mut buf,
-            (&bare_wall(buf_w, top_wall_h), true),
+            (&bare_wall(buf_w, top_wall_h), true, false),
             &m,
             theme,
         );
@@ -892,7 +899,7 @@ fn base_fill_cache_hit_is_byte_identical_and_a_key_change_repaints() {
         paint_ground_and_walls(
             base_fill,
             &mut buf,
-            (&bare_wall(buf_w, top_wall_h), true),
+            (&bare_wall(buf_w, top_wall_h), true, false),
             &Moment::resolve(
                 Sky::at_with(now, weather),
                 theme,
@@ -951,7 +958,7 @@ fn base_fill_cache_resize_on_a_warm_cache_recomputes() {
         paint_ground_and_walls(
             base_fill,
             &mut buf,
-            (&bare_wall(w, 14), true),
+            (&bare_wall(w, 14), true, false),
             &Moment::resolve(Sky::clock(now), theme, 0.0, Motion::Full.timing(now)),
             theme,
         );
@@ -1152,7 +1159,7 @@ fn the_wall_between_two_windows_is_one_frame_post() {
     paint_ground_and_walls(
         &mut BaseFillCache::new(),
         &mut buf,
-        (&bare_wall(buf_w, top_wall_h), true),
+        (&bare_wall(buf_w, top_wall_h), true, false),
         &Moment::resolve(Sky::clock(now), theme, 0.0, Motion::Full.timing(now)),
         theme,
     );

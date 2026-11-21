@@ -845,6 +845,7 @@ fn each_pack_and_theme_keeps_its_own_office_caches() {
                 span: 0..w,
                 band_h: 32,
                 bays: crate::layout::window_slots(0..w).collect(),
+                open: false,
             },
             crate::sprite::format::Density::ONE,
             crate::glass_weather::GlassWeather::of(&moment),
@@ -1439,5 +1440,10 @@ fn the_classic_paints_a_wall_without_windows_solid() {
             &[]
         )),
         0
+    );
+    assert_eq!(
+        framed(crate::pack::test_office_with("[walls]\nopen = true\n", &[])),
+        0,
+        "a wall open to the sky frames none"
     );
 }
