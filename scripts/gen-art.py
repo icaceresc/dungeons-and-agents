@@ -8008,14 +8008,11 @@ def spider_eyes(g, cx, top):
             put(g, ex, top + dy, GLASS_TXT)
 
 
-def lair_north():
-    """The north seat's lair, beyond its back-turned occupant: a giant spider
-    facing them and the viewer, its eyes over their head and its legs arched
-    out either side, between a boulder heaped with loot west and one with a
-    torch and the potion east."""
-    lift = DESK_NORTH_LIFT
-    w, h = DESK_ART_W * S, desk_rows(lift)[3] * S
-    g = canvas(w, h)
+def spider_facing(g):
+    """A giant spider facing its foe and the viewer: its legs arched out
+    either side, its head with folded fangs, and over the back-turned
+    fighter's head its eyes."""
+    w = len(g[0])
     for side in (-1, 1):
         for hip, knee, foot in (
             ((21, 5), (9, 1), (2, 26)),
@@ -8025,8 +8022,6 @@ def lair_north():
         ):
             m = (lambda p: p) if side < 0 else (lambda p: (w - 1 - p[0], p[1]))
             spider_leg(g, m(hip), m(knee), m(foot))
-    boulder(g, 6.0, 35.0, 6.5, 9.5, 21)
-    boulder(g, 48.0, 38.0, 7.5, 6.5, 22)
     ellipse(g, 28.0, 7.0, 10.0, 7.0, CHITIN)  # the head
     lit_ball(g, CHITIN_KEYS, 28.0, 7.0, 10.0, 7.0)
     for side in (-1, 1):  # the fangs, folded under the head
@@ -8034,8 +8029,33 @@ def lair_north():
         rect(g, x, 12, x + 1, 16, CHITIN_SH)
         put(g, x, 16, BONE)
     spider_eyes(g, 28.0, 1)
+
+
+def lair_north():
+    """The north seat's lair, beyond its back-turned occupant, empty: a
+    boulder for its loot west, one with a torch and the potion east, cobwebs
+    strung from them and bones on the floor. Its foe stands here only while
+    the seat's sitter works."""
+    lift = DESK_NORTH_LIFT
+    w, h = DESK_ART_W * S, desk_rows(lift)[3] * S
+    g = canvas(w, h)
+    for strands in (
+        ((1, 22), (9, 8), (14, 26)),
+        ((w - 2, 26), (w - 10, 12), (w - 14, 30)),
+    ):
+        stem(g, strands, 0.3, OFFWHITE_SH)
+    boulder(g, 6.0, 35.0, 6.5, 9.5, 21)
+    boulder(g, 48.0, 38.0, 7.5, 6.5, 22)
     torch(g, lamp_base_x("desk_north") - 2, 26, 34)
     bones(g, 22, 42)
+    union_outline(g)
+    return g
+
+
+def foe_north():
+    """The north lair's foe, while its sitter fights: the giant spider."""
+    g = canvas(DESK_ART_W * S, desk_rows(DESK_NORTH_LIFT)[3] * S)
+    spider_facing(g)
     union_outline(g)
     return g
 
@@ -8090,25 +8110,80 @@ def orc_back(g):
     rect(g, sx, sy - 6, sx + 1, sy + 7, GLASS_TXT)
 
 
+def lair_pebble(g):
+    """A pebble at the south lair's foot, between where its orc's feet stand,
+    the one stone nearer the viewer than the occupant's props: the lair's
+    front is drawn over its foes too, so it keeps clear of them."""
+    rect(g, 26, 33, 30, 36, ROCK)
+    rect(g, 26, 33, 30, 34, ROCK_LT)
+
+
 def lair_south():
-    """The south seat's lair, as the seat faces it: an orc from behind,
-    squaring up to its occupant between two boulders, a torch burning on the
-    west one; the occupant's potion and loot stand where the desk's
-    arrangement marks them."""
+    """The south seat's lair, as the seat faces it, empty: two boulders, a
+    torch burning on the west one, bones strewn between; the occupant's
+    potion and loot stand where the desk's arrangement marks them. Its foes
+    stand here only while the seat's sitter works."""
     w, h = DESK_ART_W * S, desk_rows(0)[3] * S
     g = canvas(w, h)
     boulder(g, 6.0, 25.0, 6.5, 11.5, 11)
     boulder(g, 50.0, 27.0, 6.5, 9.5, 12)
-    orc_back(g)
+    bones(g, 18, 31)
+    bones(g, 40, 27, flip=True)
+    lair_pebble(g)
     torch(g, lamp_base_x("desk"), 9, 16)
     union_outline(g)
     return g
 
 
 def lair_south_front():
-    """The south lair's front: the orc, which stands before whatever of its
-    occupant's props it overlaps."""
-    return front_layer(lair_south(), orc_back)
+    """The south lair's front, drawn over its occupant's props: its pebble."""
+    return front_layer(lair_south(), lair_pebble)
+
+
+# A goblin's hide, yellower than an orc's: one base in [palette], its shades
+# in [ramps].
+GOBLIN, GOBLIN_LT, GOBLIN_SH = "ɤ", "ɥ", "ɯ"
+GOBLIN_KEYS = (GOBLIN, GOBLIN_LT, GOBLIN_LT, GOBLIN_SH)
+
+
+def goblin_back(g, cx, foot):
+    """A goblin seen from behind, at the orc's side: a bald head between long
+    ears swept out sideways, a ragged hood over its shoulders, thin legs, a
+    spear held upright."""
+    top = foot - 22
+    rect(g, int(cx) + 4, top - 3, int(cx) + 5, foot, WOOD_SH)  # the spear
+    rect(g, int(cx) + 3, top - 6, int(cx) + 6, top - 3, IRON)
+    put(g, int(cx) + 4, top - 7, IRON_LT)
+    for x in (int(cx) - 2, int(cx) + 1):  # the legs
+        rect(g, x, foot - 5, x + 2, foot, GOBLIN_SH)
+    ellipse(g, cx, foot - 10.0, 5.0, 6.0, LEATHER)  # the hood
+    rect(g, int(cx) - 4, foot - 6, int(cx) + 5, foot - 5, LEATHER_SH)
+    ellipse(g, cx, top + 5.0, 4.0, 4.0, GOBLIN)  # the head
+    for side in (-1, 1):  # the ears
+        for i in range(6):
+            x = int(cx) + side * (4 + i) - (side < 0)
+            put(g, x, top + 4 - i // 3, GOBLIN)
+    lit_ball(g, GOBLIN_KEYS, cx, top + 5.0, 5.0, 4.5)
+    put(g, int(cx) + 4, foot - 3, GOBLIN)  # the spear hand
+    put(g, int(cx) + 4, foot - 2, GOBLIN)
+
+
+def foe_south():
+    """The south lair's first foe, under its occupant's props: a goblin at the
+    orc's west side, spear up."""
+    g = canvas(DESK_ART_W * S, desk_rows(0)[3] * S)
+    goblin_back(g, 6.0, len(g) - 1)
+    union_outline(g)
+    return g
+
+
+def foe_south_front():
+    """The south lair's foe over its occupant's props: the orc, squaring up to
+    the fighter."""
+    g = canvas(DESK_ART_W * S, desk_rows(0)[3] * S)
+    orc_back(g)
+    union_outline(g)
+    return g
 
 
 # ---- the dungeon's props, chair and stairs --------------------------------------
@@ -9515,6 +9590,14 @@ def main():
     require(
         grounded([lair_south()]) == [lair_south()], "the south lair moves when grounded"
     )
+    # A foe is drawn on its desk's canvas at the desk's top-left, so it is not
+    # grounded on its own rows.
+    for foe, draw in (
+        ("foe", foe_south),
+        ("foe_front", foe_south_front),
+        ("foe_north", foe_north),
+    ):
+        sprites[f"{DUNGEON}{foe}@{S}x.sprite"] = render_sprite(doc(draw), [draw()])
     for up, name in ((True, "floor_up"), (False, "floor_down")):
         sprites[f"{DUNGEON}icon_{name}.sprite"] = render_sprite(
             doc(stair_icon), [stair_icon(up)]

@@ -14,6 +14,7 @@ windows = false
 "ɐ" = "#5d7236"   # an orc's hide
 "ɔ" = "#4a3f58"   # a giant spider's chitin
 "ɘ" = "#d4c9a8"   # bone: a tusk, a fang, a skull
+"ɤ" = "#8a9636"   # a goblin's hide, yellower than an orc's
 "ɛ" = "#e0702c"   # a torch's flame round its bulb-key core
 
 [ramps]
@@ -30,35 +31,35 @@ windows = false
 "ə" = { of = "ɘ", level = -2 }   # bone, shaded
 "ɚ" = { of = "ɘ", level = -5 }   # bone, darkest
 "ɜ" = { of = "ɛ", level = -3 }   # flame, its dark red tips
+"ɥ" = { of = "ɤ", level = 2 }    # goblin hide, lit
+"ɯ" = { of = "ɤ", level = -2 }   # goblin hide, shaded
 
 # The lairs, each on its desk's own canvas: empty, keeping the desk's `cup`
 # and `tower` marks and a torch whose flame burns in the bulb key.
-# PLACEHOLDERS until the lair art lands: the empty lairs are cut from
-# gen-art's lair helpers, and the foes are the whole monster lairs.
 [animations."desk@4x"]
-frames = ["dungeon_lair_placeholder@4x.sprite"]
+frames = ["dungeon_desk@4x.sprite"]
 
 [animations."desk_north@4x"]
-frames = ["dungeon_lair_north_placeholder@4x.sprite"]
+frames = ["dungeon_desk_north@4x.sprite"]
 
 [animations."desk_front@4x"]
-frames = ["dungeon_lair_front_placeholder@4x.sprite"]
+frames = ["dungeon_desk_front@4x.sprite"]
 
-# Its foe, drawn on its lair's canvas only while the seat's sitter works:
-# `foe` under the sitter's props, `foe_front` over them, `foe_north` at the
-# back-turned seat's lair. Its eyes or sigil in the screen keys, so the
-# fighter's tool lights them. pack.toml has no `@4x` of these to merge into,
-# so each names its base's `frame_ms`.
+# Its foes, drawn on its lair's canvas only while the seat's sitter works:
+# `foe` under the sitter's props (a goblin), `foe_front` over them (an orc),
+# `foe_north` at the back-turned seat's lair (a giant spider). Their eyes or
+# sigils in the screen keys, so the fighter's tool lights them. pack.toml has
+# no `@4x` of these to merge into, so each names its base's `frame_ms`.
 [animations."foe@4x"]
-frames = ["dungeon_desk@4x.sprite"]
+frames = ["dungeon_foe@4x.sprite"]
 frame_ms = 600
 
 [animations."foe_front@4x"]
-frames = ["dungeon_desk_front@4x.sprite"]
+frames = ["dungeon_foe_front@4x.sprite"]
 frame_ms = 600
 
 [animations."foe_north@4x"]
-frames = ["dungeon_desk_north@4x.sprite"]
+frames = ["dungeon_foe_north@4x.sprite"]
 frame_ms = 600
 
 [animations."desk_chair@4x"]
