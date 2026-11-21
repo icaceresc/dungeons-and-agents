@@ -377,6 +377,22 @@ frame_ms = 600
 frames   = ["desk_front@4x.sprite"]
 frame_ms = 600
 
+# What stands at a desk while its sitter works, on the desk's own canvas,
+# one frame each: `foe` and `foe_north` under the sitter's props, `foe_front`
+# over them (the viewer-facing desk's only). The office draws none; a role's
+# manifest redraws them, at any density its desks are drawn at.
+[animations.foe]
+frames   = ["foe.sprite"]
+frame_ms = 600
+
+[animations.foe_north]
+frames   = ["foe_north.sprite"]
+frame_ms = 600
+
+[animations.foe_front]
+frames   = ["foe_front.sprite"]
+frame_ms = 600
+
 [animations.plant]
 frames   = ["plant.sprite"]
 frame_ms = 600

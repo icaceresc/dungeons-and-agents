@@ -275,9 +275,21 @@ pub(super) fn paint_drawable(kind: &DrawableKind<'_>, c: &mut DrawableCtx<'_>) {
             // the blit origin; passing `sprite_top + DESK_BEZEL_RAISE` caps every glow with a bar.
             let sprite_top = desk_art_top(pack, desk.y, art.height());
             blit_frame(art, desk.x, sprite_top, buf);
+            // The foe stands under its sitter's props and, where it reaches
+            // nearer the viewer, over them; the desk's own front over both.
+            let (foe, foe_front) = Desk::facing(*facing).foe();
+            let overlay = |buf: &mut RgbBuffer, piece: Piece| {
+                blit_frame(pack.piece(piece).first(), desk.x, sprite_top, buf);
+            };
+            if props.foe {
+                overlay(buf, foe);
+            }
             paint_desk_props(buf, (*desk, *facing), props, pack, theme);
+            if let Some(foe_front) = foe_front.filter(|_| props.foe) {
+                overlay(buf, foe_front);
+            }
             if let Some(front) = Desk::facing(*facing).front() {
-                blit_frame(pack.piece(front).first(), desk.x, sprite_top, buf);
+                overlay(buf, front);
             }
             // The desk's light falls on the whole group, its front and props
             // included, as the cutaway lights every piece after painting it.
@@ -653,6 +665,7 @@ mod tests {
                     sheet_fall,
                     effects: Vec::new(),
                     scanline: 0,
+                    foe: false,
                 },
             },
         }
@@ -687,6 +700,7 @@ mod tests {
                 sheet_fall: None,
                 effects: crate::sim::cup_effects(at, cup, Motion::Full.beat(now)),
                 scanline: 0,
+                foe: false,
             };
             paint_desk_props(&mut buf, (desk, Facing::South), &props, &pack, th);
             buf.as_slice().iter().filter(|&&c| c != bg).count()

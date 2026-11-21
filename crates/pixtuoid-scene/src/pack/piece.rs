@@ -50,6 +50,9 @@ pub enum Piece {
     Desk,
     DeskNorth,
     DeskFront,
+    Foe,
+    FoeNorth,
+    FoeFront,
     FilingCabinet,
     Plant,
     PlantTall,
@@ -142,13 +145,16 @@ impl Piece {
         }
     }
 
-    /// The piece it is drawn over, on that piece's canvas: `desk_front` is
+    /// The piece it is drawn over, on that piece's canvas: a foe is drawn on
+    /// its lair's, and `desk_front` is
     /// what of `desk` stands nearer the viewer than its sitter's props. An
     /// overlay keeps that piece's canvas rather than grounding on its own
     /// bottom row.
+    #[cfg(test)]
     pub(crate) fn overlay_of(self) -> Option<Piece> {
         match self {
-            Piece::DeskFront => Some(Piece::Desk),
+            Piece::DeskFront | Piece::Foe | Piece::FoeFront => Some(Piece::Desk),
+            Piece::FoeNorth => Some(Piece::DeskNorth),
             _ => None,
         }
     }
