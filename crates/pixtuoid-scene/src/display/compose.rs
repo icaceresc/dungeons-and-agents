@@ -920,13 +920,13 @@ fn push_fixture(
             depth,
             Playback::Held,
         ),
-        K::SideTable => push_art(
+        K::SideTable => push_held_or_looping(
             order,
             pack,
             centre,
-            Art::still(PackPiece::SideTable),
+            PackPiece::SideTable,
+            moment.timing.beat,
             depth,
-            Playback::Held,
         ),
         K::FloorLamp => push_art(
             order,

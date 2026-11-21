@@ -1341,6 +1341,54 @@ fn the_lounge_couch_is_drawn_from_behind() {
     );
 }
 
+/// A side table loops when its art has frames to loop: the camp's campfire
+/// flickers, where the office's table holds still.
+#[test]
+fn a_side_table_loops_only_when_its_art_has_frames() {
+    let layout = many_layouts()
+        .find(|l| l.fixtures().any(|f| f.kind == FixtureKind::SideTable))
+        .expect("a layout with a side table");
+    let side_table = |pack: &OfficeArt, ms: u64| {
+        let at = std::time::UNIX_EPOCH + std::time::Duration::from_millis(ms);
+        let on = (Motion::Full.timing(at), Default::default());
+        queued_at(
+            &layout,
+            pack,
+            RenderScale::ONE,
+            &[],
+            |k| k == FixtureKind::SideTable,
+            on,
+        )
+        .into_iter()
+        .map(|(_, kind)| kind)
+        .collect::<Vec<_>>()
+    };
+    let office = test_office();
+    let held = side_table(&office, 0);
+    assert!(
+        !held.is_empty() && held.iter().all(|k| matches!(k, PieceKind::Prop { .. })),
+        "the office's side table holds still: {held:?}"
+    );
+    let packs = crate::pack::load_bundled_role_packs().expect("the role packs load");
+    let camp = packs.of(crate::floor::FloorRole::Camp);
+    let frame = |ms| {
+        side_table(camp, ms)
+            .into_iter()
+            .find_map(|k| match k {
+                PieceKind::Animated { art, .. } => Some(art.frame),
+                _ => None,
+            })
+            .expect("the camp's campfire loops")
+    };
+    // Painted each Full tick across a few of its frame_ms, it shows more than one frame.
+    let span = 4 * u64::from(camp.piece(PackPiece::SideTable).frame_ms());
+    let shown: std::collections::BTreeSet<usize> = (0..=span)
+        .step_by(crate::anim::FULL_TICK_MS as usize)
+        .map(frame)
+        .collect();
+    assert!(shown.len() > 1, "the campfire flickers: {shown:?}");
+}
+
 /// The fish tank and the water cooler loop on the floor's beat: Full steps
 /// them, Calm a [`CALM_TICK_MS`](crate::anim::CALM_TICK_MS) pace slower,
 /// Still never.
