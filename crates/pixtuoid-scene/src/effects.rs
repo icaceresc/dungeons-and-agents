@@ -4,7 +4,7 @@
 
 use crate::anim::Beat;
 use crate::layout::Point;
-use crate::sprite::{HeadView, Rgb};
+use crate::sprite::Rgb;
 
 pub(crate) mod look;
 
@@ -26,17 +26,16 @@ pub(crate) enum EffectKind {
     SteamPuff,
     /// One bubble over a running gateway mascot; rows it has risen.
     MascotBubble,
-    /// A subagent's cap; still.
-    SubagentCap(Cap),
+    /// A subagent's team banner; still.
+    SubagentBanner(Banner),
 }
 
-/// A subagent's cap: its team's `ink`, the `line` round it, and the base
-/// art's head it sits on: seen from `view`, mirrored when `flip`.
+/// A subagent's banner: its team's `ink` and the `line` round it, carried on
+/// the back of a figure that is mirrored when `flip`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub(crate) struct Cap {
+pub(crate) struct Banner {
     pub(crate) ink: Rgb,
     pub(crate) line: Rgb,
-    pub(crate) view: HeadView,
     pub(crate) flip: bool,
 }
 
@@ -84,10 +83,10 @@ pub(crate) fn requires_action_mark(at: Point) -> Effect {
     }
 }
 
-/// `cap`, its brim on the head mark at `brow`.
-pub(crate) fn subagent_cap(brow: Point, cap: Cap) -> Effect {
+/// `banner`, carried by the figure whose head mark is at `brow`.
+pub(crate) fn subagent_banner(brow: Point, banner: Banner) -> Effect {
     Effect {
-        kind: EffectKind::SubagentCap(cap),
+        kind: EffectKind::SubagentBanner(banner),
         at: brow,
         phase: 0,
     }
@@ -170,7 +169,7 @@ const BUBBLE_SPACING: u16 = 2;
 
 /// The bubbles over a running gateway mascot centred at `pos`, its frame
 /// `frame_h` tall, with `turns` in flight: one per turn over a baseline of one,
-/// capped, rising from just above its head.
+/// bannered, rising from just above its head.
 pub(crate) fn mascot_bubbles(
     pos: Point,
     frame_h: u16,

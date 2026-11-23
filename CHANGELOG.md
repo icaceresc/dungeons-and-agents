@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-11-23
+
+### Changes
+
+- Team banners replace the original caps: a subagent carries its team's gonfalon on its back, in a heraldic tincture, strapped at the shoulder.
+- The keep's name plates, tooltips and panels are dark wood with parchment ink, and each source's hue is muted to match.
+- A sleeper's moon and a waiter's carved exclamation replace the original z and ?.
+- The wall board reads Dungeons & Agents, and its star opens this repository.
+- A list portrait no longer draws a team marker, so every row stays one size.
+
+
 ## [0.23.0](https://github.com/pixtuoid/pixtuoid/compare/v0.22.0...v0.23.0) - 2026-11-13
 
 ### Bug Fixes

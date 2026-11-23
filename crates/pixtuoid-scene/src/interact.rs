@@ -416,7 +416,7 @@ mod tests {
         p.down(Some(SceneHit::Star), pt(5, 5), SLOP, None);
         assert_eq!(
             p.up(Some(pt(6, 5))),
-            Some(Gesture::Click(HitAction::Open(crate::hit::REPO_URL))),
+            Some(Gesture::Click(HitAction::Open(crate::hit::STAR_URL))),
             "released in place, within the slop"
         );
         assert_eq!(
@@ -509,7 +509,7 @@ mod tests {
             (
                 Some(SceneHit::Star),
                 None,
-                affords(Some(HitAction::Open(crate::hit::REPO_URL)), None),
+                affords(Some(HitAction::Open(crate::hit::STAR_URL)), None),
             ),
             (Some(SceneHit::Furniture("Desk")), None, affords(None, None)),
             (None, None, affords(None, None)),

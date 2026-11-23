@@ -47,13 +47,14 @@ fn branding_visible_in_wall_display() {
     let mut found = false;
     for y in 0..upper_quarter {
         let row = row_text(&buf, y, w);
-        if row.contains("pixtuoid") {
+        if row.contains(pixtuoid_scene::neon_sign::BOARD_BRAND) {
             found = true;
             break;
         }
     }
     assert!(
         found,
-        "branding 'pixtuoid' not found in the upper quarter of the display"
+        "branding {} not found in the upper quarter of the display",
+        pixtuoid_scene::neon_sign::BOARD_BRAND
     );
 }

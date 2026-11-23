@@ -277,38 +277,43 @@ const HAIR_PRESETS: &[Rgb] = &[
     }, // silver-grey
 ];
 const _: () = assert!(!HAIR_PRESETS.is_empty());
-/// The inks a subagent's cap comes in, one per team: its lead's id picks it
-/// ([`cap_ink`]), so siblings match and a glance groups them. Picked to stand
-/// off every [`HAIR_PRESETS`] entry, which the cap sits on, rather than to
-/// fill the hue wheel: an orange or red would vanish into ginger or auburn.
-const CAP_INKS: &[Rgb] = &[
+/// The inks a subagent's banner comes in, one per team: its lead's id picks it
+/// ([`banner_ink`]), so siblings match and a glance groups them. The heraldic
+/// tinctures, muted and rich as a torch-lit hall shows them, each told from the
+/// others rather than spread over the hue wheel.
+const BANNER_INKS: &[Rgb] = &[
     Rgb {
-        r: 0xec,
-        g: 0xec,
-        b: 0xec,
-    }, // off-white
-    Rgb {
-        r: 0x2f,
-        g: 0x6f,
-        b: 0xde,
-    }, // blue
-    Rgb {
-        r: 0x58,
-        g: 0xd0,
-        b: 0x68,
-    }, // green
-    Rgb {
-        r: 0xf5,
-        g: 0xe0,
+        r: 0xc8,
+        g: 0x4c,
         b: 0x4a,
-    }, // yellow
+    }, // gules
     Rgb {
-        r: 0xe0,
-        g: 0x60,
-        b: 0xc8,
-    }, // magenta
+        r: 0x56,
+        g: 0x7a,
+        b: 0xc0,
+    }, // azure
+    Rgb {
+        r: 0x54,
+        g: 0x90,
+        b: 0x58,
+    }, // vert
+    Rgb {
+        r: 0xd0,
+        g: 0xaa,
+        b: 0x4c,
+    }, // or
+    Rgb {
+        r: 0x96,
+        g: 0x66,
+        b: 0xb4,
+    }, // purpure
+    Rgb {
+        r: 0xdc,
+        g: 0xd6,
+        b: 0xc4,
+    }, // argent
 ];
-const _: () = assert!(!CAP_INKS.is_empty());
+const _: () = assert!(!BANNER_INKS.is_empty());
 const SKIN_PRESETS: &[Rgb] = &[
     Rgb {
         r: 0xf4,
@@ -413,9 +418,9 @@ pub(crate) fn work_glow_tint(
     crate::lighting::screen_work(agent).map(|work| glow.for_work(work))
 }
 
-/// The ink of the cap a subagent of `lead`'s team wears.
-pub(crate) fn cap_ink(lead: pixtuoid_core::AgentId) -> Rgb {
-    CAP_INKS[crate::spread(lead.raw(), CAP_INKS.len())]
+/// The ink of the banner a subagent of `lead`'s team carries.
+pub(crate) fn banner_ink(lead: pixtuoid_core::AgentId) -> Rgb {
+    BANNER_INKS[crate::spread(lead.raw(), BANNER_INKS.len())]
 }
 
 #[cfg(test)]
@@ -425,33 +430,37 @@ mod tests {
     use pixtuoid_core::state::{ActivityState, ToolKind, ToolUse};
     use std::sync::Arc;
 
-    /// The closest any cap ink comes to any hair, in OKLab: measured off
-    /// [`CAP_INKS`] as picked, not a perceptual threshold. A ratchet: an ink
-    /// edited nearer a hair the cap sits on fails here first.
-    const CAP_HAIR_MIN: f32 = 0.159;
+    /// The closest any two banner inks come, in OKLab: measured off
+    /// [`BANNER_INKS`] as picked, not a perceptual threshold. A ratchet: an ink
+    /// edited nearer another's fails here first, so two teams never read as one.
+    const BANNER_PAIR_MIN: f32 = 0.100;
 
     #[test]
-    fn no_cap_ink_comes_nearer_a_hair_than_the_measured_minimum() {
-        let nearest = CAP_INKS
+    fn no_two_banner_inks_come_nearer_than_the_measured_minimum() {
+        let nearest = BANNER_INKS
             .iter()
-            .flat_map(|&ink| HAIR_PRESETS.iter().map(move |&hair| ink.delta_e(hair)))
+            .enumerate()
+            .flat_map(|(i, &a)| BANNER_INKS[i + 1..].iter().map(move |&b| a.delta_e(b)))
             .fold(f32::INFINITY, f32::min);
-        assert!(nearest >= CAP_HAIR_MIN, "a cap ink {nearest} from a hair");
+        assert!(
+            nearest >= BANNER_PAIR_MIN,
+            "two banner inks {nearest} apart"
+        );
     }
 
-    /// A cap is a graphic ringed in the pack's `[characters] outline` at every
-    /// density, so each ink holds the non-text bar against that ring, itself
-    /// and in the one shade a cap draws.
+    /// A banner is a graphic ringed in the pack's `[characters] outline` at
+    /// every density, so each ink holds the non-text bar against that ring,
+    /// itself and in the one shade a banner draws.
     #[test]
-    fn every_cap_shade_reads_as_a_graphic_against_its_ring() {
-        use crate::effects::look::CAP_SHADE;
+    fn every_banner_shade_reads_as_a_graphic_against_its_ring() {
+        use crate::effects::look::BANNER_SHADE;
         use palette::color_difference::Wcag21RelativeContrast as _;
         let ring = crate::pack::test_office()
             .inner()
             .character_outline()
             .srgb();
-        for ink in CAP_INKS {
-            for level in [0, CAP_SHADE] {
+        for ink in BANNER_INKS {
+            for level in [0, BANNER_SHADE] {
                 let shade = ink.ramp(level).srgb();
                 assert!(
                     shade.has_min_contrast_graphics(ring),

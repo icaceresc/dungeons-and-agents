@@ -132,7 +132,7 @@ pub struct BoardModel {
 
 /// The board's brand line. It carries NO version: the board is in every committed
 /// still, so a version here made each release re-render all of them.
-pub const BOARD_BRAND: &str = "pixtuoid";
+pub const BOARD_BRAND: &str = "Dungeons & Agents";
 
 /// The board's L1 star CTA: the star, then its word.
 fn board_star() -> Vec<BoardSegment> {
@@ -687,7 +687,7 @@ mod tests {
 
     #[test]
     fn the_brand_carries_no_version_so_a_release_cannot_drift_committed_media() {
-        assert_eq!(BOARD_BRAND, "pixtuoid");
+        assert_eq!(BOARD_BRAND, "Dungeons & Agents");
         assert!(!BOARD_BRAND.contains(env!("CARGO_PKG_VERSION")));
         let b = build_board(
             counts(1, 0, 0),

@@ -493,7 +493,7 @@ impl HeadView {
 }
 
 /// A frame's head: which way it faces and its point, where a hairstyle
-/// layer's own head is laid and a subagent's cap sits, read from the frame's
+/// layer's own head is laid and a subagent's banner stands beside, read from the frame's
 /// one `head.<view>` [`Mark`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) struct HeadMark {
@@ -562,8 +562,8 @@ impl Sprite {
         self.marks.get(idx).map_or(&[], Vec::as_slice)
     }
 
-    /// Frame `idx`'s head: where a hairstyle dresses it and a subagent's cap
-    /// sits.
+    /// Frame `idx`'s head: where a hairstyle dresses it and a subagent's banner
+    /// stands beside.
     pub(crate) fn head(&self, idx: usize) -> Option<HeadMark> {
         self.marks(idx).iter().find_map(HeadMark::of)
     }

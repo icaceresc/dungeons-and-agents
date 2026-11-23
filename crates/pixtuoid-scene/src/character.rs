@@ -16,7 +16,7 @@ pub(crate) mod test_support;
 
 #[cfg(test)]
 pub(crate) use colors::{HAIR_KEY, PANTS_KEY, SHIRT_KEY, SKIN_KEY};
-pub(crate) use colors::{agent_overrides, cap_ink, party_outfit_seed, work_glow_tint};
+pub(crate) use colors::{agent_overrides, banner_ink, party_outfit_seed, work_glow_tint};
 #[cfg(test)]
 pub(crate) use hair::dress;
 pub(crate) use hair::{Class, Dress, dress_for, outline, project_of};
