@@ -887,10 +887,10 @@ fn a_top_model_at_max_effort_draws_as_any_other_agent() {
     assert_eq!(effects(&top), effects(&other), "something rode a top model");
 }
 
-/// A subagent wears a cap, which reaches both painters and leaves the badge
-/// where it was; the lead who dispatched them wears none.
+/// A subagent carries a banner, which reaches both painters and leaves the
+/// badge where it was; the lead who dispatched them carries none.
 #[test]
-fn a_subagent_wears_a_cap_and_a_lead_does_not() {
+fn a_subagent_carries_a_banner_and_a_lead_does_not() {
     let now = SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
     let conditions = Conditions::default();
     let plain = make_scene(2, 8);
@@ -916,16 +916,19 @@ fn a_subagent_wears_a_cap_and_a_lead_does_not() {
             .map(|c| (frame.agents[c.agent_idx].agent_id, c.clone()))
             .collect::<std::collections::HashMap<_, _>>()
     };
-    let caps = |c: &crate::sim::CharacterPlacement| {
+    let banners = |c: &crate::sim::CharacterPlacement| {
         c.effects
             .iter()
-            .filter(|e| matches!(e.kind, crate::effects::EffectKind::SubagentCap(_)))
+            .filter(|e| matches!(e.kind, crate::effects::EffectKind::SubagentBanner(_)))
             .count()
     };
     let (before, after) = (placed(&plain), placed(&dispatched));
-    assert!(before.values().all(|c| caps(c) == 0), "a lead wore a cap");
-    assert_eq!(caps(&after[&lead]), 0, "the lead wore a cap");
-    assert_eq!(caps(&after[&child]), 1, "the subagent wore no cap");
+    assert!(
+        before.values().all(|c| banners(c) == 0),
+        "a lead carried a banner"
+    );
+    assert_eq!(banners(&after[&lead]), 0, "the lead carried a banner");
+    assert_eq!(banners(&after[&child]), 1, "the subagent carried no banner");
     assert_eq!(
         after[&child].label_anchor, before[&child].label_anchor,
         "the cap moved the classic's badge"
@@ -3014,7 +3017,10 @@ fn a_petting_refuses_another_while_it_plays() {
         "it plays to its last millisecond"
     );
     assert!((twins.petted.showing_pets(&pets, last).petting).is_some());
-    assert!(!twins.petted.pet(PetKind::Wolf, last), "and refuses another");
+    assert!(
+        !twins.petted.pet(PetKind::Wolf, last),
+        "and refuses another"
+    );
     let over = t + Duration::from_millis(PET_DURATION_MS);
     twins.render(&pets, over);
     assert!(!twins.sits(0, PetKind::Wolf), "over at its length");

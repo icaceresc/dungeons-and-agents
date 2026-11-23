@@ -1,9 +1,9 @@
 //! Each effect's look in layout cells, which every painter draws it from;
 //! [`super`] decides only when and where one shows.
 
-use crate::sprite::{HeadView, Rgb};
+use crate::sprite::Rgb;
 
-use super::{Cap, Effect, EffectKind, HEART_LIFE_MS, SLEEP_Z_RISE_MS, STEAM_CYCLE_MS};
+use super::{Banner, Effect, EffectKind, HEART_LIFE_MS, SLEEP_Z_RISE_MS, STEAM_CYCLE_MS};
 use crate::composite::WHITE;
 use crate::layout::chrome::Glyph;
 use crate::layout::{Point, WALKING_Y_OFF};
@@ -47,7 +47,7 @@ pub(crate) fn plot_effect(e: &Effect, inks: &Inks, plot: &mut impl FnMut(u16, u1
         EffectKind::PetHeart => plot_pet_heart(plot, e.at, e.phase),
         EffectKind::SteamPuff => plot_steam_puff(plot, e.at, e.phase, inks),
         EffectKind::MascotBubble => plot_mascot_bubble(plot, e.at, e.phase),
-        EffectKind::SubagentCap(cap) => plot_subagent_cap(plot, e.at, cap),
+        EffectKind::SubagentBanner(cap) => plot_subagent_banner(plot, e.at, cap),
     }
 }
 
@@ -67,71 +67,48 @@ pub(crate) const REQUIRES_ACTION_MARK_1X: Glyph = Glyph::new(&[
     ".#.", //
 ]);
 
-/// A subagent's cap on the base art, as [`SLEEP_Z_1X`] is, from the front:
-/// layers of a glyph and the ramp step of the cap's ink it is drawn in, each
-/// glyph's middle column on the head mark and its last row on the brow, the
-/// cap's line ringing them on the row over them ([`plot_subagent_cap`]).
-const CAP_1X_FRONT: [(Glyph, i8); 2] = [
-    (
-        Glyph::new(&[
-            "..######..", //
-            "..........", //
-        ]),
-        0,
-    ),
-    (
-        Glyph::new(&[
-            "..........", //
-            "..######..", //
-        ]),
-        CAP_SHADE,
-    ),
-];
-/// [`CAP_1X_FRONT`] from behind: the strap's nub under the crown.
-const CAP_1X_BACK: [(Glyph, i8); 1] = [(
-    Glyph::new(&[
-        "..######..", //
-        "....##....", //
-    ]),
-    0,
-)];
-/// [`CAP_1X_FRONT`] in profile, facing east: the peak jutting past the brow.
-const CAP_1X_SIDE: [(Glyph, i8); 2] = [
-    (
-        Glyph::new(&[
-            "...#####..", //
-            "...#####..", //
-        ]),
-        0,
-    ),
-    (
-        Glyph::new(&[
-            "..........", //
-            "........##", //
-        ]),
-        CAP_SHADE,
-    ),
-];
-/// [`CAP_1X_FRONT`] from above: the peak a shade on the crown.
-const CAP_1X_CROWN: [(Glyph, i8); 2] = [
-    (
-        Glyph::new(&[
-            "...####...", //
-            "..######..", //
-        ]),
-        0,
-    ),
-    (
-        Glyph::new(&[
-            "..........", //
-            "....##....", //
-        ]),
-        CAP_SHADE,
-    ),
-];
-/// The one shade a cap draws its shading in, one ramp step down: the darkest
-/// ink's shade still reads against the cap's ring (`every_cap_shade_reads_as_a_graphic_against_its_ring`).
-pub(crate) const CAP_SHADE: i8 = -1;
+/// A subagent's banner on the base art, as [`SLEEP_Z_1X`] is, its pole the last
+/// column: cloth `l` lit, `b` base and `s` shade, `w` wood. The 4x look draws
+/// the same banner finer (`display::effects::banner_look`).
+const BANNER_1X: [&str; 3] = ["lllw", "bbsw", ".bsw"];
+/// Cells from the head mark west to the pole: just clear of the body's edge.
+pub(crate) const BANNER_1X_POLE_DX: i32 = 5;
+/// Cells the cloth's top stands over the brow, so its ring is the frame's top
+/// row and the badge over the frame stays clear.
+const BANNER_1X_RISE: i32 = 1;
+/// Cells from the brow down to where the pole ends: the shoulder, which a strap
+/// two cells long crosses one row above.
+const BANNER_1X_FOOT: i32 = 6;
+const BANNER_1X_STRAP_LEN: i32 = 2;
+/// The one shade a banner draws its shading in, one ramp step down: the
+/// darkest ink's shade still reads against the banner's ring
+/// (`every_banner_shade_reads_as_a_graphic_against_its_ring`).
+pub(crate) const BANNER_SHADE: i8 = -1;
+/// The pack's wood (`O`, `D`), iron (`Σ`) and dark leather (`г`), which every
+/// banner's pole, tip and strap are drawn in (`banner_materials_are_the_packs`).
+pub(crate) const WOOD_LIT: Rgb = Rgb {
+    r: 0x7a,
+    g: 0x5a,
+    b: 0x3a,
+};
+/// See [`WOOD_LIT`].
+pub(crate) const WOOD: Rgb = Rgb {
+    r: 0x5e,
+    g: 0x41,
+    b: 0x28,
+};
+/// See [`WOOD_LIT`].
+pub(crate) const IRON: Rgb = Rgb {
+    r: 0x7e,
+    g: 0x83,
+    b: 0x8c,
+};
+/// See [`WOOD_LIT`].
+pub(crate) const LEATHER: Rgb = Rgb {
+    r: 0x4a,
+    g: 0x30,
+    b: 0x20,
+};
 
 /// Layout rows a sleep z rises over its life.
 pub(crate) const SLEEP_Z_MAX_RISE: u16 = 4;
@@ -252,40 +229,44 @@ fn plot_requires_action_mark(
     }
 }
 
-/// `cap` on the base art, its brim on `brow`: its glyphs, ringed in its line
-/// within its own rows and the one over them, never under the brow, so the
-/// cap keeps to its frame and reads against any carpet.
-fn plot_subagent_cap(plot: &mut impl FnMut(u16, u16, Rgb, f32), brow: Point, cap: Cap) {
-    let layers: &[(Glyph, i8)] = match cap.view {
-        HeadView::Front => &CAP_1X_FRONT,
-        HeadView::Back => &CAP_1X_BACK,
-        HeadView::Side => &CAP_1X_SIDE,
-        HeadView::Crown => &CAP_1X_CROWN,
-    };
-    let mut ink = std::collections::BTreeMap::new();
-    for &(glyph, level) in layers {
-        let (mid, bottom) = (i32::from(glyph.width() / 2), i32::from(glyph.height()) - 1);
-        for (dx, dy) in glyph.inked() {
-            let cell = (i32::from(dx) - mid, i32::from(dy) - bottom);
-            ink.insert(cell, cap.ink.ramp(level));
+/// `banner` on the base art, its pole beside the head mark at `brow`, ringed in
+/// its line.
+fn plot_subagent_banner(plot: &mut impl FnMut(u16, u16, Rgb, f32), brow: Point, banner: Banner) {
+    let mut px = std::collections::BTreeMap::new();
+    let width = BANNER_1X[0].len() as i32;
+    for (row, line) in (-BANNER_1X_RISE..).zip(BANNER_1X) {
+        for (col, key) in (-BANNER_1X_POLE_DX - width + 1..).zip(line.chars()) {
+            let ink = match key {
+                'l' => banner.ink.ramp(1),
+                'b' => banner.ink,
+                's' => banner.ink.ramp(BANNER_SHADE),
+                'w' => WOOD,
+                _ => continue,
+            };
+            px.insert((col, row), ink);
         }
     }
-    let Some(top) = ink.keys().map(|&(_, row)| row).min() else {
+    for row in BANNER_1X.len() as i32 - BANNER_1X_RISE..BANNER_1X_FOOT {
+        px.insert((-BANNER_1X_POLE_DX, row), WOOD);
+    }
+    for col in 1..=BANNER_1X_STRAP_LEN {
+        px.insert((col - BANNER_1X_POLE_DX, BANNER_1X_FOOT - 2), LEATHER);
+    }
+    let (Some(x0), Some(x1), Some(y0), Some(y1)) = (
+        px.keys().map(|&(x, _)| x).min(),
+        px.keys().map(|&(x, _)| x).max(),
+        px.keys().map(|&(_, y)| y).min(),
+        px.keys().map(|&(_, y)| y).max(),
+    ) else {
         return;
     };
-    let (x0, x1) = ink
-        .keys()
-        .fold((0, 0), |(lo, hi), &(dx, _)| (lo.min(dx), hi.max(dx)));
-    let around = (top - 1..=0).flat_map(|row| (x0 - 1..=x1 + 1).map(move |dx| (dx, row)));
-    let ring = crate::character::outline(around, |dx, row| ink.contains_key(&(dx, row)));
-    let sign = if cap.flip { -1 } else { 1 };
-    let cells = ring.map(|cell| (cell, cap.line)).collect::<Vec<_>>();
-    for ((dx, row), c) in cells
-        .into_iter()
-        .chain(ink.iter().map(|(&cell, &c)| (cell, c)))
-    {
-        let x = i32::from(brow.x) + sign * dx;
-        let y = i32::from(brow.y) + row;
+    let around = (y0 - 1..=y1 + 1).flat_map(|y| (x0 - 1..=x1 + 1).map(move |x| (x, y)));
+    let ring = crate::character::outline(around, |x, y| px.contains_key(&(x, y)));
+    let cells = ring
+        .map(|cell| (cell, banner.line))
+        .chain(px.iter().map(|(&cell, &ink)| (cell, ink)));
+    for ((dx, dy), c) in cells {
+        let (x, y) = (i32::from(brow.x) + dx, i32::from(brow.y) + dy);
         if let (Ok(x), Ok(y)) = (u16::try_from(x), u16::try_from(y)) {
             plot(x, y, c, 1.0);
         }

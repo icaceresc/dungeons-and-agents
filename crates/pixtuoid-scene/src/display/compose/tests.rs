@@ -1042,12 +1042,12 @@ pub(crate) fn list_at<'a>(frame: &SimFrame, office: Office<'a>, hour: u32) -> Di
 }
 
 /// The cap rider in `list`.
-pub(crate) fn cap_rider(list: &DisplayList<'_>) -> crate::display::effects::Riding {
+pub(crate) fn banner_rider(list: &DisplayList<'_>) -> crate::display::effects::Riding {
     list.pieces()
         .iter()
         .find_map(|p| match p.kind {
             PieceKind::Effect(r)
-                if matches!(r.effect.kind, crate::effects::EffectKind::SubagentCap(_)) =>
+                if matches!(r.effect.kind, crate::effects::EffectKind::SubagentBanner(_)) =>
             {
                 Some(r)
             }

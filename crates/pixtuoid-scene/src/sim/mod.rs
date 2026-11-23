@@ -860,12 +860,12 @@ pub(crate) struct Cues {
 }
 
 /// What rides on the figure whose frame stands at `top_left` this tick, in
-/// paint order: dust underfoot, the `cap` it wears, then a sleeper's z or a
+/// paint order: dust underfoot, the `banner` it carries, then a sleeper's z or a
 /// waiter's mark.
 pub(crate) fn character_effects(
     top_left: Point,
     cues: Cues,
-    cap: Option<Effect>,
+    banner: Option<Effect>,
     beat: Beat,
 ) -> Vec<Effect> {
     let mut out = Vec::new();
@@ -873,7 +873,7 @@ pub(crate) fn character_effects(
         cues.planted_foot
             .map(|f| effects::walking_dust(top_left, f)),
     );
-    out.extend(cap);
+    out.extend(banner);
     out.extend(
         cues.sleep_seed
             .and_then(|seed| effects::sleep_z(top_left, seed, beat)),
@@ -884,9 +884,9 @@ pub(crate) fn character_effects(
     out
 }
 
-/// [`team_cap`] on the figure `p` draws, its brim on the base art's head mark,
+/// [`team_banner`] on the figure `p` draws, beside the base art's head mark,
 /// the brow.
-pub(crate) fn cap_for(
+pub(crate) fn banner_for(
     p: &CharacterPlacement,
     agent: &AgentSlot,
     pack: &OfficeArt,
@@ -898,7 +898,7 @@ pub(crate) fn cap_for(
         crate::render_scale::RenderScale::ONE,
     );
     let head = art.head?;
-    let cap = team_cap(agent, pack, head.view, p.flip_x)?;
+    let banner = team_banner(agent, pack, p.flip_x)?;
     let x = if p.flip_x {
         art.logical.0 - 1 - head.x
     } else {
@@ -908,20 +908,18 @@ pub(crate) fn cap_for(
         x: p.top_left.x + x,
         y: p.top_left.y + head.y,
     };
-    Some(effects::subagent_cap(brow, cap))
+    Some(effects::subagent_banner(brow, banner))
 }
 
-/// The cap `agent` wears where they are a subagent, in their team's ink.
-pub(crate) fn team_cap(
+/// The banner `agent` carries where they are a subagent, in their team's ink.
+pub(crate) fn team_banner(
     agent: &AgentSlot,
     pack: &OfficeArt,
-    view: crate::sprite::HeadView,
     flip: bool,
-) -> Option<effects::Cap> {
-    Some(effects::Cap {
-        ink: crate::character::cap_ink(agent.parent_id?),
+) -> Option<effects::Banner> {
+    Some(effects::Banner {
+        ink: crate::character::banner_ink(agent.parent_id?),
         line: pack.inner().character_outline(),
-        view,
         flip,
     })
 }
@@ -1179,8 +1177,8 @@ pub(crate) fn resolve_characters(
         } else {
             fitted
         };
-        let cap = cap_for(p, agent, pack);
-        p.effects = character_effects(p.top_left, *cues, cap, beat);
+        let banner = banner_for(p, agent, pack);
+        p.effects = character_effects(p.top_left, *cues, banner, beat);
     }
 
     // wp_rank's keys ARE this tick's occupied waypoints — every AtWaypoint
@@ -1289,21 +1287,26 @@ mod tests {
     }
 
     /// A subagent wearing `figure`'s pose, of the team `lead` leads: their
-    /// cap.
-    fn cap_on(figure: &SimFrame, child: AgentId, lead: AgentId, pack: &OfficeArt) -> effects::Cap {
+    /// banner.
+    fn banner_on(
+        figure: &SimFrame,
+        child: AgentId,
+        lead: AgentId,
+        pack: &OfficeArt,
+    ) -> effects::Banner {
         let c = &figure.characters[0];
         let mut agent = figure.agents[c.agent_idx].clone();
         (agent.agent_id, agent.parent_id) = (child, Some(lead));
-        match cap_for(c, &agent, pack).map(|e| e.kind) {
-            Some(effects::EffectKind::SubagentCap(cap)) => cap,
-            other => panic!("a subagent wears no cap: {other:?}"),
+        match banner_for(c, &agent, pack).map(|e| e.kind) {
+            Some(effects::EffectKind::SubagentBanner(banner)) => banner,
+            other => panic!("a subagent carries no banner: {other:?}"),
         }
     }
 
-    /// A subagent's cap takes its lead's ink, whoever the subagent is, so a
+    /// A subagent's banner takes its lead's ink, whoever the subagent is, so a
     /// team matches; and two leads' teams can differ.
     #[test]
-    fn a_team_shares_its_cap_ink_and_teams_can_differ() {
+    fn a_team_shares_its_banner_ink_and_teams_can_differ() {
         let (_, pack, frames, _) = crate::display::compose::tests::sit_down(Facing::South, 0);
         let figure = frames.last().expect("a frame");
         let id = |path: String| AgentId::from_transcript_path(&path);
@@ -1311,25 +1314,25 @@ mod tests {
         let first = id("/team/child-0.jsonl".into());
         let sibling = (1..64)
             .map(|n| id(format!("/team/child-{n}.jsonl")))
-            .find(|&s| crate::character::cap_ink(s) != crate::character::cap_ink(first))
+            .find(|&s| crate::character::banner_ink(s) != crate::character::banner_ink(first))
             .expect("two children whose own ids pick different inks");
         assert_eq!(
-            cap_on(figure, first, lead, &pack).ink,
-            cap_on(figure, sibling, lead, &pack).ink,
-            "siblings wear different inks"
+            banner_on(figure, first, lead, &pack).ink,
+            banner_on(figure, sibling, lead, &pack).ink,
+            "siblings carry different inks"
         );
         let other_team = (0..)
             .map(|n| id(format!("/other/lead-{n}.jsonl")))
-            .map(|l| cap_on(figure, first, l, &pack).ink)
+            .map(|l| banner_on(figure, first, l, &pack).ink)
             .take(32)
-            .any(|ink| ink != cap_on(figure, first, lead, &pack).ink);
-        assert!(other_team, "every team wears one ink");
+            .any(|ink| ink != banner_on(figure, first, lead, &pack).ink);
+        assert!(other_team, "every team carries one ink");
     }
 
-    /// A subagent wears a cap in every frame of every pose, its brim on the
+    /// A subagent carries a banner in every frame of every pose, riding on the
     /// base art's head mark, the brow, mirrored with the frame.
     #[test]
-    fn a_cap_sits_on_the_base_heads_brow_in_every_frame() {
+    fn a_banner_rides_on_the_base_heads_brow_in_every_frame() {
         use strum::VariantArray as _;
         let (_, pack, frames, _) = crate::display::compose::tests::sit_down(Facing::South, 0);
         let mut frame = frames.last().expect("a frame").clone();
@@ -1349,14 +1352,14 @@ mod tests {
                     let lead = AgentId::from_transcript_path("/brow/lead.jsonl");
                     let mut agent = frame.agents[c.agent_idx].clone();
                     agent.parent_id = Some(lead);
-                    let cap = cap_for(c, &agent, &pack).expect("a subagent wears a cap");
+                    let banner = banner_for(c, &agent, &pack).expect("a subagent carries a banner");
                     let x = if flip {
                         art.frame_at(idx).width() - 1 - head.x
                     } else {
                         head.x
                     };
                     assert_eq!(
-                        cap.at,
+                        banner.at,
                         Point {
                             x: at.x + x,
                             y: at.y + head.y
@@ -1364,11 +1367,10 @@ mod tests {
                         "{piece:?} frame {idx}, flipped: {flip}"
                     );
                     assert_eq!(
-                        cap.kind,
-                        effects::EffectKind::SubagentCap(effects::Cap {
-                            ink: crate::character::cap_ink(lead),
+                        banner.kind,
+                        effects::EffectKind::SubagentBanner(effects::Banner {
+                            ink: crate::character::banner_ink(lead),
                             line: pack.inner().character_outline(),
-                            view: head.view,
                             flip,
                         })
                     );
@@ -1377,19 +1379,18 @@ mod tests {
         }
     }
 
-    /// A cap rides under a sleeper's z and a waiter's mark, which it would hide
-    /// where they meet over a wide head.
+    /// A banner rides under a sleeper's z and a waiter's mark, so it never
+    /// hides them where they meet.
     #[test]
-    fn a_cap_rides_under_the_z_and_the_mark() {
+    fn a_banner_rides_under_the_z_and_the_mark() {
         use crate::effects::EffectKind as K;
         use crate::sprite::Rgb;
         let at = Point { x: 10, y: 10 };
-        let cap = effects::subagent_cap(
+        let banner = effects::subagent_banner(
             at,
-            effects::Cap {
+            effects::Banner {
                 ink: Rgb { r: 1, g: 2, b: 3 },
                 line: Rgb { r: 4, g: 5, b: 6 },
-                view: crate::sprite::HeadView::Front,
                 flip: false,
             },
         );
@@ -1398,13 +1399,18 @@ mod tests {
             requires_action: true,
             planted_foot: Some(0),
         };
-        let kinds: Vec<K> = character_effects(at, cues, Some(cap), Beat::at_ms(0))
+        let kinds: Vec<K> = character_effects(at, cues, Some(banner), Beat::at_ms(0))
             .iter()
             .map(|e| e.kind)
             .collect();
         assert_eq!(
             kinds,
-            [K::WalkingDust, cap.kind, K::SleepZ, K::RequiresActionMark]
+            [
+                K::WalkingDust,
+                banner.kind,
+                K::SleepZ,
+                K::RequiresActionMark
+            ]
         );
     }
 

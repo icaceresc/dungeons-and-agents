@@ -2,7 +2,7 @@ use super::*;
 use crate::anim::Motion;
 use crate::atmosphere::Moment;
 use crate::display::compose::tests::{
-    base_size, cap_rider, empty_frame, kind_name, list_at, lively_office, many_layouts, queued,
+    banner_rider, base_size, empty_frame, kind_name, list_at, lively_office, many_layouts, queued,
     quiet_board, showing, sit_down, sit_down_as, sit_down_in,
 };
 use crate::display::compose::{compose_at, ground_shadow, push_windows};
@@ -885,12 +885,12 @@ fn looks_keep_their_places(s: u16) {
         theme,
         scale,
     };
-    let mut frame = capped(frames.last().expect("a seated frame").clone(), &pack);
+    let mut frame = bannered(frames.last().expect("a seated frame").clone(), &pack);
     let cap = frame.characters[0].effects[0];
     for c in &mut frame.characters {
         c.effects = every_effect(c.top_left);
         for e in &mut c.effects {
-            if matches!(e.kind, K::SubagentCap(_)) {
+            if matches!(e.kind, K::SubagentBanner(_)) {
                 *e = cap;
             }
         }
@@ -1179,15 +1179,18 @@ fn a_riders_head_is_its_figures_top_row() {
     }
 }
 
-/// `frame`'s first figure made a subagent, wearing the cap the sim gives one.
-fn capped(mut frame: SimFrame, pack: &OfficeArt) -> SimFrame {
+/// `frame`'s first figure made a subagent, carrying the banner the sim gives one.
+fn bannered(mut frame: SimFrame, pack: &OfficeArt) -> SimFrame {
     let c = &mut frame.characters[0];
     let agent = &mut frame.agents[c.agent_idx];
     agent.parent_id = Some(pixtuoid_core::AgentId::from_transcript_path(
-        "/cap/lead.jsonl",
+        "/banner/lead.jsonl",
     ));
-    c.effects = crate::sim::cap_for(c, agent, pack).into_iter().collect();
-    assert!(!c.effects.is_empty(), "premise: a subagent wears a cap");
+    c.effects = crate::sim::banner_for(c, agent, pack).into_iter().collect();
+    assert!(
+        !c.effects.is_empty(),
+        "premise: a subagent carries a banner"
+    );
     frame
 }
 
@@ -1205,12 +1208,12 @@ fn painted_by(
     px
 }
 
-/// A subagent's cap puts its brim on the brow, its head mark's row, in every
-/// frame of every pose, at the base art and at the densest: there fitted to
-/// the head as its dress draws it across the brow, at the base art centred on
-/// the mark, and mirrored with a mirrored figure at both.
+/// A subagent's banner stands beside the head, west of it whichever way the
+/// figure is turned, in every frame of every pose, at the base art and at the
+/// densest: there clear of the head as its dress draws it across the brow, at
+/// the base art clear of the body's edge.
 #[test]
-fn a_caps_brim_sits_on_the_brow_in_every_pose() {
+fn a_banners_pole_stands_west_of_the_head_in_every_pose() {
     use strum::VariantArray as _;
     let theme = crate::theme::theme_by_name("normal").expect("theme");
     let (layout, pack, frames, _) = sit_down(crate::layout::Facing::South, 2);
@@ -1230,14 +1233,14 @@ fn a_caps_brim_sits_on_the_brow_in_every_pose() {
             };
             let art = crate::pack::densest_frame(&pack, piece, idx, scale);
             let (d, head) = (i32::from(art.density.get()), art.head.expect("a head mark"));
-            let worn = |flip: bool| {
+            for flip in [false, true] {
                 let mut frame = seated.clone();
                 let c = &mut frame.characters[0];
                 (c.anim_name, c.frame_idx, c.flip_x) = (piece, idx, flip);
-                let frame = capped(frame, &pack);
-                let cap = cap_rider(&list_at(&frame, office, 12));
-                let crate::effects::EffectKind::SubagentCap(look) = cap.effect.kind else {
-                    unreachable!("the cap rider");
+                let frame = bannered(frame, &pack);
+                let banner = banner_rider(&list_at(&frame, office, 12));
+                let crate::effects::EffectKind::SubagentBanner(look) = banner.effect.kind else {
+                    unreachable!("the banner rider");
                 };
                 let c = &frame.characters[0];
                 let agent = &frame.agents[c.agent_idx];
@@ -1247,106 +1250,90 @@ fn a_caps_brim_sits_on_the_brow_in_every_pose() {
                     &pack,
                     scale,
                 );
-                (painted_by(&cap, |px| px != look.line), c.top_left, key)
-            };
-            let (cap, at, key) = worn(false);
-            let (flipped, ..) = worn(true);
-            let here = format!("{piece:?} frame {idx} at scale {}", scale.get());
-            let (left, top) = (i32::from(at.x) * d, i32::from(at.y) * d);
-            let mark = left + i32::from(head.x);
-            let brim = cap.iter().map(|&(_, y)| y).max().expect("the cap paints");
-            assert_eq!(
-                brim,
-                top + i32::from(head.y),
-                "{here}: the brim is off the brow"
-            );
-            let width = i32::from(art.logical.0) * d;
-            let mirrored: std::collections::BTreeSet<_> = cap
-                .iter()
-                .map(|&(x, y)| (2 * left + width - 1 - x, y))
-                .collect();
-            assert_eq!(
-                flipped, mirrored,
-                "{here}: the cap does not turn with its figure"
-            );
-            let crown = cap.iter().map(|&(_, y)| y).min().expect("the cap paints");
-            if d == 1 {
-                let (x0, x1) = row_span(&cap, crown).expect("a row of cap");
-                assert!(
-                    (x0 + x1 - 2 * mark).abs() <= 1,
-                    "{here}: {x0}..={x1} off the mark {mark}"
+                let drawn = painted_by(&banner, |px| px != look.line);
+                let (left, top) = (i32::from(c.top_left.x) * d, i32::from(c.top_left.y) * d);
+                let width = i32::from(art.logical.0) * d;
+                let mark = left
+                    + if flip {
+                        width - 1 - i32::from(head.x)
+                    } else {
+                        i32::from(head.x)
+                    };
+                let brow = top + i32::from(head.y);
+                let here = format!(
+                    "{piece:?} frame {idx} at scale {} flipped {flip}",
+                    scale.get()
                 );
-            } else {
-                let (west, east) = key.dress.expect("a dressed figure").reach;
-                let (x0, x1) = (
-                    cap.iter().map(|&(x, _)| x).min().expect("the cap paints"),
-                    cap.iter().map(|&(x, _)| x).max().expect("the cap paints"),
-                );
-                assert_eq!(x0, mark - west, "{here}: not fitted to the head's west");
-                if head.view == crate::sprite::HeadView::Side {
-                    assert!(x1 > mark + east, "{here}: no peak juts past the brow");
+                let clear = if d == 1 {
+                    crate::effects::look::BANNER_1X_POLE_DX
                 } else {
-                    assert_eq!(x1, mark + east, "{here}: not fitted to the head's east");
-                }
+                    let (west, east) = key.dress.expect("a dressed figure").reach;
+                    if flip { east } else { west }
+                };
+                assert!(
+                    drawn
+                        .iter()
+                        .filter(|&&(_, y)| y < brow)
+                        .all(|&(x, _)| x <= mark - clear),
+                    "{here}: the banner leans on the head"
+                );
+                assert!(
+                    drawn.iter().any(|&(x, _)| x <= mark - clear),
+                    "{here}: the banner is not beside the head"
+                );
             }
         }
     }
 }
 
-/// The base art's cap is ringed in its line as the densest's is: its top row,
-/// the frame's, is all line in a front, back or side view, the ring's own row
-/// over the ink.
+/// A banner is ringed in its line as a dressed figure is, at the base art and
+/// at the densest: its outermost rows and columns are all ring.
 #[test]
-fn a_base_caps_top_row_is_its_ring() {
+fn a_banner_is_ringed_in_its_line() {
     let theme = crate::theme::theme_by_name("normal").expect("theme");
     let (layout, pack, frames, _) = sit_down(crate::layout::Facing::South, 2);
-    let office = Office {
-        layout: &layout,
-        pack: &pack,
-        theme,
-        scale: RenderScale::ONE,
-    };
-    for piece in [
-        PackPiece::Seated,
-        PackPiece::SeatedBack,
-        PackPiece::SideSeated,
-    ] {
-        let mut frame = frames.last().expect("a seated frame").clone();
-        let c = &mut frame.characters[0];
-        (c.anim_name, c.frame_idx) = (piece, 0);
-        let frame = capped(frame, &pack);
-        let cap = cap_rider(&list_at(&frame, office, 12));
-        let crate::effects::EffectKind::SubagentCap(look) = cap.effect.kind else {
-            unreachable!("the cap rider");
+    let densest = RenderScale::from(pack.max_density_variant());
+    for scale in [RenderScale::ONE, densest] {
+        let office = Office {
+            layout: &layout,
+            pack: &pack,
+            theme,
+            scale,
         };
-        let all = painted_by(&cap, |_| true);
-        let top = all.iter().map(|&(_, y)| y).min().expect("the cap paints");
-        assert_eq!(
-            top,
-            i32::from(frame.characters[0].top_left.y),
-            "{piece:?}: the cap rises off its frame"
+        let frame = bannered(frames.last().expect("a seated frame").clone(), &pack);
+        let banner = banner_rider(&list_at(&frame, office, 12));
+        let crate::effects::EffectKind::SubagentBanner(look) = banner.effect.kind else {
+            unreachable!("the banner rider");
+        };
+        let all = painted_by(&banner, |_| true);
+        let ring = painted_by(&banner, |c| c == look.line);
+        let (top, west) = (
+            all.iter()
+                .map(|&(_, y)| y)
+                .min()
+                .expect("the banner paints"),
+            all.iter()
+                .map(|&(x, _)| x)
+                .min()
+                .expect("the banner paints"),
         );
-        let ring = painted_by(&cap, |c| c == look.line);
-        let top_row: std::collections::BTreeSet<_> =
-            all.iter().copied().filter(|&(_, y)| y == top).collect();
-        assert!(
-            top_row.is_subset(&ring),
-            "{piece:?}: the top row is not all ring"
+        let bare = all
+            .iter()
+            .filter(|&&(x, y)| (y == top || x == west) && !ring.contains(&(x, y)))
+            .count();
+        assert_eq!(
+            bare,
+            0,
+            "at scale {}: the banner's edge is not ring",
+            scale.get()
         );
     }
 }
 
-/// The first and last columns of `row` in `px`.
-fn row_span(px: &std::collections::BTreeSet<(i32, i32)>, row: i32) -> Option<(i32, i32)> {
-    let xs = px.iter().filter(|&&(_, y)| y == row).map(|&(x, _)| x);
-    Some((xs.clone().min()?, xs.max()?))
-}
-
-/// A cap stays inside its figure's box, its top no higher than the body's, so
-/// a subagent's badge hangs where a lead's does, sitting and walking, at the
-/// base art and at the densest.
+/// A banner never moves its figure's badge, sitting and walking, at the base
+/// art and at the densest: the badge hangs where a lead's does.
 #[test]
-fn a_cap_never_moves_its_figures_badge() {
+fn a_banner_never_moves_its_figures_badge() {
     let theme = crate::theme::theme_by_name("normal").expect("theme");
     let (layout, pack, frames, _) = sit_down(crate::layout::Facing::South, 2);
     let densest = RenderScale::from(pack.max_density_variant());
@@ -1355,7 +1342,7 @@ fn a_cap_never_moves_its_figures_badge() {
         .find(|f| f.characters[0].seat_desk.is_none())
         .expect("a walking frame");
     for lead in [walking, frames.last().expect("a seated frame")] {
-        let capped = capped(lead.clone(), &pack);
+        let bannered = bannered(lead.clone(), &pack);
         for scale in [RenderScale::ONE, densest] {
             let office = Office {
                 layout: &layout,
@@ -1364,27 +1351,7 @@ fn a_cap_never_moves_its_figures_badge() {
                 scale,
             };
             let badge = |frame: &SimFrame| list_at(frame, office, 12).badges()[0].run();
-            assert_eq!(badge(&capped), badge(lead), "at scale {}", scale.get());
-            let worn = list_at(&capped, office, 12);
-            let body = worn
-                .pieces()
-                .iter()
-                .find_map(|p| match p.kind {
-                    PieceKind::Character { body, .. } => Some(body),
-                    _ => None,
-                })
-                .expect("the figure");
-            let cap = worn
-                .pieces()
-                .iter()
-                .find(|p| matches!(p.kind, PieceKind::Effect(r) if r == cap_rider(&worn)))
-                .expect("the cap")
-                .span;
-            assert!(
-                cap.y0 >= body.y0,
-                "at scale {} the cap {cap:?} rises over the body {body:?}",
-                scale.get()
-            );
+            assert_eq!(badge(&bannered), badge(lead), "at scale {}", scale.get());
         }
     }
 }
@@ -3447,6 +3414,19 @@ fn an_effect_never_blocks_its_figure() {
     let mut frame = frames.last().expect("a seated frame").clone();
     for c in &mut frame.characters {
         c.effects = every_effect(c.top_left);
+        // A banner rides beside its figure's head mark, not its corner.
+        let head = pack
+            .piece(c.anim_name)
+            .head(c.frame_idx)
+            .expect("a head mark");
+        for e in &mut c.effects {
+            if matches!(e.kind, crate::effects::EffectKind::SubagentBanner(_)) {
+                e.at = Point {
+                    x: c.top_left.x + head.x,
+                    y: c.top_left.y + head.y,
+                };
+            }
+        }
     }
     let id = crate::hit::HoverTarget::Agent(frame.agents[frame.characters[0].agent_idx].agent_id);
     for scale in [
@@ -3771,7 +3751,7 @@ fn riders_paint_beside_their_figure() {
             [
                 Some(K::WalkingDust),
                 None,
-                Some(K::SubagentCap(EVERY_CAP)),
+                Some(K::SubagentBanner(EVERY_BANNER)),
                 Some(K::SleepZ),
                 Some(K::RequiresActionMark)
             ]
@@ -4516,8 +4496,8 @@ fn each_drawn_agent_hovers_inside_its_piece() {
     }
 }
 
-/// [`every_effect`]'s cap.
-const EVERY_CAP: crate::effects::Cap = crate::effects::Cap {
+/// [`every_effect`]'s banner.
+const EVERY_BANNER: crate::effects::Banner = crate::effects::Banner {
     ink: crate::sprite::Rgb {
         r: 0xec,
         g: 0xec,
@@ -4528,7 +4508,6 @@ const EVERY_CAP: crate::effects::Cap = crate::effects::Cap {
         g: 0x10,
         b: 0x10,
     },
-    view: crate::sprite::HeadView::Front,
     flip: false,
 };
 
@@ -4538,7 +4517,7 @@ fn every_effect(top_left: crate::layout::Point) -> Vec<crate::effects::Effect> {
     let at = |ms| std::time::UNIX_EPOCH + std::time::Duration::from_millis(ms);
     vec![
         crate::effects::walking_dust(top_left, 0),
-        crate::effects::subagent_cap(top_left, EVERY_CAP),
+        crate::effects::subagent_banner(top_left, EVERY_BANNER),
         crate::effects::sleep_z(top_left, 0, Motion::Full.beat(at(500)))
             .expect("a z rising at 500 ms"),
         crate::effects::requires_action_mark(top_left),

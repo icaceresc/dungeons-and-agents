@@ -4,16 +4,16 @@
 //! mark beside its head, else its [shared look](crate::effects::look), a
 //! layout cell per art cell block. A look stays whole down to [`LOOK_SOLID`].
 
+use crate::sprite::Rgb;
 use crate::sprite::format::Density;
-use crate::sprite::{HeadView, Rgb};
 
 use crate::display::Span;
 use crate::display::pen::Pen;
 use crate::effects::look::{
-    CAP_SHADE, Inks, REQUIRES_ACTION_MARK_1X, SLEEP_Z_1X, SLEEP_Z_MAX_RISE, plot_effect,
-    sleep_z_fade, walking_dust_foot,
+    BANNER_SHADE, IRON, Inks, LEATHER, REQUIRES_ACTION_MARK_1X, SLEEP_Z_1X, SLEEP_Z_MAX_RISE, WOOD,
+    WOOD_LIT, plot_effect, sleep_z_fade, walking_dust_foot,
 };
-use crate::effects::{Cap, Effect, EffectKind};
+use crate::effects::{Banner, Effect, EffectKind};
 use crate::layout::chrome::{Glyph, REQUIRES_ACTION_MARK};
 
 /// The density this module's own looks are drawn at.
@@ -65,7 +65,6 @@ impl Head {
                     brow: Brow {
                         at: row(i32::from(dress.head.y)),
                         reach: dress.reach,
-                        view: dress.head.view,
                     },
                 })
             }
@@ -80,14 +79,13 @@ impl Head {
     }
 }
 
-/// A dressed head's brow on the art grid: its mark, the columns it is drawn
-/// across there ([`Dress::reach`](crate::character::Dress::reach)) and the view
-/// it is seen from, which a cap there takes its shape from.
+/// A dressed head's brow on the art grid: its mark and the columns it is drawn
+/// across there ([`Dress::reach`](crate::character::Dress::reach)), which a
+/// banner beside the head stands clear of.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) struct Brow {
     pub(crate) at: ArtPoint,
     pub(crate) reach: (i32, i32),
-    pub(crate) view: HeadView,
 }
 
 /// One effect on the figure it rides on.
@@ -151,14 +149,15 @@ impl Riding {
     }
 }
 
-/// A sleeping head's z, rising off the side of the head and drifting away.
+/// A sleeping head's moon, a crescent rising off the side of the head and
+/// drifting away.
 const SLEEP_Z: Glyph = Glyph::new(&[
-    "######", //
-    "....##", //
-    "...##.", //
-    "..##..", //
-    ".##...", //
-    "######", //
+    "..###.", //
+    ".####.", //
+    "###...", //
+    "###...", //
+    ".####.", //
+    "..###.", //
 ]);
 
 /// Art columns from the head mark to the west edge of what floats beside the
@@ -259,135 +258,106 @@ fn dense_look(
             let y = i32::from(foot.y) * d - 1;
             stamp(DUST, x, y, emit, (inks.dust, 1.0));
         }
-        EffectKind::SubagentCap(cap) => cap_look(cap, brow, emit),
+        EffectKind::SubagentBanner(banner) => banner_look(banner, head, brow, emit),
         // A creature's riders have no head, so `look` plots them as the classic
         // does; steam isn't drawn here.
         EffectKind::PetHeart | EffectKind::SteamPuff | EffectKind::MascotBubble => {}
     }
 }
 
-/// A cap's crown, top row first: each row's half-width as a share of the head
-/// it covers, a dome flattened on top as a ball cap's is.
-const CAP_CROWN: [f32; 8] = [0.47, 0.7, 0.82, 0.9, 0.95, 0.98, 0.99, 1.0];
-/// A cap seen from above, row by row as [`CAP_CROWN`] is: a disc.
-const CAP_DISC: [f32; 8] = [0.54, 0.82, 0.95, 1.0, 1.0, 0.95, 0.82, 0.54];
-/// Rows from an upright cap's crown down to its brim: the visor at the front,
-/// the crown carried on over the strap at the back and over the peak in
-/// profile.
-const CAP_BAND: usize = 3;
-/// The visor seen from the front, row by row: its share of the head and the
-/// ramp step it is drawn in, its seam, its lit top and its dark lip.
-const CAP_VISOR: [(f32, i8); CAP_BAND] = [(1.0, CAP_SHADE), (0.96, 1), (0.82, CAP_SHADE)];
-/// The peak in profile, row by row down to the brim: the columns it juts
-/// past the crown and its ramp step, its lit top over its underside.
-const CAP_PEAK: [(i32, i8); CAP_BAND - 1] = [(4, 1), (6, CAP_SHADE)];
-/// The tab under a cap seen from above, row by row from the disc's last: its
-/// share of the head, the peak glimpsed past the crown.
-const CAP_TAB: [f32; 2] = [0.55, 0.4];
-/// The share of the head the seam across a cap seen from above spans.
-const CAP_CROSS: f32 = 0.92;
-/// Columns a cap is lit along its west edge.
-const CAP_LIT_COLUMNS: i32 = 3;
-/// Columns a cap is shaded along its east edge.
-const CAP_SHADED_COLUMNS: i32 = 2;
-
-/// `cap` with its brim on `brow`, as wide as the head is drawn there: its
-/// crown lit on top and west and shaded east, ringed in its line as a dressed
-/// figure is, and turned with its figure.
-pub(crate) fn cap_look(cap: Cap, brow: Brow, emit: &mut impl FnMut(ArtPoint, i32, Rgb, f32)) {
-    let (west, east) = brow.reach;
-    let span = |s: f32| {
-        let side = |reach: i32| (reach as f32 * s).round() as i32;
-        -side(west)..=side(east)
+/// A subagent's banner on the 4x look's art grid, its pole the last two
+/// columns. Cloth: `l` lit, `b` base, `s` shade, the fold a shade column that
+/// steps over once down the cloth. Wood: `O` lit, `D` shaded. Iron: `i`, `I`
+/// lit.
+const BANNER: [&str; 17] = [
+    "..........II",
+    "........iIIi",
+    "..........ii",
+    "iOOOOOOOOOOD",
+    "iDDDDDDDDDOD",
+    "..llllllllOD",
+    "..lbbsbbbsOD",
+    "..lbbsbbbsOD",
+    "..lbbsbbbsOD",
+    "..lbbbsbbsOD",
+    "..lbbbsbbsOD",
+    "..lbbsbbbsOD",
+    "..lbbsbbbsOD",
+    "..lbbs.bbsOD",
+    "...bbs.bs.OD",
+    "...bs..bs.OD",
+    "....s..s..OD",
+];
+/// The pole's width in [`BANNER`]'s last columns.
+const POLE_W: i32 = 2;
+/// Art rows the banner's top stands over the crest: its iron tip over the hair.
+const BANNER_RISE: i32 = 9;
+/// Art columns between the head's outline and the pole, whose own ring takes
+/// the one.
+const BANNER_GAP: i32 = 3;
+/// Art rows from the brow down to where the pole ends: the shoulder.
+const SHOULDER_DROP: i32 = 15;
+/// The strap that holds the pole to the shoulder: rows, and its columns on
+/// the first row, each row one column longer toward the body.
+const STRAP_ROWS: i32 = 3;
+const STRAP_LEN: i32 = 4;
+/// `banner` carried on its figure's back: its pole stands beside the head's
+/// west, whichever way the figure faces, clear of every hair and helm, and ends
+/// at a strap on the shoulder. Ringed in its line as a dressed figure is.
+pub(crate) fn banner_look(
+    banner: Banner,
+    crest: ArtPoint,
+    brow: Brow,
+    emit: &mut impl FnMut(ArtPoint, i32, Rgb, f32),
+) {
+    let west = if banner.flip {
+        brow.reach.1
+    } else {
+        brow.reach.0
     };
-    let ink = |level: i8| cap.ink.ramp(level);
-    let (crown, under): (&[f32], usize) = match brow.view {
-        HeadView::Front => (&CAP_CROWN, 0),
-        HeadView::Back => (&CAP_CROWN, CAP_BAND - 1),
-        HeadView::Side => (&CAP_CROWN, CAP_BAND),
-        HeadView::Crown => (&CAP_DISC, 0),
-    };
+    let width = BANNER[0].len() as i32;
+    let pole = brow.at.x - west - BANNER_GAP;
+    let (left, top) = (pole + POLE_W - width, crest.y - BANNER_RISE);
     let mut px = std::collections::BTreeMap::new();
-    let rows = crown.iter().map(|&s| span(s));
-    for (row, cols) in (0..).zip(rows.chain(std::iter::repeat_n(-west..=east, under))) {
-        let (lo, hi) = (*cols.start(), *cols.end());
-        for dx in cols {
-            let level = if row == 0 || dx < lo + CAP_LIT_COLUMNS {
-                1
-            } else if dx > hi - CAP_SHADED_COLUMNS {
-                CAP_SHADE
-            } else {
-                0
+    for (row, line) in (top..).zip(BANNER) {
+        for (col, key) in (left..).zip(line.chars()) {
+            let ink = match key {
+                'b' => banner.ink,
+                'l' => banner.ink.ramp(1),
+                's' => banner.ink.ramp(BANNER_SHADE),
+                'O' => WOOD_LIT,
+                'D' => WOOD,
+                'i' => IRON,
+                'I' => IRON.ramp(1),
+                _ => continue,
             };
-            px.insert((dx, row), ink(level));
+            px.insert((col, row), ink);
         }
     }
-    let mut band = |row: i32, cols: std::ops::RangeInclusive<i32>, c: Rgb| {
-        for dx in cols {
-            px.insert((dx, row), c);
-        }
-    };
-    let (centre, depth) = ((east - west + 1).div_euclid(2), crown.len() as i32);
-    match brow.view {
-        HeadView::Front => {
-            (1..depth).for_each(|row| band(row, centre..=centre, ink(CAP_SHADE)));
-            band(-1, centre - 1..=centre, ink(CAP_SHADE));
-            for (row, (s, level)) in (depth..).zip(CAP_VISOR) {
-                band(row, span(s), ink(level));
-            }
-        }
-        HeadView::Back => {
-            let strap = depth + under as i32;
-            (1..strap - 1).for_each(|row| band(row, centre..=centre, ink(CAP_SHADE)));
-            band(-1, centre - 1..=centre, ink(CAP_SHADE));
-            band(strap - 1, centre - 1..=centre, cap.line);
-            band(strap, centre - 2..=centre + 1, ink(CAP_SHADE));
-        }
-        HeadView::Side => {
-            band(-1, centre - 1..=centre, ink(CAP_SHADE));
-            let peak = depth + (CAP_BAND - CAP_PEAK.len()) as i32;
-            for (row, (jut, level)) in (peak..).zip(CAP_PEAK) {
-                band(row, east + 1..=east + jut, ink(level));
-            }
-        }
-        HeadView::Crown => {
-            let tab = depth - 1;
-            (1..tab).for_each(|row| band(row, centre..=centre, ink(CAP_SHADE)));
-            let cross = span(CAP_CROSS);
-            band(
-                depth / 2,
-                cross.start() + 1..=cross.end() - 1,
-                ink(CAP_SHADE),
-            );
-            for row in depth / 2 - 1..=depth / 2 {
-                band(row, centre - 1..=centre, ink(CAP_SHADE));
-            }
-            for (row, s) in (tab..).zip(CAP_TAB) {
-                band(row, span(s), ink(CAP_SHADE));
-            }
+    let foot = brow.at.y + SHOULDER_DROP;
+    for row in top + BANNER.len() as i32..=foot {
+        px.insert((pole, row), WOOD_LIT);
+        px.insert((pole + 1, row), WOOD);
+    }
+    for k in 0..STRAP_ROWS {
+        for col in 0..STRAP_LEN + k {
+            px.insert((pole + POLE_W + col, foot - STRAP_ROWS + 1 + k), LEATHER);
         }
     }
-    let bounds = px
-        .keys()
-        .fold(None, |b: Option<(i32, i32, i32, i32)>, &(dx, row)| {
-            Some(b.map_or((dx, dx, row, row), |(x0, x1, top, bottom)| {
-                (x0.min(dx), x1.max(dx), top.min(row), bottom.max(row))
-            }))
-        });
-    let Some((x0, x1, top, bottom)) = bounds else {
+    let (Some(x0), Some(x1), Some(y0), Some(y1)) = (
+        px.keys().map(|&(x, _)| x).min(),
+        px.keys().map(|&(x, _)| x).max(),
+        px.keys().map(|&(_, y)| y).min(),
+        px.keys().map(|&(_, y)| y).max(),
+    ) else {
         return;
     };
-    let sign = if cap.flip { -1 } else { 1 };
-    let at = |(dx, row): (i32, i32)| ArtPoint {
-        x: brow.at.x + sign * dx,
-        y: brow.at.y - bottom + row,
-    };
-    let around = (top - 1..=bottom + 1).flat_map(|row| (x0 - 1..=x1 + 1).map(move |dx| (dx, row)));
-    for cell in crate::character::outline(around, |dx, row| px.contains_key(&(dx, row))) {
-        emit(at(cell), 1, cap.line, 1.0);
+    let around = (y0 - 1..=y1 + 1).flat_map(|y| (x0 - 1..=x1 + 1).map(move |x| (x, y)));
+    for (x, y) in crate::character::outline(around, |x, y| px.contains_key(&(x, y))) {
+        emit(ArtPoint { x, y }, 1, banner.line, 1.0);
     }
-    for (&cell, &c) in &px {
-        emit(at(cell), 1, c, 1.0);
+    for (&(x, y), &ink) in &px {
+        emit(ArtPoint { x, y }, 1, ink, 1.0);
     }
 }
 
@@ -413,48 +383,65 @@ mod tests {
     use super::*;
     use crate::render_scale::RenderScale;
 
-    /// The densest art's cap takes its shape from its own frame's view, even
-    /// where the base art's, which the effect carries for the base look,
-    /// differs: a profile's peak juts past the brow, a front's does not.
+    /// A banner's pole, tip and strap are the pack's own wood, iron and leather.
     #[test]
-    fn a_dense_cap_takes_its_own_frames_view() {
+    fn banner_materials_are_the_packs() {
+        let pack = crate::pack::test_office();
+        for (key, ink) in [('O', WOOD_LIT), ('D', WOOD), ('Σ', IRON), ('г', LEATHER)] {
+            assert_eq!(pack.palette().get(key).flatten(), Some(ink), "key {key:?}");
+        }
+    }
+
+    /// A banner stands over the crest and clear of the head's west side,
+    /// whichever way its figure is turned: where the figure is mirrored, the
+    /// head's screen west is its east reach.
+    #[test]
+    fn a_banner_stands_clear_of_the_head_it_is_carried_beside() {
         let theme = crate::theme::theme_by_name("normal").expect("theme");
         let line = Rgb { r: 1, g: 1, b: 1 };
         let at = ArtPoint { x: 40, y: 40 };
-        let reach = (10, 10);
-        let east_edge = |view: HeadView| {
-            let cap = Cap {
+        let crest = ArtPoint { x: 40, y: 30 };
+        let reach = (10, 6);
+        for flip in [false, true] {
+            let banner = Banner {
                 ink: Rgb {
-                    r: 0xec,
-                    g: 0xec,
-                    b: 0xec,
+                    r: 0xa8,
+                    g: 0x32,
+                    b: 0x32,
                 },
                 line,
-                view: HeadView::Front,
-                flip: false,
+                flip,
             };
             let riding = Riding {
-                effect: crate::effects::subagent_cap(crate::layout::Point { x: 10, y: 10 }, cap),
+                effect: crate::effects::subagent_banner(
+                    crate::layout::Point { x: 10, y: 10 },
+                    banner,
+                ),
                 head: Some(Head::Dressed {
-                    crest: at,
-                    brow: Brow { at, reach, view },
+                    crest,
+                    brow: Brow { at, reach },
                 }),
                 pen: Pen::new(RenderScale::new(4).expect("nonzero"), LOOK_DENSITY)
                     .expect("a density divides itself"),
                 inks: Inks::of(theme),
             };
-            let mut east = i32::MIN;
+            let mut drawn = Vec::new();
             riding.look(&mut |p, _, c, _| {
                 if c != line {
-                    east = east.max(p.x);
+                    drawn.push(p);
                 }
             });
-            east
-        };
-        assert_eq!(east_edge(HeadView::Front), at.x + reach.1);
-        assert!(
-            east_edge(HeadView::Side) > at.x + reach.1,
-            "no peak in profile"
-        );
+            let west = if flip { reach.1 } else { reach.0 };
+            let beside_head = drawn.iter().filter(|p| p.y < at.y);
+            assert!(
+                beside_head.clone().all(|p| p.x < at.x - west),
+                "flip {flip}: the banner leans on the head"
+            );
+            assert_eq!(
+                drawn.iter().map(|p| p.y).min(),
+                Some(crest.y - BANNER_RISE),
+                "flip {flip}: the tip is off the crest"
+            );
+        }
     }
 }

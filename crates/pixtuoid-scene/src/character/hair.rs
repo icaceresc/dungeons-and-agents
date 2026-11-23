@@ -207,7 +207,7 @@ pub(crate) struct Dress {
     /// negative where it rises over it.
     pub(crate) crest: i32,
     /// Art columns the dressed head spans west and east of its mark's column,
-    /// on its mark's row: what a cap with its brim there covers.
+    /// on its mark's row: what a banner beside the head stands clear of.
     pub(crate) reach: (i32, i32),
 }
 
@@ -293,9 +293,9 @@ fn crest(body: &Frame, head: HeadMark, style: Option<&Hairstyle>) -> i32 {
 }
 
 /// [`Dress::reach`] of `body` dressed in `style`, as far as the body's sides,
-/// where [`dress`] cuts a layer. Fitted rather than one size, so a cap covers
-/// the hair it sits on: a mop spills no wider than its brim, a crop never
-/// hides under it.
+/// where [`dress`] cuts a layer. Fitted rather than one size, so a banner's pole
+/// stands clear of every hair and helm: a mop never reaches it, a crop leaves
+/// no gap to it.
 fn reach(body: &Frame, head: HeadMark, style: Option<&Hairstyle>) -> (i32, i32) {
     let (row, mark) = (i32::from(head.y), i32::from(head.x));
     let xs = laid(body, head, style).flat_map(|(f, dx, dy)| {
@@ -389,7 +389,7 @@ const SIDES: [(i32, i32); 4] = [(1, 0), (-1, 0), (0, 1), (0, -1)];
 
 /// The cells of `area` a shape leaves empty but touches along a side, the
 /// shape being the cells `opaque` holds: where one line round it runs, as a
-/// dressed figure's and a cap's do.
+/// dressed figure's and a banner's do.
 pub(crate) fn outline(
     area: impl Iterator<Item = (i32, i32)>,
     opaque: impl Fn(i32, i32) -> bool,

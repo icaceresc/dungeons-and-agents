@@ -15,6 +15,9 @@ use crate::pet::{PetKind, PetState};
 #[doc(hidden)]
 pub const REPO_URL: &str = env!("CARGO_PKG_REPOSITORY");
 
+/// Where the wall board's star links: this fork, which the board names.
+pub(crate) const STAR_URL: &str = "https://github.com/icaceresc/dungeons-and-agents";
+
 /// Where the coffee machine links.
 pub(crate) const COFFEE_URL: &str = "https://buymeacoffee.com/IvanWng97";
 
@@ -75,7 +78,7 @@ impl SceneHit<'_> {
             Self::Figure(&HoverTarget::Pet(PetHover { kind, .. })) => {
                 petting.is_none().then_some(HitAction::Pet(kind))
             }
-            Self::Star => Some(HitAction::Open(REPO_URL)),
+            Self::Star => Some(HitAction::Open(STAR_URL)),
             Self::Coffee => Some(HitAction::Open(COFFEE_URL)),
             Self::Figure(HoverTarget::Mascot(_)) | Self::Furniture(_) => None,
         }
@@ -180,7 +183,7 @@ mod tests {
             Some(HitAction::Pet(PetKind::Owlbear))
         );
         assert_eq!(act(SceneHit::Figure(&pet), Some(&playing)), None);
-        assert_eq!(act(SceneHit::Star, None), Some(HitAction::Open(REPO_URL)));
+        assert_eq!(act(SceneHit::Star, None), Some(HitAction::Open(STAR_URL)));
         assert_eq!(
             act(SceneHit::Coffee, None),
             Some(HitAction::Open(COFFEE_URL))

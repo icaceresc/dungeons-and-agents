@@ -172,16 +172,17 @@ impl Glyph {
     }
 }
 
-/// The mark beside the head of an agent whose turn it is.
+/// The mark beside the head of an agent whose turn it is: a carved
+/// exclamation, its dot a diamond.
 pub const REQUIRES_ACTION_MARK: Glyph = Glyph::new(&[
     ".####.", //
-    "##..##", //
-    "##..##", //
-    "...##.", //
+    ".####.", //
+    ".####.", //
     "..##..", //
     "..##..", //
     "......", //
     "..##..", //
+    ".####.", //
     "..##..", //
 ]);
 
